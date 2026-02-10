@@ -1,0 +1,1691 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDental – Phần mềm quản lý nha khoa</title>
+    <meta name="description" content="TDental - Phần mềm quản lý nha khoa chuyên nghiệp">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+
+    <!-- ═══ LOGIN SCREEN ═══ -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <div class="login-logo">
+                <svg viewBox="0 0 32 32" fill="none">
+                    <rect width="32" height="32" rx="6" fill="#1A6DE3" />
+                    <text x="5" y="23" font-size="18" font-weight="bold" fill="white">T</text>
+                </svg>
+                <span>TDental</span>
+            </div>
+            <div class="login-subtitle">Phần mềm quản lý nha khoa chuyên nghiệp</div>
+            <div id="loginError" class="login-error"></div>
+            <div class="login-field">
+                <label>Email</label>
+                <input id="loginEmail" type="text" placeholder="Email hoặc Tên đăng nhập (ví dụ: admin)"
+                    autocomplete="username">
+            </div>
+            <div class="login-field">
+                <label>Mật khẩu</label>
+                <div class="password-wrapper">
+                    <input id="loginPassword" type="password" placeholder="Nhập mật khẩu..."
+                        autocomplete="current-password">
+                    <button type="button" class="password-toggle" onclick="toggleLoginPassword()">👁️</button>
+                </div>
+            </div>
+            <label class="login-remember">
+                <input type="checkbox" id="loginRemember" checked>
+                <span>Ghi nhớ đăng nhập (60 ngày)</span>
+            </label>
+            <button class="login-btn" onclick="handleLogin()">Đăng nhập</button>
+            <div class="login-footer">© 2026 TDental — Phần mềm quản lý nha khoa</div>
+        </div>
+    </div>
+
+    <!-- ═══ SIDEBAR ═══ -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-logo" style="justify-content:flex-start;padding:0 16px;gap:10px">
+            <svg viewBox="0 0 32 32" fill="none" style="width:28px;height:28px;flex-shrink:0">
+                <rect width="32" height="32" rx="6" fill="#1A6DE3" />
+                <text x="5" y="23" font-size="18" font-weight="bold" fill="white">T</text>
+            </svg>
+            <span style="color:#fff;font-size:16px;font-weight:700;white-space:nowrap">TDental</span>
+        </div>
+        <div class="sidebar-nav">
+            <a class="sidebar-item active" data-page="dashboard" onclick="navigate('dashboard')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                </svg>
+                <span>Tổng quan</span>
+            </a>
+            <a class="sidebar-item" data-page="customers" onclick="navigate('customers')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 00-3-3.87" />
+                    <path d="M16 3.13a4 4 0 010 7.75" />
+                </svg>
+                <span>Khách hàng</span>
+            </a>
+            <a class="sidebar-item" data-page="reception" onclick="navigate('reception')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
+                    <rect x="8" y="2" width="8" height="4" rx="1" />
+                    <path d="M9 14l2 2 4-4" />
+                </svg>
+                <span>Công việc</span>
+            </a>
+            <a class="sidebar-item" data-page="calendar" onclick="navigate('calendar')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <path d="M16 2v4M8 2v4M3 10h18" />
+                </svg>
+                <span>Lịch hẹn</span>
+            </a>
+            <div class="sidebar-group">
+                <a class="sidebar-item" onclick="toggleSubmenu(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+                    </svg>
+                    <span>Labo</span>
+                    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6" />
+                    </svg>
+                </a>
+                <div class="sidebar-submenu">
+                    <a class="sidebar-subitem" data-page="treatments" onclick="navigate('treatments')">Quản lý phiếu
+                        Labo</a>
+                    <a class="sidebar-subitem" data-page="labo-orders" onclick="navigate('treatments')">Đơn hàng
+                        Labo</a>
+                </div>
+            </div>
+            <div class="sidebar-group">
+                <a class="sidebar-item" onclick="toggleSubmenu(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="9" cy="21" r="1" />
+                        <circle cx="20" cy="21" r="1" />
+                        <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
+                    </svg>
+                    <span>Mua hàng</span>
+                    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6" />
+                    </svg>
+                </a>
+                <div class="sidebar-submenu">
+                    <a class="sidebar-subitem" data-page="purchase" onclick="navigate('purchase')">Mua hàng</a>
+                    <a class="sidebar-subitem" data-page="purchase-return" onclick="navigate('purchase')">Trả hàng</a>
+                </div>
+            </div>
+            <a class="sidebar-item" data-page="inventory" onclick="navigate('inventory')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path
+                        d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+                    <path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12" />
+                </svg>
+                <span>Kho</span>
+            </a>
+            <a class="sidebar-item" data-page="salary" onclick="navigate('salary')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23" />
+                    <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+                </svg>
+                <span>Lương</span>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18l6-6-6-6" />
+                </svg>
+            </a>
+            <a class="sidebar-item" data-page="cashbook" onclick="navigate('cashbook')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2" />
+                    <path d="M2 10h20" />
+                    <path d="M12 14h.01" />
+                </svg>
+                <span>Sổ quỹ</span>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18l6-6-6-6" />
+                </svg>
+            </a>
+            <div class="sidebar-group">
+                <a class="sidebar-item" onclick="toggleSubmenu(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
+                    </svg>
+                    <span>Tổng đài</span>
+                    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6" />
+                    </svg>
+                </a>
+                <div class="sidebar-submenu">
+                    <a class="sidebar-subitem" data-page="callcenter" onclick="navigate('callcenter')">Cấu hình tổng
+                        đài</a>
+                    <a class="sidebar-subitem" data-page="call-history" onclick="navigate('callcenter')">Lịch sử cuộc
+                        gọi</a>
+                </div>
+            </div>
+            <div class="sidebar-group">
+                <a class="sidebar-item" onclick="toggleSubmenu(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                    <span>Hoa hồng</span>
+                    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6" />
+                    </svg>
+                </a>
+                <div class="sidebar-submenu">
+                    <a class="sidebar-subitem" data-page="commission" onclick="navigate('commission')">Người giới
+                        thiệu</a>
+                    <a class="sidebar-subitem" data-page="commission-staff" onclick="navigate('commission')">Nhân
+                        viên</a>
+                </div>
+            </div>
+            <a class="sidebar-item" data-page="reports" onclick="navigate('reports')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 20V10M12 20V4M6 20v-6" />
+                </svg>
+                <span>Báo cáo</span>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18l6-6-6-6" />
+                </svg>
+            </a>
+            <a class="sidebar-item" data-page="categories" onclick="navigate('categories')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" />
+                </svg>
+                <span>Danh mục</span>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18l6-6-6-6" />
+                </svg>
+            </a>
+        </div>
+        <div class="sidebar-bottom">
+            <a class="sidebar-item" data-page="users" onclick="navigate('users')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                <span>Quản lý người dùng</span>
+            </a>
+            <a class="sidebar-item" data-page="settings" onclick="navigate('settings')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3" />
+                    <path
+                        d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+                </svg>
+                <span>Cấu hình</span>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18l6-6-6-6" />
+                </svg>
+            </a>
+            <a class="sidebar-item" onclick="logoutUser()" style="color:#ef4444;cursor:pointer">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                <span>Đăng xuất</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- ═══ TOPBAR ═══ -->
+    <header class="topbar">
+        <button class="topbar-hamburger" onclick="toggleSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                <path d="M3 12h18M3 6h18M3 18h18" />
+            </svg>
+        </button>
+        <div class="topbar-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input type="text" placeholder="Tìm kiếm (F2)" id="globalSearch">
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="topbar-marquee">
+            <span class="marquee-text">Màn hình lễ tân</span>
+            <span class="badge-new">Mới</span>
+            <span id="uptime">--</span>
+        </div>
+        <div style="position:relative">
+            <button class="topbar-branch" id="branchSelector" onclick="toggleBranchDropdown(event)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                </svg>
+                <span id="currentBranch">Tất cả chi nhánh</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <path d="M6 9l6 6 6-6" />
+                </svg>
+            </button>
+            <div class="branch-dropdown" id="branchDropdown">
+                <!-- Branches dynamically loaded here -->
+            </div>
+        </div>
+        <div class="topbar-bell" onclick="alert('Chưa có thông báo mới')" style="cursor:pointer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 01-3.46 0" />
+            </svg>
+            <div class="notif-dot"></div>
+        </div>
+        <div class="topbar-user">
+            <div class="topbar-user-avatar">A</div>
+            <span>admin</span>
+        </div>
+    </header>
+
+    <!-- ═══ MAIN ═══ -->
+    <div class="main" id="mainContent">
+        <!-- Dashboard page (default) -->
+        <div id="page-dashboard" class="page-content">
+            <div class="page-header">
+                <h2>Tổng quan</h2>
+                <div class="page-header-actions">
+                    <span style="font-size:12px;color:var(--text-muted)" id="dashDate"></span>
+                </div>
+            </div>
+            <!-- Stat cards removed to match original TDental dashboard -->
+            <div id="dashGrid" style="display:none">
+                <span id="statCustomers"></span>
+                <span id="statAppointments"></span>
+                <span id="statTreating"></span>
+                <span id="statEmployees"></span>
+            </div>
+            <div class="dash-2col">
+                <!-- LEFT COLUMN -->
+                <div>
+                    <!-- TIẾP NHẬN KHÁCH HÀNG -->
+                    <div class="dash-panel">
+                        <div class="dash-panel-header">
+                            <span>TIẾP NHẬN KHÁCH HÀNG</span>
+                            <div class="panel-actions">
+                                <button class="panel-add-btn" title="Thêm mới"
+                                    onclick="openModal('reception')">+</button>
+                                <div style="position:relative">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--text-muted)">
+                                        <circle cx="11" cy="11" r="8" />
+                                        <path d="M21 21l-4.35-4.35" />
+                                    </svg>
+                                    <input type="text" class="panel-search" placeholder="Tìm kiếm theo họ tên, sdt"
+                                        style="padding-left:28px">
+                                </div>
+                                <button class="panel-filter-btn" title="Lọc">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        width="14" height="14">
+                                        <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="panel-tabs">
+                            <button class="panel-tab active">Tất cả <span class="count" id="recTabAll">0</span></button>
+                            <button class="panel-tab">Chờ khám <span class="count" id="recTabWaiting">0</span></button>
+                            <button class="panel-tab">Đang khám <span class="count" id="recTabExam">0</span></button>
+                            <button class="panel-tab">Hoàn thành <span class="count" id="recTabDone">0</span></button>
+                        </div>
+                        <div class="dash-panel-body" id="receptionList" style="min-height:200px">
+                            <div class="loading">
+                                <div class="spinner"></div>Đang tải...
+                            </div>
+                        </div>
+                    </div>
+                    <!-- DỊCH VỤ TRONG NGÀY -->
+                    <div class="dash-panel">
+                        <div class="dash-panel-header">
+                            <span>DỊCH VỤ TRONG NGÀY</span>
+                            <div class="panel-actions">
+                                <div style="position:relative">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--text-muted)">
+                                        <circle cx="11" cy="11" r="8" />
+                                        <path d="M21 21l-4.35-4.35" />
+                                    </svg>
+                                    <input type="text" class="panel-search" placeholder="Tìm kiếm nhanh"
+                                        style="padding-left:28px">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dash-panel-body" id="todayServiceList">
+                            <div class="loading">
+                                <div class="spinner"></div>Đang tải...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- RIGHT COLUMN -->
+                <div>
+                    <!-- LỊCH HẸN HÔM NAY -->
+                    <div class="dash-panel">
+                        <div class="dash-panel-header">
+                            <span>LỊCH HẸN HÔM NAY</span>
+                            <div class="panel-actions">
+                                <button class="panel-add-btn" title="Thêm lịch hẹn"
+                                    onclick="openModal('appointment')">+</button>
+                            </div>
+                        </div>
+                        <div style="padding:8px 16px 0">
+                            <div style="position:relative;margin-bottom:8px">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--text-muted)">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <path d="M21 21l-4.35-4.35" />
+                                </svg>
+                                <input type="text" class="panel-search" placeholder="Tìm kiếm bác sĩ, họ tên, sdt"
+                                    style="padding-left:28px;width:100%;box-sizing:border-box" id="apptListSearch">
+                                <!-- Rainbow color icon matching original -->
+                                <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;background:conic-gradient(#ef4444,#f97316,#eab308,#22c55e,#3b82f6,#8b5cf6,#ef4444);cursor:pointer"
+                                    title="Lọc theo màu"></div>
+                            </div>
+                        </div>
+                        <div class="panel-tabs" id="apptFilterTabs">
+                            <button class="panel-tab active" data-appt-filter="all"
+                                onclick="setDashboardApptFilter('all')">Tất cả <span class="count"
+                                    id="apptTabAll">0</span></button>
+                            <button class="panel-tab" data-appt-filter="pending"
+                                onclick="setDashboardApptFilter('pending')">Đang hẹn <span class="count"
+                                    id="apptTabPending">0</span></button>
+                            <button class="panel-tab" data-appt-filter="arrived"
+                                onclick="setDashboardApptFilter('arrived')">Đã đến <span class="count"
+                                    id="apptTabArrived">0</span></button>
+                            <button class="panel-tab" data-appt-filter="cancel"
+                                onclick="setDashboardApptFilter('cancel')">Hủy hẹn <span class="count"
+                                    id="apptTabCancel">0</span></button>
+                        </div>
+                        <div class="dash-panel-body" id="todayApptList" style="min-height:200px;max-height:500px">
+                            <div class="loading">
+                                <div class="spinner"></div>Đang tải...
+                            </div>
+                        </div>
+                    </div>
+                    <!-- DOANH THU panel -->
+                    <div class="dash-panel" id="revenuePanel">
+                        <div class="dash-panel-header">
+                            <span>DOANH THU</span>
+                        </div>
+                        <div class="dash-panel-body"
+                            style="padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px">
+                            <div style="position:relative;width:220px;height:220px;margin-bottom:20px">
+                                <svg viewBox="0 0 36 36" class="circular-chart" id="revenueChart">
+                                    <path class="circle-bg"
+                                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                        fill="none" stroke="#eee" stroke-width="3.8" />
+                                    <path class="circle" stroke-dasharray="100, 100"
+                                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                        fill="none" stroke="#8b5cf6" stroke-width="3.8" stroke-linecap="round" />
+                                </svg>
+                                <div
+                                    style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
+                                    <div style="font-size:20px;font-weight:700;color:#3b82f6" id="revTotal">---</div>
+                                    <div style="font-size:12px;color:#9ca3af">Tổng doanh thu</div>
+                                </div>
+                            </div>
+                            <div class="revenue-legend" id="revenueLegend"
+                                style="width:100%;display:flex;justify-content:center;gap:15px;flex-wrap:wrap">
+                                <!-- Legend items -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Customers page -->
+        <div id="page-customers" class="page-content">
+            <div class="page-header">
+                <h2>Khách hàng</h2>
+                <div class="page-header-actions">
+                    <button class="btn-primary" onclick="openModal('customer')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 8v8M8 12h8" />
+                        </svg>
+                        Thêm mới
+                    </button>
+                </div>
+            </div>
+            <div class="tabs">
+                <button class="tab active" data-status="" onclick="filterStatus(this)">Tất cả</button>
+                <button class="tab" data-status="sale" onclick="filterStatus(this)">Đang điều trị</button>
+                <button class="tab" data-status="done" onclick="filterStatus(this)">Hoàn thành</button>
+                <button class="tab" data-status="none" onclick="filterStatus(this)">Chưa phát sinh</button>
+                <div class="tabs-right">
+                    <select class="filter-select" id="companyFilter" onchange="currentPage=1;loadCustomers()">
+                        <option value="">Lọc chi nhánh tạo</option>
+                    </select>
+                    <div class="filter-search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="M21 21l-4.35-4.35" />
+                        </svg>
+                        <input type="text" id="tableSearch" placeholder="Tìm kiếm" oninput="debounceSearch()">
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="cell-check"><input type="checkbox"></th>
+                            <th style="min-width:180px">Họ và tên</th>
+                            <th>Ngày sinh</th>
+                            <th>Ngày hẹn gần nhất</th>
+                            <th>Ngày hẹn sắp tới</th>
+                            <th>Ngày điều trị gần nhất</th>
+                            <th>Tình trạng điều trị</th>
+                            <th>Công nợ</th>
+                            <th>Tổng tiền ĐT</th>
+                            <th>Tổng doanh thu</th>
+                            <th>Dự kiến thu</th>
+                            <th>Thẻ thành viên</th>
+                            <th>Nhãn</th>
+                            <th>Chi nhánh</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="15" class="loading">
+                                <div class="spinner"></div>Đang tải...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="pagination" id="pagination"></div>
+            </div>
+        </div>
+
+        <!-- Reception page -->
+        <div id="page-reception" class="page-content" style="display:none">
+            <div class="page-header">
+                <h2>Công việc</h2>
+                <div class="page-header-actions">
+                    <button class="btn-primary" onclick="openModal('task')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 8v8M8 12h8" />
+                        </svg>
+                        Thêm công việc
+                    </button>
+                </div>
+            </div>
+            <div class="tabs" id="taskMainTabs" style="margin-bottom:0">
+                <button class="tab active" onclick="switchTaskTab(this,'tasks')">Công việc</button>
+                <button class="tab" onclick="switchTaskTab(this,'task_types')">Loại công việc</button>
+            </div>
+            <div class="tabs" id="taskStatusTabs">
+                <button class="tab active" data-state="" onclick="filterTaskState(this)">Tất cả</button>
+                <button class="tab" data-state="priority" onclick="filterTaskState(this)">Ưu tiên</button>
+                <button class="tab" data-state="new" onclick="filterTaskState(this)">Mới</button>
+                <button class="tab" data-state="in_progress" onclick="filterTaskState(this)">Đang làm</button>
+                <button class="tab" data-state="need_info" onclick="filterTaskState(this)">Cần thêm thông tin</button>
+                <button class="tab" data-state="done" onclick="filterTaskState(this)">Hoàn thành</button>
+                <button class="tab" data-state="cancelled" onclick="filterTaskState(this)">Hủy</button>
+                <button class="tab" data-state="unassigned" onclick="filterTaskState(this)">Chưa phân công</button>
+                <div class="tabs-right">
+                    <div class="filter-search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="M21 21l-4.35-4.35" />
+                        </svg>
+                        <input type="text" id="taskSearch" placeholder="Tìm công việc..."
+                            oninput="debounceTaskSearch()">
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="min-width:200px">Tiêu đề</th>
+                            <th>Loại công việc</th>
+                            <th>Hành động</th>
+                            <th>Người phụ trách</th>
+                            <th>Người theo dõi</th>
+                            <th>Khách hàng</th>
+                            <th>Nội dung CV</th>
+                            <th>Trạng thái CV</th>
+                            <th>Ngày tạo</th>
+                            <th>Thời hạn</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="receptionBody">
+                        <tr>
+                            <td colspan="11" class="loading">
+                                <div class="spinner"></div>Đang tải...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="pagination" id="receptionPagination"></div>
+            </div>
+        </div>
+
+        <!-- Calendar (Appointments) page -->
+        <div id="page-calendar" class="page-content" style="display:none">
+            <div class="page-header">
+                <h2>Lịch hẹn</h2>
+                <div class="page-header-actions">
+                    <button class="btn-primary" onclick="openModal('appointment')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 8v8M8 12h8" />
+                        </svg>
+                        Thêm mới
+                    </button>
+                    <button class="btn-primary"
+                        style="background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border)"
+                        onclick="exportCalendarExcel()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                            height="16">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                            <path d="M3 9h18M9 21V9" />
+                        </svg>
+                        Xuất Excel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Calendar Toolbar -->
+            <div class="calendar-toolbar">
+                <div class="calendar-toolbar-left">
+                    <div class="calendar-view-toggle" id="calViewToggle">
+                        <button class="active" data-view="day" onclick="switchCalendarView('day', this)">Ngày</button>
+                        <button data-view="week" onclick="switchCalendarView('week', this)">Tuần</button>
+                        <button data-view="month" onclick="switchCalendarView('month', this)">Tháng</button>
+                    </div>
+                    <div class="calendar-date-nav">
+                        <button onclick="navigateCalendar(-1)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <polyline points="15 18 9 12 15 6" />
+                            </svg>
+                        </button>
+                        <span class="date-label" id="calDateLabel">---</span>
+                        <button onclick="navigateCalendar(1)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <polyline points="9 18 15 12 9 6" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="calendar-toolbar-right">
+                    <div class="calendar-search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="M21 21l-4.35-4.35" />
+                        </svg>
+                        <input type="text" id="calSearch" placeholder="Tìm kiếm theo họ tên, số điện thoại khách hàng"
+                            oninput="filterCalendarSearch()">
+                    </div>
+                    <div class="calendar-toolbar-icons">
+                        <button class="cal-icon-btn active" title="Theo bác sĩ">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                                <circle cx="12" cy="7" r="4" />
+                            </svg>
+                        </button>
+                        <button class="cal-icon-btn" title="Theo giờ">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <circle cx="12" cy="12" r="10" />
+                                <polyline points="12 6 12 12 16 14" />
+                            </svg>
+                        </button>
+                        <button class="cal-icon-btn cal-counter-btn" title="Số lượng">
+                            <span class="cal-counter-badge" id="calApptCount">0</span>
+                        </button>
+                    </div>
+                    <div class="calendar-mode-toggle" id="calModeToggle">
+                        <button class="active" data-mode="grid" onclick="switchCalendarMode('grid', this)" title="Lịch">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                            </svg>
+                        </button>
+                        <button data-mode="list" onclick="switchCalendarMode('list', this)" title="Danh sách">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="8" y1="6" x2="21" y2="6" />
+                                <line x1="8" y1="12" x2="21" y2="12" />
+                                <line x1="8" y1="18" x2="21" y2="18" />
+                                <line x1="3" y1="6" x2="3.01" y2="6" />
+                                <line x1="3" y1="12" x2="3.01" y2="12" />
+                                <line x1="3" y1="18" x2="3.01" y2="18" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar Grid View -->
+            <div class="calendar-grid-wrapper" id="calendarGridView">
+                <div class="calendar-loading" id="calendarLoading">
+                    <div class="spinner"></div>Đang tải lịch hẹn...
+                </div>
+                <div class="calendar-grid-container" id="calendarGrid" style="display:none"></div>
+            </div>
+
+            <!-- Calendar List View (hidden by default) -->
+            <div class="calendar-list-view" id="calendarListView">
+                <div class="tabs" id="apptTabs">
+                    <button class="tab active" data-state="" onclick="filterApptState(this)">Tất cả</button>
+                    <div class="tabs-right">
+                        <select class="filter-select" id="apptCompanyFilter" onchange="apptPage=1;loadAppointments()">
+                            <option value="">Lọc chi nhánh</option>
+                        </select>
+                        <div class="filter-search">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8" />
+                                <path d="M21 21l-4.35-4.35" />
+                            </svg>
+                            <input type="text" id="apptSearch" placeholder="Tìm kiếm lịch hẹn"
+                                oninput="debounceApptSearch()">
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:40px">#</th>
+                                <th style="min-width:180px">Khách hàng</th>
+                                <th>Mã KH</th>
+                                <th>SĐT</th>
+                                <th>Ngày hẹn</th>
+                                <th>Giờ</th>
+                                <th>Bác sĩ</th>
+                                <th>Chi nhánh</th>
+                                <th>Trạng thái</th>
+                                <th>Lý do</th>
+                            </tr>
+                        </thead>
+                        <tbody id="apptBody">
+                            <tr>
+                                <td colspan="10" class="loading">
+                                    <div class="spinner"></div>Đang tải...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="pagination" id="apptPagination"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Labo Ticket Management page -->
+        <div id="page-treatments" class="page-content" style="display:none">
+            <div class="page-header">
+                <h2>Quản lý Labo</h2>
+                <div class="page-header-actions">
+                    <button class="btn-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 8v8M8 12h8" />
+                        </svg>
+                        Tạo phiếu Labo
+                    </button>
+                </div>
+            </div>
+            <div class="tabs" id="treatTabs">
+                <button class="tab active" data-state="" onclick="filterTreatState(this)">Tất cả</button>
+                <button class="tab" data-state="sending" onclick="filterTreatState(this)">Đang gửi</button>
+                <button class="tab" data-state="received" onclick="filterTreatState(this)">Đã nhận</button>
+                <button class="tab" data-state="completed" onclick="filterTreatState(this)">Hoàn thành</button>
+                <div class="tabs-right">
+                    <div class="filter-search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="M21 21l-4.35-4.35" />
+                        </svg>
+                        <input type="text" id="treatSearch" placeholder="Tìm phiếu Labo"
+                            oninput="debounceTreatSearch()">
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mã phiếu Labo</th>
+                            <th style="min-width:140px">Khách hàng</th>
+                            <th>SĐT</th>
+                            <th>Phiếu điều trị</th>
+                            <th>Loại phục hình</th>
+                            <th>Mã Labo</th>
+                            <th>Tên phục hình</th>
+                            <th>Hãng Labo</th>
+                            <th>Răng</th>
+                            <th>Màu sắc</th>
+                            <th>Trạng thái Labo</th>
+                            <th>Ngày gửi</th>
+                            <th>Ngày nhận (Dự kiến)</th>
+                            <th>Ngày nhận (Thực tế)</th>
+                            <th>Chi phí Labo</th>
+                            <th>Thanh toán Labo</th>
+                            <th>Bảo hành (tháng)</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="treatBody">
+                        <tr>
+                            <td colspan="18" class="loading">
+                                <div class="spinner"></div>Đang tải...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="pagination" id="treatPagination"></div>
+            </div>
+        </div>
+
+        <!-- Reports page -->
+        <div id="page-reports" class="page-content" style="display:none">
+            <div class="page-header">
+                <h2>Báo cáo doanh thu</h2>
+                <div class="page-header-actions" style="display:flex;gap:8px;align-items:center">
+                    <div class="tabs" style="margin-bottom:0;gap:0">
+                        <button class="tab active"
+                            style="border-radius:6px 0 0 6px;border:1px solid var(--primary)">Ngày</button>
+                        <button class="tab"
+                            style="border-radius:0 6px 6px 0;border:1px solid var(--border)">Tháng</button>
+                    </div>
+                    <select class="filter-select" style="min-width:180px">
+                        <option>Nha khoa Tấm Dentist</option>
+                    </select>
+                    <span style="font-size:12px;color:var(--text-muted)" id="rptDateRange"></span>
+                </div>
+            </div>
+            <div class="tabs" style="margin-bottom:12px">
+                <button class="tab active">Thời gian</button>
+                <button class="tab">Dịch vụ</button>
+                <button class="tab">Nhân viên</button>
+                <button class="tab">Khách hàng</button>
+                <button class="tab">Nguồn khách hàng</button>
+                <button class="tab">Chi nhánh</button>
+            </div>
+            <div class="dash-grid" id="reportStats">
+                <div class="dash-stat">
+                    <div class="dash-stat-icon blue">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"
+                            height="20">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                        </svg>
+                    </div>
+                    <div class="dash-stat-info">
+                        <div class="dash-label">Tổng phiếu điều trị</div>
+                        <div class="dash-value" id="rptOrders">---</div>
+                    </div>
+                </div>
+                <div class="dash-stat">
+                    <div class="dash-stat-icon green">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"
+                            height="20">
+                            <line x1="12" y1="1" x2="12" y2="23" />
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                        </svg>
+                    </div>
+                    <div class="dash-stat-info">
+                        <div class="dash-label">Tổng doanh thu</div>
+                        <div class="dash-value" id="rptRevenue">---</div>
+                    </div>
+                </div>
+                <div class="dash-stat">
+                    <div class="dash-stat-icon purple">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"
+                            height="20">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                    </div>
+                    <div class="dash-stat-info">
+                        <div class="dash-label">Đã thu</div>
+                        <div class="dash-value" id="rptPaid">---</div>
+                    </div>
+                </div>
+                <div class="dash-stat">
+                    <div class="dash-stat-icon orange">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"
+                            height="20">
+                            <rect x="2" y="5" width="20" height="14" rx="2" />
+                            <path d="M2 10h20" />
+                        </svg>
+                    </div>
+                    <div class="dash-stat-info">
+                        <div class="dash-label">Công nợ</div>
+                        <div class="dash-value" id="rptDebt">---</div>
+                    </div>
+                </div>
+            </div>
+            <div class="dash-2col">
+                <div class="dash-panel">
+                    <div class="dash-panel-header">
+                        <span>BIỂU ĐỒ</span>
+                        <div style="font-size:12px;color:var(--text-secondary);text-transform:none;letter-spacing:0">
+                            Tổng doanh thu: <span style="color:var(--primary);font-weight:700"
+                                id="rptChartTotal">0</span>
+                            &nbsp; Trung bình ngày: <span style="color:var(--success);font-weight:700"
+                                id="rptChartAvg">0</span>
+                        </div>
+                    </div>
+                    <div class="dash-panel-body" id="rptMonthly" style="max-height:420px">
+                        <div class="loading">
+                            <div class="spinner"></div>Đang tải...
+                        </div>
+                    </div>
+                </div>
+                <div class="dash-panel">
+                    <div class="dash-panel-header"><span>DOANH THU THEO CHI NHÁNH</span></div>
+                    <div class="dash-panel-body" id="rptCompany">
+                        <div class="loading">
+                            <div class="spinner"></div>Đang tải...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top:16px">
+                <div class="dash-panel">
+                    <div class="dash-panel-header">
+                        <span>BÁO CÁO SỐ LIỆU</span>
+                        <div class="panel-actions">
+                            <button class="btn-primary"
+                                style="font-size:12px;padding:6px 14px;gap:6px;background:#dc2626">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"
+                                    height="14">
+                                    <path d="M6 9V2h12v7" />
+                                    <path
+                                        d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                                    <rect x="6" y="14" width="12" height="8" />
+                                </svg>
+                                In báo cáo
+                            </button>
+                            <button class="btn-primary"
+                                style="font-size:12px;padding:6px 14px;gap:6px;background:#fff;color:var(--text-primary);border:1px solid var(--border)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"
+                                    height="14">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="7 10 12 15 17 10" />
+                                    <line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
+                                Xuất file
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="dash-2col" style="margin-top:16px">
+                <div class="dash-panel">
+                    <div class="dash-panel-header"><span>TOP BÁC SĨ</span></div>
+                    <div class="dash-panel-body" id="rptDoctors">
+                        <div class="loading">
+                            <div class="spinner"></div>Đang tải...
+                        </div>
+                    </div>
+                </div>
+                <div class="dash-panel">
+                    <div class="dash-panel-header"><span>TOP DỊCH VỤ</span></div>
+                    <div class="dash-panel-body" id="rptServices">
+                        <div class="loading">
+                            <div class="spinner"></div>Đang tải...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ PURCHASE PAGE ══ -->
+        <div id="page-purchase" class="page-content" style="display:none">
+            <div class="page-header">
+                <h2>Mua hàng</h2>
+                <div class="page-header-actions">
+                    <button class="btn-primary" onclick="openModal('purchase')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 8v8M8 12h8" />
+                        </svg>
+                        Tạo phiếu mua
+                    </button>
+                    <input type="text" id="purchaseSearch" placeholder="🔍 Tìm kiếm..."
+                        style="width:250px;padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px"
+                        oninput="purchaseSearchKey=this.value;purchasePage=1;loadPurchase()">
+                </div>
+            </div>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Số phiếu</th>
+                            <th>Nhà cung cấp</th>
+                            <th>Ngày mua hàng</th>
+                            <th>Tổng tiền</th>
+                            <th>Đã thanh toán</th>
+                            <th>Còn nợ</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="purchaseTableBody">
+                        <tr>
+                            <td colspan="8" class="loading">
+                                <div class="spinner"></div>Đang tải...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="purchasePagination" class="pagination"></div>
+            </div>
+        </div>
+
+        <!-- ══ INVENTORY PAGE ══ -->
+        <div id="page-inventory" class="page-content" style="display:none">
+            <div class="page-header">
+                <h2>Kho</h2>
+                <div class="page-header-actions" id="inventoryActions">
+                    <input type="text" id="inventorySearch" placeholder="🔍 Tìm mã, tên sản phẩm"
+                        style="width:250px;padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px"
+                        oninput="inventorySearchKey=this.value;inventoryPage=1;loadInventory()">
+                </div>
+            </div>
+            <div class="tabs" id="inventoryTabs">
+                <button class="tab active" data-tab="stock_summary" onclick="switchInventoryTab(this)">Nhập xuất
+                    tồn</button>
+                <button class="tab" data-tab="stock_in" onclick="switchInventoryTab(this)">Nhập kho</button>
+                <button class="tab" data-tab="stock_out" onclick="switchInventoryTab(this)">Xuất kho</button>
+                <button class="tab" data-tab="material_request" onclick="switchInventoryTab(this)">Yêu cầu vật
+                    tư</button>
+                <button class="tab" data-tab="stock_check" onclick="switchInventoryTab(this)">Kiểm kho</button>
+                <button class="tab" data-tab="history" onclick="switchInventoryTab(this)">Lịch sử xuất - nhập</button>
+            </div>
+            <div id="inventoryContent">
+                <!-- Dynamic content rendered by JS per tab -->
+                <div class="card">
+                    <table>
+                        <thead id="inventoryTableHead"></thead>
+                        <tbody id="inventoryTableBody">
+                            <tr>
+                                <td colspan="10" class="loading">
+                                    <div class="spinner"></div>Đang tải...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div id="inventoryPagination" class="pagination"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ SALARY PAGE ══ -->
+        <div id="page-salary" class="page-content" style="display:none">
+            <div class="page-header">
+                <h2>Bảng lương nhân viên</h2>
+                <div class="page-header-actions">
+                    <select id="salaryMonth" style="padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px"
+                        onchange="loadSalary()">
+                        <option>02/2026</option>
+                        <option>01/2026</option>
+                        <option>12/2025</option>
+                    </select>
+                    <input type="text" id="salarySearch" placeholder="🔍 Tìm nhân viên..."
+                        style="width:250px;padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px"
+                        oninput="salarySearchKey=this.value;salaryPage=1;loadSalary()">
+                </div>
+            </div>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mã nhân viên</th>
+                            <th style="min-width:160px">Họ và tên</th>
+                            <th>Tổng lương thực tế</th>
+                            <th>Lương cơ bản</th>
+                            <th>Thưởng</th>
+                            <th>Hoa hồng</th>
+                            <th>Phụ cấp</th>
+                            <th>Tăng ca</th>
+                            <th>Tạm ứng</th>
+                            <th>Bảo hiểm</th>
+                            <th>Khác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salaryTableBody">
+                        <tr>
+                            <td colspan="11" class="loading">
+                                <div class="spinner"></div>Đang tải...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="salaryPagination" class="pagination"></div>
+            </div>
+        </div>
+
+        <!-- ══ CASHBOOK PAGE ══ -->
+        <div id="page-cashbook" class="page-content" style="display:none">
+            <div class="page-header">
+                <h2>Sổ quỹ tiền</h2>
+                <div class="page-header-actions">
+                    <button class="btn-primary" onclick="openModal('cashbook')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 8v8M8 12h8" />
+                        </svg>
+                        Tạo phiếu thu/chi
+                    </button>
+                    <input type="text" id="cashbookSearch" placeholder="🔍 Tìm kiếm..."
+                        style="width:250px;padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px"
+                        oninput="cashbookSearchKey=this.value;cashbookPage=1;loadCashbook()">
+                </div>
+            </div>
+            <div class="tabs" id="cashbookTabs">
+                <button class="tab active" onclick="switchCashbookTab(this,'cash')">Sổ quỹ tiền</button>
+                <button class="tab" onclick="switchCashbookTab(this,'bank')">Sổ quỹ ngân hàng</button>
+            </div>
+            <div class="dash-grid" style="grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+                <div class="dash-stat">
+                    <div class="dash-stat-icon blue">📊</div>
+                    <div class="dash-stat-info">
+                        <div class="dash-label">Đầu kỳ</div>
+                        <div class="dash-value" id="cbStart">0</div>
+                    </div>
+                </div>
+                <div class="dash-stat">
+                    <div class="dash-stat-icon green">📈</div>
+                    <div class="dash-stat-info">
+                        <div class="dash-label">Tổng thu</div>
+                        <div class="dash-value" id="cbIncome" style="color:#10b981">0</div>
+                    </div>
+                </div>
+                <div class="dash-stat">
+                    <div class="dash-stat-icon red">📉</div>
+                    <div class="dash-stat-info">
+                        <div class="dash-label">Tổng chi</div>
+                        <div class="dash-value" id="cbExpense" style="color:#ef4444">0</div>
+                    </div>
+                </div>
+                <div class="dash-stat">
+                    <div class="dash-stat-icon purple">💰</div>
+                    <div class="dash-stat-info">
+                        <div class="dash-label">Cuối kỳ</div>
+                        <div class="dash-value" id="cbEnd">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ngày</th>
+                            <th>Mã phiếu</th>
+                            <th>Loại</th>
+                            <th>Hạng mục</th>
+                            <th>Người nộp/nhận</th>
+                            <th style="color:#10b981">Thu</th>
+                            <th style="color:#ef4444">Chi</th>
+                            <th>Tồn</th>
+                            <th>Trạng thái</th>
+                            <th>Chi nhánh</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cashbookTableBody">
+                        <tr>
+                            <td colspan="11" class="loading">
+                                <div class="spinner"></div>Đang tải...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="cashbookPagination" class="pagination"></div>
+            </div>
+        </div>
+
+        <!-- ══ CALL CENTER PAGE ══ -->
+        <div id="page-callcenter" class="page-content" style="display:none">
+            <div class="page-header">
+                <h2>Lịch sử cuộc gọi</h2>
+                <div class="page-header-actions">
+                    <input type="text" id="callcenterSearch" placeholder="🔍 Tìm kiếm..."
+                        style="width:250px;padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px"
+                        oninput="callcenterSearchKey=this.value;callcenterPage=1;loadCallCenter()">
+                </div>
+            </div>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Số gọi</th>
+                            <th>Số nhận</th>
+                            <th>Hướng</th>
+                            <th>Trạng thái</th>
+                            <th>Thời lượng</th>
+                            <th>Nhân viên</th>
+                            <th>Khách hàng</th>
+                            <th>Ghi âm</th>
+                        </tr>
+                    </thead>
+                    <tbody id="callcenterTableBody">
+                        <tr>
+                            <td colspan="9" class="loading">
+                                <div class="spinner"></div>Đang tải...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="callcenterPagination" class="pagination"></div>
+            </div>
+        </div>
+
+        <!-- ══ COMMISSION PAGE ══ -->
+        <div id="page-commission" class="page-content" style="display:none">
+            <div class="page-header">
+                <h2>Người giới thiệu</h2>
+                <div class="page-header-actions">
+                    <button class="btn-primary" onclick="openModal('referral')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 8v8M8 12h8" />
+                        </svg>
+                        Thêm người giới thiệu
+                    </button>
+                    <input type="text" id="commissionSearch" placeholder="🔍 Tìm kiếm..."
+                        style="width:250px;padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px"
+                        oninput="commissionSearchKey=this.value;commissionPage=1;loadCommission()">
+                </div>
+            </div>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mã người giới thiệu</th>
+                            <th style="min-width:160px">Họ và tên</th>
+                            <th>Ngày sinh</th>
+                            <th>Giới tính</th>
+                            <th>Số điện thoại</th>
+                            <th>SL KH đã giới thiệu</th>
+                            <th>Tổng doanh thu GT</th>
+                            <th>Hoa hồng đã hưởng</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="commissionTableBody">
+                        <tr>
+                            <td colspan="9" class="loading">
+                                <div class="spinner"></div>Đang tải...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="commissionPagination" class="pagination"></div>
+            </div>
+        </div>
+
+        <!-- ══ CATEGORIES PAGE ══ -->
+        <div id="page-categories" class="page-content" style="display:none">
+            <div class="page-header">
+                <h2>Danh mục</h2>
+            </div>
+            <div style="display:flex;gap:20px">
+                <!-- Sidebar menu -->
+                <div style="min-width:260px;max-width:260px">
+                    <div class="card" style="padding:0;overflow:hidden">
+                        <!-- Thông tin khách hàng group -->
+                        <div class="cat-group">
+                            <div class="cat-group-title"
+                                style="padding:12px 16px;font-weight:600;font-size:13px;color:#6b7280;text-transform:uppercase;background:#f9fafb;border-bottom:1px solid #e5e7eb">
+                                Thông tin khách hàng</div>
+                            <a class="cat-menu-item active" onclick="loadCatDetail('customer_labels')"
+                                style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151;transition:background 0.15s">Nhãn
+                                khách hàng</a>
+                            <a class="cat-menu-item" onclick="loadCatDetail('partner_sources')"
+                                style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Nguồn
+                                khách hàng</a>
+                            <a class="cat-menu-item" onclick="loadCatDetail('partner_titles')"
+                                style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Danh
+                                xưng</a>
+                            <a class="cat-menu-item" onclick="loadCatDetail('medical_history')"
+                                style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Tiểu
+                                sử bệnh</a>
+                        </div>
+                        <!-- Trạng thái khách hàng -->
+                        <a class="cat-menu-item" onclick="loadCatDetail('customer_statuses')"
+                            style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Trạng
+                            thái khách hàng</a>
+                        <!-- Đối tác group -->
+                        <div class="cat-group">
+                            <div class="cat-group-title"
+                                style="padding:12px 16px;font-weight:600;font-size:13px;color:#6b7280;text-transform:uppercase;background:#f9fafb;border-bottom:1px solid #e5e7eb">
+                                Đối tác</div>
+                            <a class="cat-menu-item" onclick="loadCatDetail('labo_partners')"
+                                style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Đối
+                                tác Labo</a>
+                            <a class="cat-menu-item" onclick="loadCatDetail('insurance')"
+                                style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Bảo
+                                hiểm</a>
+                        </div>
+                        <!-- Dịch vụ - Vật tư - Thuốc group -->
+                        <div class="cat-group">
+                            <div class="cat-group-title"
+                                style="padding:12px 16px;font-weight:600;font-size:13px;color:#6b7280;text-transform:uppercase;background:#f9fafb;border-bottom:1px solid #e5e7eb">
+                                Dịch vụ - Vật tư - Thuốc</div>
+                            <a class="cat-menu-item" onclick="loadCatDetail('product_categories')"
+                                style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Nhóm
+                                dịch vụ</a>
+                            <a class="cat-menu-item" onclick="loadCatDetail('services')"
+                                style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Dịch
+                                vụ</a>
+                            <a class="cat-menu-item" onclick="loadCatDetail('material_groups')"
+                                style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Nhóm
+                                vật tư - thuốc</a>
+                            <a class="cat-menu-item" onclick="loadCatDetail('materials')"
+                                style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Vật
+                                tư - thuốc</a>
+                            <a class="cat-menu-item" onclick="loadCatDetail('units')"
+                                style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Đơn
+                                vị tính</a>
+                        </div>
+                        <!-- Standalone items -->
+                        <a class="cat-menu-item" onclick="loadCatDetail('prescriptions')"
+                            style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Đơn
+                            thuốc mẫu</a>
+                        <a class="cat-menu-item" onclick="loadCatDetail('price_list')"
+                            style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Bảng
+                            giá</a>
+                        <a class="cat-menu-item" onclick="loadCatDetail('commission_table')"
+                            style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Bảng
+                            hoa hồng</a>
+                        <!-- Nhân viên group -->
+                        <div class="cat-group">
+                            <div class="cat-group-title"
+                                style="padding:12px 16px;font-weight:600;font-size:13px;color:#6b7280;text-transform:uppercase;background:#f9fafb;border-bottom:1px solid #e5e7eb">
+                                Nhân viên</div>
+                            <a class="cat-menu-item" onclick="loadCatDetail('employees')"
+                                style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Nhân
+                                viên</a>
+                            <a class="cat-menu-item" onclick="loadCatDetail('departments')"
+                                style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Phòng
+                                ban</a>
+                            <a class="cat-menu-item" onclick="loadCatDetail('job_titles')"
+                                style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Chức
+                                danh</a>
+                        </div>
+                        <!-- Thông số Labo group -->
+                        <div class="cat-group">
+                            <div class="cat-group-title"
+                                style="padding:12px 16px;font-weight:600;font-size:13px;color:#6b7280;text-transform:uppercase;background:#f9fafb;border-bottom:1px solid #e5e7eb">
+                                Thông số Labo</div>
+                            <a class="cat-menu-item" onclick="loadCatDetail('labo_brands')"
+                                style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Hãng
+                                Labo</a>
+                            <a class="cat-menu-item" onclick="loadCatDetail('restoration_types')"
+                                style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Loại
+                                phục hình</a>
+                            <a class="cat-menu-item" onclick="loadCatDetail('labo_colors')"
+                                style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Màu
+                                sắc</a>
+                        </div>
+                        <!-- More standalone items -->
+                        <a class="cat-menu-item" onclick="loadCatDetail('income_expense_types')"
+                            style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Loại
+                            thu chi</a>
+                        <a class="cat-menu-item" onclick="loadCatDetail('inventory_criteria')"
+                            style="display:block;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">Tiêu
+                            chí kiểm kho</a>
+                        <a class="cat-menu-item" onclick="loadCatDetail('diagnoses')"
+                            style="display:block;padding:10px 16px;cursor:pointer;font-size:14px;color:#374151">Chẩn
+                            đoán răng</a>
+                    </div>
+                </div>
+                <!-- Content area -->
+                <div style="flex:1">
+                    <div id="catDetailArea" class="card" style="padding:20px;min-height:400px">
+                        <div style="text-align:center;color:#9ca3af;padding:60px 0">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48"
+                                height="48" style="margin:0 auto 16px;display:block;opacity:0.5">
+                                <path d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                            <p>Chọn một danh mục từ menu bên trái để xem chi tiết</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="page-locations" class="page-content" style="display:none">
+            <div class="page-header">
+                <h2>Chi nhánh hệ thống</h2>
+                <div class="page-header-actions">
+                    <button class="btn-primary" onclick="alert('Tính năng đang phát triển')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 8v8M8 12h8" />
+                        </svg>
+                        Thêm chi nhánh
+                    </button>
+                </div>
+            </div>
+            <div id="branchListBody" class="dash-grid"
+                style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+                <!-- Branch cards loaded here -->
+            </div>
+        </div>
+
+        <!-- Settings page -->
+        <!-- ═══ USER MANAGEMENT PAGE ═══ -->
+        <div id="page-users" class="page-content" style="display:none">
+            <div class="page-header">
+                <h2>Quản lý người dùng</h2>
+                <div class="page-header-actions">
+                    <button class="btn-primary" onclick="openUserModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                            height="16">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                        Thêm người dùng
+                    </button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:40px">#</th>
+                            <th style="min-width:160px">Tên người dùng</th>
+                            <th style="min-width:200px">Email</th>
+                            <th style="min-width:120px">Vai trò</th>
+                            <th style="min-width:100px">Trạng thái</th>
+                            <th style="min-width:180px">Ngày tạo</th>
+                            <th style="min-width:100px">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+            <!-- Role Permission Matrix -->
+            <div id="permissionMatrix"
+                style="margin-top:24px;background:#fff;border-radius:10px;border:1px solid var(--border);padding:24px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+                    <div>
+                        <h3 style="margin:0;font-size:16px;font-weight:700;color:var(--text)">🔐 Phân quyền theo vai trò
+                        </h3>
+                        <p style="margin:4px 0 0;font-size:12px;color:var(--text-muted)">Thiết lập quyền truy cập cho
+                            từng vai trò. Thay đổi sẽ áp dụng cho tất cả người dùng thuộc vai trò đó.</p>
+                    </div>
+                    <button class="btn-primary" onclick="saveRolePermissions()" style="font-size:13px;padding:8px 20px">
+                        💾 Lưu phân quyền
+                    </button>
+                </div>
+                <div style="overflow-x:auto">
+                    <table style="width:100%;border-collapse:collapse;font-size:13px" id="permMatrixTable">
+                        <thead>
+                            <tr style="background:#f8fafc">
+                                <th
+                                    style="text-align:left;padding:12px 16px;font-weight:600;color:var(--text-secondary);border-bottom:2px solid var(--border);min-width:200px">
+                                    Trang / Chức năng</th>
+                                <th
+                                    style="text-align:center;padding:12px 16px;font-weight:600;border-bottom:2px solid var(--border);min-width:120px">
+                                    <span
+                                        style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;background:#fee2e2;color:#dc2626">🔑
+                                        Admin</span>
+                                </th>
+                                <th
+                                    style="text-align:center;padding:12px 16px;font-weight:600;border-bottom:2px solid var(--border);min-width:120px">
+                                    <span
+                                        style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;background:#dbeafe;color:#2563eb">👁️
+                                        Viewer</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="permMatrixBody">
+                            <!-- Rendered by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-settings" class="page-content" style="display:none">
+            <div class="page-header">
+                <h2>Cấu hình chung</h2>
+                <div class="page-header-actions">
+                    <button class="btn-primary" onclick="alert('Đã lưu cấu hình!')">
+                        Áp dụng
+                    </button>
+                </div>
+            </div>
+            <div style="display:flex;gap:0;min-height:calc(100vh - 120px)">
+                <!-- Settings sidebar sub-nav -->
+                <div
+                    style="width:200px;background:#fff;border-right:1px solid var(--border);padding:12px 0;flex-shrink:0">
+                    <div class="settings-subnav">
+                        <a class="settings-nav-item" onclick="switchSettingsTab(this,'branches')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                                <circle cx="12" cy="10" r="3" />
+                            </svg>
+                            Chi nhánh
+                        </a>
+                        <a class="settings-nav-item" onclick="switchSettingsTab(this,'permissions')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                            </svg>
+                            Nhóm quyền
+                        </a>
+                        <a class="settings-nav-item active" onclick="switchSettingsTab(this,'general')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <circle cx="12" cy="12" r="3" />
+                                <path
+                                    d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+                            </svg>
+                            Cấu hình chung
+                        </a>
+                        <a class="settings-nav-item" onclick="switchSettingsTab(this,'team')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <path d="M23 21v-2a4 4 0 00-3-3.87" />
+                                <path d="M16 3.13a4 4 0 010 7.75" />
+                            </svg>
+                            Cấu hình Team
+                        </a>
+                        <a class="settings-nav-item" onclick="switchSettingsTab(this,'other')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 16v-4M12 8h.01" />
+                            </svg>
+                            Cấu hình khác
+                        </a>
+                        <a class="settings-nav-item" onclick="switchSettingsTab(this,'activity')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                            </svg>
+                            Lịch sử hoạt động
+                        </a>
+                    </div>
+                </div>
+                <!-- Settings content area -->
+                <div style="flex:1;padding:20px;overflow-y:auto">
+                    <div id="settingsContent">
+                        <!-- CẤU HÌNH CHUNG -->
+                        <div class="settings-section">
+                            <h3
+                                style="color:var(--primary);font-size:14px;font-weight:700;margin-bottom:16px;text-transform:uppercase;letter-spacing:0.3px">
+                                CẤU HÌNH CHUNG</h3>
+                            <div class="settings-grid">
+                                <label class="settings-checkbox-card">
+                                    <input type="checkbox">
+                                    <div class="settings-cb-info">
+                                        <div class="settings-cb-title">Marketing</div>
+                                        <div class="settings-cb-desc">Quản lý chương trình khuyến mãi, thẻ ưu đãi
+                                        </div>
+                                    </div>
+                                </label>
+                                <label class="settings-checkbox-card">
+                                    <input type="checkbox">
+                                    <div class="settings-cb-info">
+                                        <div class="settings-cb-title">Nhắc lịch hẹn</div>
+                                        <div class="settings-cb-desc">Hiện thông báo khi sắp tới lịch hẹn</div>
+                                    </div>
+                                </label>
+                                <label class="settings-checkbox-card">
+                                    <input type="checkbox">
+                                    <div class="settings-cb-info">
+                                        <div class="settings-cb-title">Đơn vị tính</div>
+                                        <div class="settings-cb-desc">Hàng hóa có thể nhập xuất nhiều đơn vị tính
+                                        </div>
+                                    </div>
+                                </label>
+                                <label class="settings-checkbox-card">
+                                    <input type="checkbox">
+                                    <div class="settings-cb-info">
+                                        <div class="settings-cb-title">Bán thuốc</div>
+                                        <div class="settings-cb-desc">Quản lý đơn thuốc và hóa đơn thuốc</div>
+                                    </div>
+                                </label>
+                                <label class="settings-checkbox-card">
+                                    <input type="checkbox">
+                                    <div class="settings-cb-info">
+                                        <div class="settings-cb-title">SMS Brandname CSKH</div>
+                                        <div class="settings-cb-desc">Quản lý SMS Brandname CSKH</div>
+                                    </div>
+                                </label>
+                                <label class="settings-checkbox-card">
+                                    <input type="checkbox">
+                                    <div class="settings-cb-info">
+                                        <div class="settings-cb-title">Khảo sát đánh giá</div>
+                                        <div class="settings-cb-desc">Quản lý và cấu hình khảo sát đánh giá</div>
+                                    </div>
+                                </label>
+                                <label class="settings-checkbox-card">
+                                    <input type="checkbox">
+                                    <div class="settings-cb-info">
+                                        <div class="settings-cb-title">Bảo hiểm</div>
+                                        <div class="settings-cb-desc">Quản lý và đối soát công nợ bảo hiểm</div>
+                                    </div>
+                                </label>
+                                <label class="settings-checkbox-card">
+                                    <input type="checkbox">
+                                    <div class="settings-cb-info">
+                                        <div class="settings-cb-title">Xuất kho quá số lượng tồn</div>
+                                        <div class="settings-cb-desc">Không cho phép xuất kho quá số lượng tồn</div>
+                                    </div>
+                                </label>
+                                <label class="settings-checkbox-card">
+                                    <input type="checkbox">
+                                    <div class="settings-cb-info">
+                                        <div class="settings-cb-title">Khảo sát khách hàng</div>
+                                        <div class="settings-cb-desc">Quản lý và đánh giá chất lượng dịch vụ NK
+                                        </div>
+                                    </div>
+                                </label>
+                                <label class="settings-checkbox-card">
+                                    <input type="checkbox">
+                                    <div class="settings-cb-info">
+                                        <div class="settings-cb-title">Thanh toán ngoại tệ</div>
+                                        <div class="settings-cb-desc">Thanh toán phiếu điều trị bằng ngoại tệ</div>
+                                    </div>
+                                </label>
+                                <label class="settings-checkbox-card">
+                                    <input type="checkbox">
+                                    <div class="settings-cb-info">
+                                        <div class="settings-cb-title">Hoàn tiền điều trị</div>
+                                        <div class="settings-cb-desc">Cho phép tạo thanh toán hoàn tiền dịch vụ điều
+                                            trị</div>
+                                    </div>
+                                </label>
+                                <label class="settings-checkbox-card">
+                                    <input type="checkbox">
+                                    <div class="settings-cb-info">
+                                        <div class="settings-cb-title">Head Office <span
+                                                style="background:#22c55e;color:#fff;font-size:9px;padding:1px 6px;border-radius:10px;margin-left:4px">Dùng
+                                                thử</span></div>
+                                        <div class="settings-cb-desc">Quản lý tính năng Head Office</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        <!-- ĐA CHI NHÁNH -->
+                        <div class="settings-section" style="margin-top:24px">
+                            <h3
+                                style="color:var(--primary);font-size:14px;font-weight:700;margin-bottom:16px;text-transform:uppercase;letter-spacing:0.3px">
+                                ĐA CHI NHÁNH</h3>
+                            <div class="settings-grid">
+                                <label class="settings-checkbox-card">
+                                    <input type="checkbox" checked>
+                                    <div class="settings-cb-info">
+                                        <div class="settings-cb-title">Dùng chung danh sách đối tác</div>
+                                        <div class="settings-cb-desc">Chia sẻ danh sách đối tác giữa các chi nhánh
+                                        </div>
+                                    </div>
+                                </label>
+                                <label class="settings-checkbox-card">
+                                    <input type="checkbox" checked>
+                                    <div class="settings-cb-info">
+                                        <div class="settings-cb-title">Dùng chung danh sách sản phẩm</div>
+                                        <div class="settings-cb-desc">Chia sẻ danh sách sản phẩm giữa các chi nhánh
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ DETAIL PANEL ═══ -->
+    <div class="detail-overlay" id="detailOverlay" onclick="closeDetail()"></div>
+    <div class="detail-panel" id="detailPanel">
+        <div class="detail-top">
+            <div class="detail-breadcrumb">
+                <a href="#" onclick="closeDetail();return false">Khách hàng</a> &gt; <span
+                    id="detailBreadcrumbName">---</span>
+            </div>
+            <button class="detail-close" onclick="closeDetail()">✕</button>
+        </div>
+        <div class="detail-body" id="detailBody"></div>
+    </div>
+
+    <!-- ═══ CHAT WIDGET ═══ -->
+    <div class="chat-widget" onclick="alert('Tính năng chat đang phát triển')" style="cursor:pointer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+        </svg>
+    </div>
+
+    <!-- ═══ MODAL SYSTEM ═══ -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-container" id="modalContainer">
+            <!-- Modal content injected here -->
+        </div>
+    </div>
+
+    <!-- ═══ SCRIPTS ═══ -->
+    <script src="/static/js/app.js"></script>
+</body>
+
+</html>
