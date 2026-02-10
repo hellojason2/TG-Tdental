@@ -20,16 +20,11 @@ import logging
 from datetime import datetime, timedelta
 from typing import Optional, Dict, List, Any
 
-try:
-    import requests
-    import psycopg2
-    from psycopg2.extras import Json
-except ImportError:
-    os.system(f"{sys.executable} -m pip install requests psycopg2-binary")
-    import requests
-    import psycopg2
-    from psycopg2.extras import Json
-
+import requests
+import psycopg2
+from psycopg2.extras import Json
+from app.core.config import settings
+from app.core.database import get_conn
 
 # ═══════════════════════════════════════════════════════════
 #  CONFIGURATION
@@ -38,8 +33,6 @@ except ImportError:
 TDENTAL_BASE_URL = "https://tamdentist.tdental.vn"
 TDENTAL_USERNAME = "dataconnect"
 TDENTAL_PASSWORD = "dataconnect@"
-
-DB_URL = "postgresql://postgres:PuQAsTSyIMQOGjOYzjpqnkWbDHeHJjYr@shortline.proxy.rlwy.net:16355/railway"
 
 DEFAULT_SYNC_INTERVAL = 300  # 5 minutes
 PAGE_SIZE = 100  # Records per API page
@@ -212,7 +205,7 @@ class SyncDatabase:
 
     def connect(self):
         log.info("🗄️  Connecting to Railway PostgreSQL...")
-        self.conn = psycopg2.connect(DB_URL)
+        self.conn = get_conn()
         self.conn.autocommit = False
         log.info("  ✅ Connected!")
 

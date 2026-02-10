@@ -6,6 +6,9 @@ import json
 import os
 import sys
 
+# Add parent directory to path to allow importing app modules
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 try:
     import psycopg2
     from psycopg2.extras import execute_values, Json
@@ -15,13 +18,15 @@ except ImportError:
     import psycopg2
     from psycopg2.extras import execute_values, Json
 
-DB_URL = "postgresql://postgres:PuQAsTSyIMQOGjOYzjpqnkWbDHeHJjYr@shortline.proxy.rlwy.net:16355/railway"
+from app.core.config import settings
+from app.core.database import get_conn
+
 DATA_DIR = "./data/tamdentist_tdental_vn_20260208_024318"
 
 
 def connect():
     print(f"  Connecting to Railway PostgreSQL...")
-    conn = psycopg2.connect(DB_URL)
+    conn = get_conn()
     conn.autocommit = False
     print(f"  ✅ Connected!")
     return conn

@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+    <style>
         :root {
             /* ═══ CORE DESIGN TOKENS (scraped from live TDental) ═══ */
             --sidebar-bg: #0C1014;
@@ -3469,9 +3470,9 @@
             font-size: 11px;
             color: var(--text-muted);
         }
-#sidebar, .topbar, .main-content { display: none; }
 
 </style>
+    </style>
 </head>
 
 <body>
@@ -5137,6 +5138,7 @@
 
     <!-- ═══ SCRIPTS ═══ -->
     <script>
+    <script>
         const API = "";  // Same origin — viewer.py serves both frontend + API on :8899
         let currentPage = 1;
         let perPage = 15;
@@ -5205,14 +5207,9 @@
 
         function hideLoginScreen() {
             document.getElementById('loginScreen').style.display = 'none';
-            const sidebar = document.getElementById('sidebar');
-            if (sidebar) sidebar.style.display = 'block';
-            
-            const topbar = document.querySelector('.topbar');
-            if (topbar) topbar.style.display = 'flex';
-            
-            const mainContent = document.querySelector('.main-content');
-            if (mainContent) mainContent.style.display = 'block';
+            document.getElementById('sidebar').style.display = '';
+            document.querySelector('.topbar').style.display = '';
+            document.querySelector('.main-content').style.display = '';
         }
 
         async function handleLogin() {
@@ -5308,18 +5305,12 @@
             // Apply permissions immediately
             enforceSidebarPermissions();
 
-            // Update user info in top bar with robust checks
-            // Try to find the user name span specifically
-            const userNameEl = document.querySelector('.topbar-user span');
-            if (userNameEl) {
-                userNameEl.textContent = user.name || user.email || 'User';
-            }
-            
+            // Update user info in top bar
+            const userDisplay = document.querySelector('.topbar-user span');
+            if (userDisplay && user) userDisplay.textContent = user.name;
             const userAvatar = document.querySelector('.topbar-user .topbar-user-avatar');
-            if (userAvatar) {
-                const initial = (user.name || user.email || 'U').charAt(0).toUpperCase();
-                userAvatar.textContent = initial;
-                
+            if (userAvatar && user) {
+                userAvatar.textContent = user.name.charAt(0).toUpperCase();
                 if (user.role === 'admin') {
                     userAvatar.style.background = '#e5e7eb';
                     userAvatar.style.color = '#9ca3af';
@@ -8052,6 +8043,7 @@
         init();
 
 </script>
+    </script>
 </body>
 
 </html>

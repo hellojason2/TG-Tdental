@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDental – Đăng nhập</title>
+    <meta name="description" content="TDental - Đăng nhập phần mềm quản lý nha khoa">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/login.css">
+</head>
+
+<body>
+
+    <div class="login-left">
+        <div class="login-form-container">
+            <div class="login-logo">
+                <svg viewBox="0 0 48 48" fill="none">
+                    <rect width="48" height="48" rx="10" fill="#1A6DE3" opacity="0.1" />
+                    <text x="8" y="34" font-size="28" font-weight="bold" fill="#1A6DE3"
+                        font-family="Inter, sans-serif">D</text>
+                </svg>
+                <h1>TDental</h1>
+            </div>
+            <p class="login-subtitle">Đăng nhập bằng tài khoản của bạn</p>
+
+            <div class="login-error" id="loginError"></div>
+
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label">Tài khoản</label>
+                    <input type="text" class="form-input" id="username" placeholder="Nhập tài khoản"
+                        autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <div class="form-label">
+                        <span>Mật khẩu</span>
+                        <a class="forgot-link">Quên mật khẩu ?</a>
+                    </div>
+                    <div class="form-input-wrap">
+                        <input type="password" class="form-input" id="password" placeholder="Nhập mật khẩu"
+                            autocomplete="current-password">
+                        <button type="button" class="password-toggle" onclick="togglePassword()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="eyeIcon">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="login-btn" id="loginBtn">Đăng nhập</button>
+            </form>
+
+            <div class="login-footer">TMT © 2022 — Bảo mật và quyền riêng tư</div>
+        </div>
+    </div>
+
+    <div class="login-right">
+        <div class="right-logo">
+            <svg viewBox="0 0 40 40" fill="none">
+                <rect width="40" height="40" rx="8" fill="#1A6DE3" />
+                <text x="8" y="28" font-size="22" font-weight="bold" fill="white">D</text>
+            </svg>
+            <span>TDental</span>
+        </div>
+        <div class="right-illustration">
+            <div class="tooth-icon">🦷</div>
+            <div class="main-icon">
+                <svg width="100" height="100" viewBox="0 0 100 100" fill="none">
+                    <circle cx="50" cy="50" r="40" fill="#1A6DE3" opacity="0.1" />
+                    <circle cx="50" cy="50" r="28" fill="#1A6DE3" opacity="0.2" />
+                    <text x="30" y="60" font-size="36" fill="#1A6DE3">🦷</text>
+                </svg>
+            </div>
+            <div class="float-card">📋 Quản lý</div>
+            <div class="float-card">💊 Điều trị</div>
+            <div class="float-card">📅 Lịch hẹn</div>
+        </div>
+        <h2 class="right-title">Phần mềm quản lý nha khoa</h2>
+        <p class="right-desc">
+            TDental không chỉ là một phần mềm, mà là người đồng hành tin cậy,
+            giúp các phòng khám nha khoa khởi nghiệp và vận hành
+            chuyên nghiệp, hiệu quả, hiện đại.
+        </p>
+        <div class="right-hotline">
+            Tổng đài hỗ trợ: <a href="tel:0898017888">0898 017 888</a>
+        </div>
+    </div>
+
+    <script src="/static/js/login.js"></script>
+</body>
+
+</html>

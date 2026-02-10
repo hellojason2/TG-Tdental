@@ -7,15 +7,16 @@ import asyncio
 import sys
 import os
 
-os.environ.setdefault("GROQ_API_KEY", os.environ.get("GROQ_API_KEY", ""))
+# Add parent directory to path to allow importing app modules
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-sys.path.insert(0, os.path.dirname(__file__))
-from scraper import SPAScraper
-from analyzer import LLMAnalyzer
+from app.services.scraper import SPAScraper
+from app.services.analyzer import LLMAnalyzer
+from app.core.config import settings
 
 CONFIG = {
     'base_url': 'https://tamdentist.tdental.vn/#/dashboard',
-    'output_dir': './scrape_output/tdental',
+    'output_dir': './data/tdental',
     'login': {
         'username': 'dataconnect',
         'password': 'dataconnect@',
@@ -40,7 +41,7 @@ async def main():
     print("  Running LLM Analysis")
     print("=" * 60)
     
-    analyzer = LLMAnalyzer(CONFIG['output_dir'], provider='groq')
+    analyzer = LLMAnalyzer(CONFIG['output_dir'], provider='groq', api_key=settings.GROQ_API_KEY)
     analyzer.load_scrape_data()
     
     # Generate all artifacts
