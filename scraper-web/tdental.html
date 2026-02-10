@@ -3406,6 +3406,12 @@
             </a>
         </div>
         <div class="sidebar-bottom">
+            <a class="sidebar-item" data-page="users" onclick="navigate('users')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                <span>Quản lý người dùng</span>
+            </a>
             <a class="sidebar-item" data-page="settings" onclick="navigate('settings')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="3" />
@@ -4585,6 +4591,65 @@
         </div>
 
         <!-- Settings page -->
+        <!-- ═══ USER MANAGEMENT PAGE ═══ -->
+        <div id="page-users" class="page-content" style="display:none">
+            <div class="page-header">
+                <h2>Quản lý người dùng</h2>
+                <div class="page-header-actions">
+                    <button class="btn-primary" onclick="openUserModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                            height="16">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                        Thêm người dùng
+                    </button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:40px">#</th>
+                            <th style="min-width:160px">Tên người dùng</th>
+                            <th style="min-width:200px">Email</th>
+                            <th style="min-width:120px">Vai trò</th>
+                            <th style="min-width:100px">Trạng thái</th>
+                            <th style="min-width:180px">Ngày tạo</th>
+                            <th style="min-width:100px">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+            <!-- Permission Editor Panel (shown when clicking a user) -->
+            <div id="permissionEditor"
+                style="display:none;margin-top:20px;background:#fff;border-radius:10px;border:1px solid var(--border);padding:24px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                    <h3 style="margin:0;font-size:15px;color:var(--text)">Phân quyền cho: <span id="permUserName"
+                            style="color:var(--primary)"></span></h3>
+                    <div style="display:flex;gap:8px">
+                        <button class="btn-primary" onclick="savePermissions()"
+                            style="font-size:12px;padding:6px 16px">Lưu quyền</button>
+                        <button class="btn-outline" onclick="closePermEditor()"
+                            style="font-size:12px;padding:6px 16px">Đóng</button>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;margin-bottom:16px">
+                    <button class="btn-outline" onclick="checkAllPerms(true)" style="font-size:11px;padding:4px 12px">✅
+                        Chọn tất cả</button>
+                    <button class="btn-outline" onclick="checkAllPerms(false)" style="font-size:11px;padding:4px 12px">❌
+                        Bỏ chọn tất cả</button>
+                </div>
+                <div id="permCheckboxGrid"
+                    style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+        </div>
+
         <div id="page-settings" class="page-content" style="display:none">
             <div class="page-header">
                 <h2>Cấu hình chung</h2>
@@ -4827,6 +4892,9 @@
 
         // ── INIT ──
         async function init() {
+            // Initialize user permissions and enforce sidebar visibility
+            getUsers(); // Ensure seed data exists
+            enforceSidebarPermissions();
             loadCompanies();
             loadDashboard();
             updateUptime();
@@ -5405,6 +5473,17 @@
         }
 
         function navigate(page) {
+            // Permission enforcement — skip check for 'users' page (admin-only handled separately)
+            if (page !== 'users' && !hasPermission(page)) {
+                alert('⛔ Bạn không có quyền truy cập trang này');
+                return;
+            }
+            // Users page is admin-only
+            if (page === 'users' && getCurrentUser().role !== 'admin') {
+                alert('⛔ Chỉ Admin mới có quyền quản lý người dùng');
+                return;
+            }
+
             currentPageView = page;
             document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
             document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
@@ -5436,6 +5515,7 @@
             if (page === 'callcenter') loadCallCenter();
             if (page === 'commission') loadCommission();
             if (page === 'categories') loadCategories();
+            if (page === 'users') loadUsersTable();
             if (page === 'settings') { /* static page, no data to load */ }
         }
 
@@ -7125,6 +7205,297 @@
                         </div>
                     `;
                 }).catch(() => { });
+        }
+
+        // ══════════════════════════════════════════════════
+        // USER PERMISSION MANAGEMENT SYSTEM
+        // ══════════════════════════════════════════════════
+
+        const PAGE_PERMISSIONS = [
+            { key: 'dashboard', label: 'Tổng quan', icon: '📊' },
+            { key: 'customers', label: 'Khách hàng', icon: '👥' },
+            { key: 'reception', label: 'Công việc', icon: '📋' },
+            { key: 'calendar', label: 'Lịch hẹn', icon: '📅' },
+            { key: 'treatments', label: 'Labo', icon: '🔧' },
+            { key: 'purchase', label: 'Mua hàng', icon: '🛒' },
+            { key: 'inventory', label: 'Kho', icon: '📦' },
+            { key: 'salary', label: 'Lương', icon: '💰' },
+            { key: 'cashbook', label: 'Sổ quỹ', icon: '💳' },
+            { key: 'callcenter', label: 'Tổng đài', icon: '📞' },
+            { key: 'commission', label: 'Hoa hồng', icon: '⭐' },
+            { key: 'reports', label: 'Báo cáo', icon: '📈' },
+            { key: 'categories', label: 'Danh mục', icon: '🗂️' },
+            { key: 'settings', label: 'Cấu hình', icon: '⚙️' },
+        ];
+
+        const ROLE_DEFAULTS = {
+            admin: PAGE_PERMISSIONS.map(p => p.key),
+            viewer: ['dashboard', 'customers', 'calendar'],
+        };
+
+        function getUsers() {
+            const raw = localStorage.getItem('tdental_users');
+            if (raw) return JSON.parse(raw);
+            // Seed default admin
+            const seed = [{
+                id: 'u_admin',
+                name: 'Admin',
+                email: 'admin@tdental.vn',
+                role: 'admin',
+                active: true,
+                created: new Date().toISOString(),
+                permissions: Object.fromEntries(PAGE_PERMISSIONS.map(p => [p.key, true])),
+            }];
+            localStorage.setItem('tdental_users', JSON.stringify(seed));
+            return seed;
+        }
+
+        function saveUsers(users) {
+            localStorage.setItem('tdental_users', JSON.stringify(users));
+        }
+
+        function getCurrentUser() {
+            const raw = localStorage.getItem('tdental_current_user');
+            if (raw) return JSON.parse(raw);
+            // Default to admin
+            const users = getUsers();
+            const admin = users.find(u => u.role === 'admin') || users[0];
+            localStorage.setItem('tdental_current_user', JSON.stringify(admin));
+            return admin;
+        }
+
+        function setCurrentUser(userId) {
+            const users = getUsers();
+            const user = users.find(u => u.id === userId);
+            if (user) localStorage.setItem('tdental_current_user', JSON.stringify(user));
+        }
+
+        function hasPermission(pageKey) {
+            const user = getCurrentUser();
+            if (!user) return true;
+            if (user.role === 'admin') return true;
+            return user.permissions && user.permissions[pageKey] === true;
+        }
+
+        function enforceSidebarPermissions() {
+            const user = getCurrentUser();
+            document.querySelectorAll('.sidebar-item[data-page]').forEach(item => {
+                const page = item.getAttribute('data-page');
+                if (page === 'users') {
+                    // Only admins can access user management
+                    item.style.display = user.role === 'admin' ? '' : 'none';
+                    return;
+                }
+                if (user.role === 'admin') {
+                    item.style.display = '';
+                    return;
+                }
+                item.style.display = (user.permissions && user.permissions[page]) ? '' : 'none';
+            });
+        }
+
+        // ── User Table ────────────────────────────────────
+
+        function loadUsersTable() {
+            const users = getUsers();
+            const tbody = document.getElementById('usersTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = users.map((u, i) => `
+                <tr style="cursor:pointer" onclick="openPermEditor('${u.id}')">
+                    <td>${i + 1}</td>
+                    <td><strong>${esc(u.name)}</strong></td>
+                    <td style="color:var(--text-muted)">${esc(u.email)}</td>
+                    <td>
+                        <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;
+                            background:${u.role === 'admin' ? '#fee2e2' : '#dbeafe'};
+                            color:${u.role === 'admin' ? '#dc2626' : '#2563eb'}">
+                            ${u.role === 'admin' ? '🔑 Admin' : '👁️ Viewer'}
+                        </span>
+                    </td>
+                    <td>
+                        <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;
+                            background:${u.active ? '#dcfce7' : '#f3f4f6'};
+                            color:${u.active ? '#16a34a' : '#9ca3af'}">
+                            ${u.active ? 'Hoạt động' : 'Tạm khóa'}
+                        </span>
+                    </td>
+                    <td style="font-size:12px;color:var(--text-muted)">${u.created ? new Date(u.created).toLocaleDateString('vi-VN') : '---'}</td>
+                    <td>
+                        <div style="display:flex;gap:4px">
+                            <button onclick="event.stopPropagation();editUserModal('${u.id}')" style="background:#eff6ff;border:none;border-radius:6px;padding:6px 8px;cursor:pointer;color:#2563eb" title="Sửa">✏️</button>
+                            <button onclick="event.stopPropagation();toggleUserActive('${u.id}')" style="background:${u.active ? '#fef3c7' : '#dcfce7'};border:none;border-radius:6px;padding:6px 8px;cursor:pointer" title="${u.active ? 'Khóa' : 'Mở khóa'}">${u.active ? '🔒' : '🔓'}</button>
+                            <button onclick="event.stopPropagation();deleteUser('${u.id}')" style="background:#fee2e2;border:none;border-radius:6px;padding:6px 8px;cursor:pointer;color:#dc2626" title="Xóa">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ── Permission Editor ─────────────────────────────
+
+        let editingPermUserId = null;
+
+        function openPermEditor(userId) {
+            const users = getUsers();
+            const user = users.find(u => u.id === userId);
+            if (!user) return;
+            editingPermUserId = userId;
+            document.getElementById('permUserName').textContent = user.name + ` (${user.role === 'admin' ? 'Admin' : 'Viewer'})`;
+            const grid = document.getElementById('permCheckboxGrid');
+            grid.innerHTML = PAGE_PERMISSIONS.map(p => {
+                const checked = user.permissions && user.permissions[p.key] ? 'checked' : '';
+                return `
+                    <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#f9fafb;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all 0.15s;user-select:none"
+                        onmouseenter="this.style.background='#eff6ff';this.style.borderColor='#93c5fd'"
+                        onmouseleave="this.style.background='#f9fafb';this.style.borderColor='var(--border)'">
+                        <input type="checkbox" data-perm="${p.key}" ${checked}
+                            style="width:18px;height:18px;accent-color:var(--primary);cursor:pointer;flex-shrink:0">
+                        <span style="font-size:16px">${p.icon}</span>
+                        <span style="font-size:13px;font-weight:500;color:var(--text)">${p.label}</span>
+                    </label>
+                `;
+            }).join('');
+            document.getElementById('permissionEditor').style.display = 'block';
+            document.getElementById('permissionEditor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function closePermEditor() {
+            document.getElementById('permissionEditor').style.display = 'none';
+            editingPermUserId = null;
+        }
+
+        function checkAllPerms(val) {
+            document.querySelectorAll('#permCheckboxGrid input[type=checkbox]').forEach(cb => cb.checked = val);
+        }
+
+        function savePermissions() {
+            if (!editingPermUserId) return;
+            const users = getUsers();
+            const user = users.find(u => u.id === editingPermUserId);
+            if (!user) return;
+            const perms = {};
+            document.querySelectorAll('#permCheckboxGrid input[data-perm]').forEach(cb => {
+                perms[cb.dataset.perm] = cb.checked;
+            });
+            user.permissions = perms;
+            saveUsers(users);
+            // If editing the current user, update current user too
+            const current = getCurrentUser();
+            if (current.id === editingPermUserId) {
+                localStorage.setItem('tdental_current_user', JSON.stringify(user));
+                enforceSidebarPermissions();
+            }
+            closePermEditor();
+            loadUsersTable();
+            alert('✅ Đã lưu phân quyền cho ' + user.name);
+        }
+
+        // ── User CRUD ─────────────────────────────────────
+
+        function openUserModal(existingUser) {
+            const isEdit = !!existingUser;
+            const u = existingUser || { name: '', email: '', role: 'viewer', active: true };
+            const modalHTML = `
+                <div class="modal-header">
+                    <h3>${isEdit ? 'Sửa người dùng' : 'Thêm người dùng'}</h3>
+                    <button class="modal-close" onclick="closeModal()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Tên người dùng <span style="color:red">*</span></label>
+                        <input id="userInputName" type="text" placeholder="Nhập tên..." value="${esc(u.name)}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:14px">
+                    </div>
+                    <div class="form-group">
+                        <label>Email <span style="color:red">*</span></label>
+                        <input id="userInputEmail" type="email" placeholder="email@example.com" value="${esc(u.email)}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:14px">
+                    </div>
+                    <div class="form-group">
+                        <label>Vai trò</label>
+                        <select id="userInputRole" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:14px">
+                            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>🔑 Admin — Toàn quyền</option>
+                            <option value="viewer" ${u.role === 'viewer' ? 'selected' : ''}>👁️ Viewer — Chỉ xem</option>
+                        </select>
+                    </div>
+                    <p style="font-size:12px;color:var(--text-muted);margin-top:8px">
+                        <strong>Admin</strong>: Truy cập tất cả trang. <strong>Viewer</strong>: Chỉ Tổng quan, Khách hàng, Lịch hẹn (có thể tùy chỉnh sau).
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-outline" onclick="closeModal()">Hủy</button>
+                    <button class="btn-primary" onclick="saveUserFromModal('${isEdit ? u.id : ''}')">${isEdit ? 'Cập nhật' : 'Tạo người dùng'}</button>
+                </div>
+            `;
+            document.getElementById('modalContainer').innerHTML = modalHTML;
+            document.getElementById('modalOverlay').classList.add('active');
+        }
+
+        function editUserModal(userId) {
+            const users = getUsers();
+            const user = users.find(u => u.id === userId);
+            if (user) openUserModal(user);
+        }
+
+        function saveUserFromModal(existingId) {
+            const name = document.getElementById('userInputName').value.trim();
+            const email = document.getElementById('userInputEmail').value.trim();
+            const role = document.getElementById('userInputRole').value;
+            if (!name) { alert('Vui lòng nhập tên'); return; }
+            if (!email) { alert('Vui lòng nhập email'); return; }
+
+            const users = getUsers();
+            if (existingId) {
+                const user = users.find(u => u.id === existingId);
+                if (user) {
+                    const roleChanged = user.role !== role;
+                    user.name = name;
+                    user.email = email;
+                    user.role = role;
+                    if (roleChanged) {
+                        // Reset permissions to role defaults
+                        const defaults = ROLE_DEFAULTS[role] || [];
+                        user.permissions = Object.fromEntries(PAGE_PERMISSIONS.map(p => [p.key, defaults.includes(p.key)]));
+                    }
+                }
+            } else {
+                const defaults = ROLE_DEFAULTS[role] || [];
+                users.push({
+                    id: 'u_' + Date.now(),
+                    name, email, role,
+                    active: true,
+                    created: new Date().toISOString(),
+                    permissions: Object.fromEntries(PAGE_PERMISSIONS.map(p => [p.key, defaults.includes(p.key)])),
+                });
+            }
+            saveUsers(users);
+            closeModal();
+            loadUsersTable();
+        }
+
+        function toggleUserActive(userId) {
+            const users = getUsers();
+            const user = users.find(u => u.id === userId);
+            if (user) {
+                user.active = !user.active;
+                saveUsers(users);
+                loadUsersTable();
+            }
+        }
+
+        function deleteUser(userId) {
+            if (!confirm('Bạn có chắc muốn xóa người dùng này?')) return;
+            let users = getUsers();
+            users = users.filter(u => u.id !== userId);
+            saveUsers(users);
+            loadUsersTable();
+        }
+
+        // ── Switch Current User (for testing) ─────────────
+
+        function switchUser(userId) {
+            setCurrentUser(userId);
+            enforceSidebarPermissions();
+            navigate('dashboard');
+            alert('Đã chuyển sang người dùng: ' + getCurrentUser().name);
         }
 
         // ── START ──
