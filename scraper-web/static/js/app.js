@@ -56,7 +56,7 @@ function showLoginScreen() {
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('sidebar').style.display = 'none';
     document.querySelector('.topbar').style.display = 'none';
-    document.querySelector('.main-content').style.display = 'none';
+    document.querySelector('.main').style.display = 'none';
     // Pre-fill from cookies
     const emailInput = document.getElementById('loginEmail');
     const passInput = document.getElementById('loginPassword');
@@ -72,7 +72,7 @@ function hideLoginScreen() {
     const topbar = document.querySelector('.topbar');
     if (topbar) topbar.style.display = 'flex';
 
-    const mainContent = document.querySelector('.main-content');
+    const mainContent = document.querySelector('.main');
     if (mainContent) mainContent.style.display = 'block';
 }
 
