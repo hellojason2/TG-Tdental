@@ -1,0 +1,80 @@
+{
+  "info": {
+    "title": "API Specification - https://tamdentist.tdental.vn/",
+    "description": "Auto-generated from SPA scraping"
+  },
+  "endpoints": {
+    "POST /api/Account/Login": {
+      "method": "POST",
+      "path": "/api/Account/Login",
+      "url": "https://tamdentist.tdental.vn/api/Account/Login",
+      "status_codes": [
+        200
+      ],
+      "call_count": 1,
+      "request_body": {
+        "type": "object",
+        "properties": {
+          "rememberMe": {
+            "type": "boolean"
+          },
+          "userName": {
+            "type": "string",
+            "example": "dataconnect"
+          },
+          "password": {
+            "type": "string",
+            "example": "mask_password_for_demo"
+          }
+        }
+      },
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "succeeded": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "example": "Tên tài khoản của bạn hoặc Mật khẩu không đúng. Vu"
+          },
+          "token": {
+            "type": "string",
+            "nullable": true
+          },
+          "refreshToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "tenantId": {
+            "type": "string",
+            "nullable": true
+          },
+          "configs": {
+            "type": "string",
+            "nullable": true
+          },
+          "user": {
+            "type": "string",
+            "nullable": true
+          },
+          "sessionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "requiresTwoFactor": {
+            "type": "boolean"
+          },
+          "userId": {
+            "type": "string",
+            "nullable": true
+          },
+          "deviceId": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    }
+  }
+}

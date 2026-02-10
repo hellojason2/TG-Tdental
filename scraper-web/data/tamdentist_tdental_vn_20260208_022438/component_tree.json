@@ -1,0 +1,10 @@
+{
+  "framework": "Angular",
+  "pages": {},
+  "shared_components": [],
+  "layout": {
+    "has_sidebar": false,
+    "has_topbar": false,
+    "has_breadcrumbs": false
+  }
+}

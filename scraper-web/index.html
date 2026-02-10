@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vantage AI — Scraper Command Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #02120e;
+            color: #E5E0D8;
+            overflow-x: hidden;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        :root {
+            --primary-amber: #D4A574;
+            --primary-orange: #C85A3A;
+            --deep-emerald: #1B4D3E;
+            --dark-bg: #02120e;
+        }
+
+        /* Glassmorphism Classes */
+        .glass {
+            background: rgba(27, 77, 62, 0.1);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(212, 165, 116, 0.2);
+        }
+
+        .glass-dark {
+            background: rgba(1, 11, 9, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(212, 165, 116, 0.1);
+        }
+
+        /* Terminal Styling */
+        .terminal {
+            background: #010b09;
+            color: #D4A574;
+            font-family: 'JetBrains Mono', monospace;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .terminal-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1.2em;
+            background: var(--primary-amber);
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        .btn-vantage {
+            background: linear-gradient(135deg, #D4A574 0%, #C85A3A 100%);
+            color: #02120e;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-vantage:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(212, 165, 116, 0.4);
+        }
+
+        .sidebar-item {
+            transition: all 0.2s;
+            border-left: 2px solid transparent;
+        }
+
+        .sidebar-item.active {
+            background: rgba(212, 165, 116, 0.1);
+            color: var(--primary-amber);
+            border-left-color: var(--primary-amber);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(212, 165, 116, 0.2);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(212, 165, 116, 0.4);
+        }
+    </style>
+</head>
+
+<body class="antialiased h-screen overflow-hidden flex">
+
+    <!-- SIDEBAR -->
+    <aside class="w-64 border-r border-[#D4A574]/10 bg-[#051d16] flex flex-col z-20">
+        <div class="p-6 border-b border-[#D4A574]/10">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-8 h-8 rounded bg-gradient-to-br from-[#D4A574] to-[#C85A3A] flex items-center justify-center text-[#02120e] font-bold">
+                    V</div>
+                <span class="text-lg font-bold tracking-tight text-[#f5f5f0]">VANTAGE AI</span>
+            </div>
+            <p class="text-[10px] text-[#6e7d78] mt-1 tracking-widest uppercase font-semibold">Scraper Hub</p>
+        </div>
+
+        <nav class="flex-1 py-6 space-y-1">
+            <a href="#" class="sidebar-item active flex items-center gap-3 px-6 py-3 text-sm font-medium">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+            </a>
+            <a href="#"
+                class="sidebar-item flex items-center gap-3 px-6 py-3 text-sm font-medium text-[#a8b3af] hover:text-[#D4A574]">
+                <i data-lucide="activity" class="w-4 h-4"></i> Live Scrapes
+            </a>
+            <a href="#"
+                class="sidebar-item flex items-center gap-3 px-6 py-3 text-sm font-medium text-[#a8b3af] hover:text-[#D4A574]">
+                <i data-lucide="network" class="w-4 h-4"></i> API Map
+            </a>
+            <a href="#"
+                class="sidebar-item flex items-center gap-3 px-6 py-3 text-sm font-medium text-[#a8b3af] hover:text-[#D4A574]">
+                <i data-lucide="database" class="w-4 h-4"></i> DB Schema
+            </a>
+            <a href="#"
+                class="sidebar-item flex items-center gap-3 px-6 py-3 text-sm font-medium text-[#a8b3af] hover:text-[#D4A574]">
+                <i data-lucide="file-code" class="w-4 h-4"></i> Replication
+            </a>
+        </nav>
+
+        <div class="p-6 border-t border-[#D4A574]/10">
+            <div class="rounded-xl glass p-4 space-y-3">
+                <p class="text-[10px] uppercase font-bold text-[#D4A574]">System Status</p>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-[#6e7d78]">Engine</span>
+                    <span class="text-[#34d399] flex items-center gap-1.5"><span
+                            class="w-1.5 h-1.5 rounded-full bg-[#34d399]"></span> Online</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="flex-1 relative overflow-y-auto bg-[#010b09]">
+        <!-- TOPBAR -->
+        <header
+            class="sticky top-0 z-10 border-b border-[#D4A574]/10 bg-[#02120e]/80 backdrop-blur px-8 py-4 flex items-center justify-between">
+            <h2 class="text-xl font-bold tracking-tight text-white">Scraper Command Center</h2>
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <p class="text-xs font-semibold text-white">Thuan Le</p>
+                    <p class="text-[10px] text-[#D4A574]">Enterprise Account</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-[#1B4D3E] border border-[#D4A574]/20"></div>
+            </div>
+        </header>
+
+        <div class="p-8 space-y-8">
+            <!-- HERO CONTROLS -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 space-y-6">
+                    <div
+                        class="glass-dark rounded-2xl p-8 border border-[#D4A574]/20 shadow-2xl relative overflow-hidden group">
+                        <div
+                            class="absolute -right-24 -top-24 w-64 h-64 rounded-full bg-[#1B4D3E]/20 blur-3xl group-hover:bg-[#D4A574]/10 transition-colors duration-500">
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-2">New Scraping Pipeline</h3>
+                        <p class="text-[#a8b3af] text-sm mb-8">Deploy an AI-powered agent to discover and
+                            reverse-engineer any SPA web application.</p>
+
+                        <div class="space-y-4 max-w-2xl">
+                            <div class="relative">
+                                <label
+                                    class="text-[10px] uppercase font-bold text-[#D4A574] mb-1 block tracking-wider">Target
+                                    URL</label>
+                                <input type="text" id="target-url" placeholder="https://app.example.com"
+                                    class="w-full bg-[#02120e] border border-[#D4A574]/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#D4A574] transition font-mono text-sm shadow-inner"
+                                    value="https://tamdentist.tdental.vn">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 text-xs">
+                                <div>
+                                    <label
+                                        class="text-[10px] uppercase font-bold text-[#D4A574] mb-1 block tracking-wider">Username</label>
+                                    <input type="text" id="username"
+                                        class="w-full bg-[#02120e] border border-[#D4A574]/20 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#D4A574] transition"
+                                        value="dataconnect">
+                                </div>
+                                <div>
+                                    <label
+                                        class="text-[10px] uppercase font-bold text-[#D4A574] mb-1 block tracking-wider">Password</label>
+                                    <input type="password" id="password"
+                                        class="w-full bg-[#02120e] border border-[#D4A574]/20 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#D4A574] transition"
+                                        value="dataconnect@">
+                                </div>
+                            </div>
+                            <div class="pt-4 flex items-center justify-between">
+                                <div class="flex items-center gap-4 text-xs text-[#a8b3af]">
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked
+                                            class="accent-[#D4A574]"> Auto-Login</label>
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked
+                                            class="accent-[#D4A574]"> Network Capture</label>
+                                </div>
+                                <button onclick="startScrape()"
+                                    class="btn-vantage px-8 py-3 rounded-lg font-bold text-sm flex items-center gap-2">
+                                    <i data-lucide="play" class="w-4 h-4"></i> LAUNCH PIPELINE
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TERMINAL -->
+                    <div class="terminal rounded-xl border border-[#D4A574]/20 overflow-hidden shadow-2xl">
+                        <div
+                            class="bg-[#051d16] px-4 py-2 border-b border-[#D4A574]/10 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2.5 h-2.5 rounded-full bg-[#C85A3A]"></div>
+                                <div class="w-2.5 h-2.5 rounded-full bg-[#D4A574]"></div>
+                                <div class="w-2.5 h-2.5 rounded-full bg-[#1B4D3E]"></div>
+                                <span class="text-[10px] font-mono text-[#D4A574]/60 ml-2">vantage-probe-sh —
+                                    80x24</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-[10px] text-[#D4A574]/40 font-mono" id="task-status">READY</span>
+                                <i data-lucide="maximize-2" class="w-3 h-3 text-[#D4A574]/40 cursor-pointer"></i>
+                            </div>
+                        </div>
+                        <div id="logs" class="p-4 h-[300px] overflow-y-auto text-xs font-mono space-y-1">
+                            <div class="text-[#6e7d78]"># vantage --init --target=tdental</div>
+                            <div class="text-[#34d399]">[INFO] Vantage AI Terminal ready for connection...</div>
+                            <div class="text-[#D4A574]/60">Waiting for pipeline trigger...<span
+                                    class="terminal-cursor"></span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STATS & PRESETS -->
+                <div class="space-y-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="glass p-5 rounded-2xl border border-[#D4A574]/10">
+                            <p class="text-[10px] uppercase font-bold text-[#6e7d78] mb-1">Endpoints Discovered</p>
+                            <p class="text-3xl font-bold text-white tracking-tight" id="count-endpoints">0</p>
+                            <p class="text-[10px] text-[#34d399] mt-1 font-semibold">↑ Real-time Discovery</p>
+                        </div>
+                        <div class="glass p-5 rounded-2xl border border-[#D4A574]/10">
+                            <p class="text-[10px] uppercase font-bold text-[#6e7d78] mb-1">Inferred Tables</p>
+                            <p class="text-3xl font-bold text-white tracking-tight" id="count-tables">0</p>
+                            <p class="text-[10px] text-[#D4A574] mt-1 font-semibold">AI Mapping Active</p>
+                        </div>
+                    </div>
+
+                    <div class="glass-dark p-6 rounded-2xl border border-[#D4A574]/10 h-[calc(100%-120px)]">
+                        <h4 class="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                            <i data-lucide="history" class="w-4 h-4 text-[#D4A574]"></i> Recent Projects
+                        </h4>
+                        <div class="space-y-3" id="recent-projects">
+                            <!-- Project Items -->
+                            <div
+                                class="p-3 rounded-lg bg-[#02120e] border border-[#D4A574]/5 hover:border-[#D4A574]/30 cursor-pointer transition-all group">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-bold text-[#e5e7eb]">tamdentist.tdental.vn</span>
+                                    <span class="text-[10px] text-[#6e7d78]">2h ago</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <span
+                                        class="px-2 py-0.5 rounded-full bg-[#1B4D3E]/30 text-[#D4A574] text-[9px] font-bold">452
+                                        ENDPOINTS</span>
+                                    <span
+                                        class="px-2 py-0.5 rounded-full bg-[#1B4D3E]/30 text-[#D4A574] text-[9px] font-bold">18
+                                        TABLES</span>
+                                </div>
+                            </div>
+                            <!-- Mock projects -->
+                            <div class="p-3 rounded-lg bg-[#02120e]/40 border border-[#D4A574]/5 opacity-60">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-bold text-[#e5e7eb]">aiit-dashboard.net</span>
+                                    <span class="text-[10px] text-[#6e7d78]">1d ago</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <span
+                                        class="px-2 py-0.5 rounded-full bg-[#D4A574]/10 text-[#6e7d78] text-[9px] font-bold">124
+                                        ENDPOINTS</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-8">
+                            <div
+                                class="p-4 rounded-xl bg-gradient-to-br from-[#1B4D3E] to-[#02120e] border border-[#D4A574]/20">
+                                <p class="text-xs font-bold text-white mb-2 italic">Pro Tip</p>
+                                <p class="text-[10px] text-[#a8b3af] leading-relaxed">Vantage AI will automatically try
+                                    common paths and inject standard headers to discover hidden API routes.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RESULTS TABS -->
+            <div class="glass-dark rounded-2xl border border-[#D4A574]/10 overflow-hidden">
+                <div class="flex border-b border-[#D4A574]/10 bg-[#051d16]/50">
+                    <button class="px-8 py-4 text-xs font-bold text-[#D4A574] border-b-2 border-[#D4A574]">API
+                        MAP</button>
+                    <button class="px-8 py-4 text-xs font-bold text-[#a8b3af] hover:text-[#D4A574] transition">DB
+                        SCHEMA</button>
+                    <button class="px-8 py-4 text-xs font-bold text-[#a8b3af] hover:text-[#D4A574] transition">COMPONENT
+                        TREE</button>
+                    <button
+                        class="px-8 py-4 text-xs font-bold text-[#a8b3af] hover:text-[#D4A574] transition">REPLICATION
+                        BLUEPRINT</button>
+                    <div class="ml-auto flex items-center px-6">
+                        <button class="text-[10px] font-bold text-[#D4A574] flex items-center gap-1.5 hover:underline">
+                            <i data-lucide="download" class="w-3 h-3"></i> EXPORT FULL REPORT
+                        </button>
+                    </div>
+                </div>
+                <div class="p-8 h-[400px] overflow-auto" id="result-content">
+                    <!-- API Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- API Item Placeholder -->
+                        <div
+                            class="p-4 rounded-xl bg-[#02120e] border border-[#D4A574]/10 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span
+                                        class="px-2 py-0.5 rounded bg-[#34d399]/20 text-[#34d399] text-[9px] font-bold tracking-widest font-mono">GET</span>
+                                    <span class="text-[10px] text-[#6e7d78]">Inferred: ClientData</span>
+                                </div>
+                                <code class="text-xs text-[#D4A574] font-mono break-all">/api/v1/customers/list</code>
+                            </div>
+                            <div class="mt-4 flex items-center gap-2">
+                                <div class="h-1.5 flex-1 bg-[#1B4D3E]/30 rounded-full">
+                                    <div class="h-full bg-[#34d399] rounded-full" style="width: 100%"></div>
+                                </div>
+                                <span class="text-[9px] text-[#6e7d78]">200 OK</span>
+                            </div>
+                        </div>
+                        <!-- More results will be populated here -->
+                        <div
+                            class="p-4 rounded-xl border border-[#D4A574]/5 bg-[#02120e]/40 flex flex-col items-center justify-center text-[#6e7d78]">
+                            <i data-lucide="lock" class="w-8 h-8 mb-2 opacity-20"></i>
+                            <p class="text-xs italic">Live data will appear here during scrape...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Lucide integration
+        lucide.createIcons();
+
+        let taskId = null;
+        let logInterval = null;
+
+        function addLog(msg, color = "#a8b3af") {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = "fade-in";
+            div.innerHTML = `<span class="text-[#D4A574]/40">[${timestamp}]</span> <span style="color: ${color}">${msg}</span>`;
+            logs.appendChild(div);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        async function startScrape() {
+            const url = document.getElementById('target-url').value;
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+
+            addLog(`Initializing vantage-v4.9 engine...`, "#D4A574");
+            addLog(`Setting target: ${url}`, "#eec");
+
+            try {
+                const resp = await fetch('/api/scrape/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        base_url: url,
+                        username: user,
+                        password: pass,
+                        output_name: url.split('/')[2].replace(/\./g, '_')
+                    })
+                });
+
+                const data = await resp.json();
+                taskId = data.task_id;
+
+                document.getElementById('task-status').innerText = "RUNNING";
+                document.getElementById('task-status').classList.add('animate-pulse');
+
+                // Start polling
+                pollStatus();
+            } catch (e) {
+                addLog(`CRITICAL: Connection to API failed.`, "#C85A3A");
+            }
+        }
+
+        async function pollStatus() {
+            if (!taskId) return;
+
+            try {
+                const resp = await fetch(`/api/scrape/status/${taskId}`);
+                const data = await resp.json();
+
+                // Add new logs
+                if (data.logs && data.logs.length > 0) {
+                    const currentLogCount = document.querySelectorAll('#logs > div').length - 3;
+                    if (data.logs.length > currentLogCount) {
+                        for (let i = currentLogCount; i < data.logs.length; i++) {
+                            addLog(data.logs[i], i % 3 === 0 ? "#34d399" : "#a8b3af");
+                        }
+                    }
+                }
+
+                if (data.status === 'completed') {
+                    addLog("SUCCESS: Scrape pipeline fully executed.", "#34d399");
+                    document.getElementById('task-status').innerText = "COMPLETED";
+                    document.getElementById('task-status').classList.remove('animate-pulse');
+                    loadResults();
+                } else if (data.status === 'failed') {
+                    addLog("ERROR: Pipeline aborted.", "#C85A3A");
+                    document.getElementById('task-status').innerText = "FAILED";
+                } else {
+                    setTimeout(pollStatus, 2000);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function loadResults() {
+            // In a real app, this would fetch the report and build UI
+            // For now, we update the counts
+            document.getElementById('count-endpoints').innerText = "452";
+            document.getElementById('count-tables').innerText = "18";
+        }
+    </script>
+
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(-4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+</body>
+
+</html>

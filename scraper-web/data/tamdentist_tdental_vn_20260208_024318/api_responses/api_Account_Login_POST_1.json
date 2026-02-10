@@ -1,0 +1,60 @@
+{
+  "url": "https://tamdentist.tdental.vn/api/Account/Login",
+  "method": "POST",
+  "status": 200,
+  "content_type": "application/json; charset=utf-8",
+  "path": "/api/Account/Login",
+  "query": "",
+  "request_headers": {
+    "sec-ch-ua-platform": "\"Windows\"",
+    "data-type": "json",
+    "referer": "https://tamdentist.tdental.vn/",
+    "x-device-id": "",
+    "accept-language": "vi",
+    "sec-ch-ua": "\"HeadlessChrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+    "sec-ch-ua-mobile": "?0",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "accept": "application/json, text/plain, */*",
+    "content-type": "application/json",
+    "x-session-id": ""
+  },
+  "response_headers": {
+    "strict-transport-security": "max-age=31536000; includeSubDomains",
+    "access-control-expose-headers": "Content-Disposition",
+    "cache-control": "no-cache,no-store",
+    "pragma": "no-cache",
+    "expires": "Thu, 01 Jan 1970 00:00:00 GMT",
+    "access-control-allow-origin": "*",
+    "content-length": "1057",
+    "date": "Sun, 08 Feb 2026 08:43:25 GMT",
+    "content-type": "application/json; charset=utf-8"
+  },
+  "request_body": {
+    "rememberMe": false,
+    "userName": "dataconnect",
+    "password": "dataconnect@"
+  },
+  "response_body": {
+    "succeeded": true,
+    "message": "Authentication succeeded",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJlYzBhOGNkMi00NGI5LTQ1MDEtOTg3Zi05OTJlYjJlOTQ3NTYiLCJ1bmlxdWVfbmFtZSI6ImRhdGFjb25uZWN0IiwiY29tcGFueV9pZCI6ImRkZThiODVlLWUzNWEtNDFmYS00YTZiLTA4ZGUxMDdkNTllYyIsInVzZXJfcm9vdCI6IkZhbHNlIiwicGFydG5lcl9pZCI6IjE3ZGVkMjdhLWYwNjYtNDc1Yi05YWI5LWIzZTkwMGFlNmZjMSIsImlzX2hlYWRfb2ZmaWNlIjoiRmFsc2UiLCJzZXNzaW9uX2lkIjoiN2Y4Mjg1MzM2Njg3MDVjYjkwMjU2MWJmN2JjNTcwYzU0MWY2NTZhZCIsIm5iZiI6MTc3MDU0MDIwNSwiZXhwIjoxNzcxMTQ1MDA1LCJpYXQiOjE3NzA1NDAyMDV9.bdgrb-mAZmONWNbd9n5k2ytY0hHOL27Hmq_KeKQjjds",
+    "refreshToken": "/Rd/9ijpv4/TFwp7jlmTluESiYvEgtzkMVFUsNPUhkI=",
+    "tenantId": "tamdentist",
+    "configs": null,
+    "user": {
+      "id": "ec0a8cd2-44b9-4501-987f-992eb2e94756",
+      "name": "dataconnect",
+      "userName": "dataconnect",
+      "partnerId": "17ded27a-f066-475b-9ab9-b3e900ae6fc1",
+      "phone": null,
+      "email": null,
+      "avatar": null,
+      "companyId": "dde8b85e-e35a-41fa-4a6b-08de107d59ec"
+    },
+    "sessionId": "7f828533668705cb902561bf7bc570c541f656ad",
+    "requiresTwoFactor": false,
+    "userId": null,
+    "deviceId": "ZTh78aXD6DPwASU"
+  },
+  "timestamp": "2026-02-08T02:43:25.441007"
+}

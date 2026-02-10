@@ -1,0 +1,1375 @@
+{
+  "info": {
+    "title": "API Specification - https://tamdentist.tdental.vn",
+    "description": "Auto-generated from SPA scraping"
+  },
+  "endpoints": {
+    "POST /api/Account/Login": {
+      "method": "POST",
+      "path": "/api/Account/Login",
+      "url": "https://tamdentist.tdental.vn/api/Account/Login",
+      "status_codes": [
+        200
+      ],
+      "call_count": 1,
+      "request_body": {
+        "type": "object",
+        "properties": {
+          "rememberMe": {
+            "type": "boolean"
+          },
+          "userName": {
+            "type": "string",
+            "example": "dataconnect"
+          },
+          "password": {
+            "type": "string",
+            "example": "dataconnect@"
+          }
+        }
+      },
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "succeeded": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "example": "Authentication succeeded"
+          },
+          "token": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiO"
+          },
+          "refreshToken": {
+            "type": "string",
+            "example": "/Rd/9ijpv4/TFwp7jlmTluESiYvEgtzkMVFUsNPUhkI="
+          },
+          "tenantId": {
+            "type": "string",
+            "example": "tamdentist"
+          },
+          "configs": {
+            "type": "string",
+            "nullable": true
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "ec0a8cd2-44b9-4501-987f-992eb2e94756"
+              },
+              "name": {
+                "type": "string",
+                "example": "dataconnect"
+              },
+              "userName": {
+                "type": "string",
+                "example": "dataconnect"
+              },
+              "partnerId": {
+                "type": "string",
+                "example": "17ded27a-f066-475b-9ab9-b3e900ae6fc1"
+              },
+              "phone": {
+                "type": "string",
+                "nullable": true
+              },
+              "email": {
+                "type": "string",
+                "nullable": true
+              },
+              "avatar": {
+                "type": "string",
+                "nullable": true
+              },
+              "companyId": {
+                "type": "string",
+                "example": "dde8b85e-e35a-41fa-4a6b-08de107d59ec"
+              }
+            }
+          },
+          "sessionId": {
+            "type": "string",
+            "example": "7f828533668705cb902561bf7bc570c541f656ad"
+          },
+          "requiresTwoFactor": {
+            "type": "boolean"
+          },
+          "userId": {
+            "type": "string",
+            "nullable": true
+          },
+          "deviceId": {
+            "type": "string",
+            "example": "ZTh78aXD6DPwASU"
+          }
+        }
+      }
+    },
+    "GET /Web/Session/GetSessionInfo": {
+      "method": "GET",
+      "path": "/Web/Session/GetSessionInfo",
+      "url": "https://tamdentist.tdental.vn/Web/Session/GetSessionInfo",
+      "status_codes": [
+        200
+      ],
+      "call_count": 2,
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "ec0a8cd2-44b9-4501-987f-992eb2e94756"
+          },
+          "name": {
+            "type": "string",
+            "example": "dataconnect"
+          },
+          "userName": {
+            "type": "string",
+            "example": "dataconnect"
+          },
+          "userPartnerId": {
+            "type": "string",
+            "example": "17ded27a-f066-475b-9ab9-b3e900ae6fc1"
+          },
+          "partnerId": {
+            "type": "string",
+            "example": "17ded27a-f066-475b-9ab9-b3e900ae6fc1"
+          },
+          "userCompanies": {
+            "type": "object",
+            "properties": {
+              "currentCompany": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "example": "dde8b85e-e35a-41fa-4a6b-08de107d59ec"
+                  },
+                  "name": {
+                    "type": "string",
+                    "example": "Nha khoa Tấm Dentist"
+                  },
+                  "isHead": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "allowedCompanies": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "object"
+                    },
+                    "name": {
+                      "type": "object"
+                    },
+                    "isHead": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "expirationDate": {
+            "type": "string",
+            "example": "2026-09-19T10:43:29"
+          },
+          "isAdmin": {
+            "type": "boolean"
+          },
+          "permissions": {
+            "type": "array"
+          },
+          "groups": {
+            "type": "array"
+          },
+          "rules": {
+            "type": "array"
+          },
+          "modules": {
+            "type": "array"
+          },
+          "settings": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiredIn": {
+            "type": "integer"
+          },
+          "tenantId": {
+            "type": "string",
+            "example": "tamdentist"
+          },
+          "isUppercasePartnerName": {
+            "type": "boolean"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "AccountMoveSequenceMixin"
+                },
+                "value": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "totpEnabled": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "GET /api/IrConfigParameters/GetParam": {
+      "method": "GET",
+      "path": "/api/IrConfigParameters/GetParam",
+      "url": "https://tamdentist.tdental.vn/api/IrConfigParameters/GetParam?key=import_sample_data",
+      "status_codes": [
+        200
+      ],
+      "call_count": 1,
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "example": "Removed"
+          }
+        }
+      }
+    },
+    "GET /api/Employees": {
+      "method": "GET",
+      "path": "/api/Employees",
+      "url": "https://tamdentist.tdental.vn/api/Employees?active=true&limit=0&offset=0&isDoctor=true&companyId=dde8b85e-e35a-41fa-4a6b-08de107d59ec",
+      "status_codes": [
+        200
+      ],
+      "call_count": 4,
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array"
+          },
+          "aggregates": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    },
+    "GET /api/Appointments": {
+      "method": "GET",
+      "path": "/api/Appointments",
+      "url": "https://tamdentist.tdental.vn/api/Appointments?offset=0&limit=0&dateTimeFrom=2026-02-08&dateTimeTo=2026-02-08&companyId=dde8b85e-e35a-41fa-4a6b-08de107d59ec",
+      "status_codes": [
+        200
+      ],
+      "call_count": 3,
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array"
+          },
+          "aggregates": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    },
+    "GET /mail/init_messaging": {
+      "method": "GET",
+      "path": "/mail/init_messaging",
+      "url": "https://tamdentist.tdental.vn/mail/init_messaging",
+      "status_codes": [
+        200
+      ],
+      "call_count": 1,
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "needactionInboxCount": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "GET /mail/inbox/messages": {
+      "method": "GET",
+      "path": "/mail/inbox/messages",
+      "url": "https://tamdentist.tdental.vn/mail/inbox/messages?limit=20&offset=0",
+      "status_codes": [
+        200
+      ],
+      "call_count": 1
+    },
+    "GET /mail/load_message_failures": {
+      "method": "GET",
+      "path": "/mail/load_message_failures",
+      "url": "https://tamdentist.tdental.vn/mail/load_message_failures",
+      "status_codes": [
+        200
+      ],
+      "call_count": 1
+    },
+    "GET /api/SaleOrderLines": {
+      "method": "GET",
+      "path": "/api/SaleOrderLines",
+      "url": "https://tamdentist.tdental.vn/api/SaleOrderLines?companyId=dde8b85e-e35a-41fa-4a6b-08de107d59ec&dateFrom=2026-02-08&dateTo=2026-02-08&state=sale,done,cancel&aggregate=%5B%7B%20field:%20%27PriceSubTotal%27,%20aggregate:%20%27sum%27%20%7D%5D&excludeRewardGlobalDiscount=true",
+      "status_codes": [
+        200
+      ],
+      "call_count": 2,
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array"
+          },
+          "aggregates": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    },
+    "GET /api/CustomerReceipts": {
+      "method": "GET",
+      "path": "/api/CustomerReceipts",
+      "url": "https://tamdentist.tdental.vn/api/CustomerReceipts?limit=0&offset=0&dateFrom=2026-02-08&dateTo=2026-02-08&companyId=dde8b85e-e35a-41fa-4a6b-08de107d59ec",
+      "status_codes": [
+        200
+      ],
+      "call_count": 2,
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array"
+          },
+          "aggregates": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    },
+    "POST /api/DashboardReports/GetSumary": {
+      "method": "POST",
+      "path": "/api/DashboardReports/GetSumary",
+      "url": "https://tamdentist.tdental.vn/api/DashboardReports/GetSumary",
+      "status_codes": [
+        200
+      ],
+      "call_count": 2,
+      "request_body": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "example": "dde8b85e-e35a-41fa-4a6b-08de107d59ec"
+          },
+          "dateFrom": {
+            "type": "string",
+            "example": "2026-02-08"
+          },
+          "dateTo": {
+            "type": "string",
+            "example": "2026-02-08"
+          }
+        }
+      },
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "totalBank": {
+            "type": "number"
+          },
+          "totalCash": {
+            "type": "number"
+          },
+          "totalOther": {
+            "type": "number"
+          },
+          "totalAmountYesterday": {
+            "type": "number"
+          },
+          "totalAmount": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "POST /api/Partnercategories/Autocomplete": {
+      "method": "POST",
+      "path": "/api/Partnercategories/Autocomplete",
+      "url": "https://tamdentist.tdental.vn/api/Partnercategories/Autocomplete",
+      "status_codes": [
+        200
+      ],
+      "call_count": 2,
+      "request_body": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          }
+        }
+      },
+      "response_schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "example": "5b3d1ac9-4969-456d-83e6-afe3007cc049"
+            },
+            "name": {
+              "type": "string",
+              "example": "Bác sĩ (17)"
+            },
+            "completeName": {
+              "type": "string",
+              "nullable": true
+            },
+            "color": {
+              "type": "string",
+              "example": "7"
+            }
+          }
+        }
+      }
+    },
+    "GET /api/Companies": {
+      "method": "GET",
+      "path": "/api/Companies",
+      "url": "https://tamdentist.tdental.vn/api/Companies?active=true",
+      "status_codes": [
+        200
+      ],
+      "call_count": 1,
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "example": "dde8b85e-e35a-41fa-4a6b-08de107d59ec"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "Nha khoa Tấm Dentist"
+                },
+                "logo": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "active": {
+                  "type": "boolean"
+                },
+                "isHead": {
+                  "type": "boolean"
+                },
+                "periodLockDate": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "medicalFacilityCode": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "hotline": {
+                  "type": "string",
+                  "example": ""
+                },
+                "phone": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "address": {
+                  "type": "string",
+                  "example": ""
+                },
+                "addressV2": {
+                  "type": "string",
+                  "example": ""
+                },
+                "usedAddressV2": {
+                  "type": "boolean"
+                },
+                "taxCode": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "taxUnitName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "taxUnitAddress": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "taxBankName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "taxBankAccount": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "taxPhone": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "householdBusinesses": {
+                  "type": "array"
+                }
+              }
+            }
+          },
+          "aggregates": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    },
+    "POST /api/PartnerSources/Autocomplete": {
+      "method": "POST",
+      "path": "/api/PartnerSources/Autocomplete",
+      "url": "https://tamdentist.tdental.vn/api/PartnerSources/Autocomplete",
+      "status_codes": [
+        200
+      ],
+      "call_count": 1,
+      "request_body": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "response_schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "example": "4c91d2d6-e689-4640-b859-b2f4009c4d2f"
+            },
+            "name": {
+              "type": "string",
+              "example": "MKT"
+            },
+            "type": {
+              "type": "string",
+              "example": "normal"
+            },
+            "isCollaborators": {
+              "type": "boolean"
+            },
+            "isActive": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "GET /api/CardTypes": {
+      "method": "GET",
+      "path": "/api/CardTypes",
+      "url": "https://tamdentist.tdental.vn/api/CardTypes?limit=0&offset=0",
+      "status_codes": [
+        200
+      ],
+      "call_count": 1,
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array"
+          },
+          "aggregates": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    },
+    "GET /api/productcategories": {
+      "method": "GET",
+      "path": "/api/productcategories",
+      "url": "https://tamdentist.tdental.vn/api/productcategories?limit=0&offset=0&type=service",
+      "status_codes": [
+        200
+      ],
+      "call_count": 1,
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "example": "bc794e7c-75cb-4e62-a1c5-b2e800760a4d"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "BỘC LỘ"
+                },
+                "completeName": {
+                  "type": "string",
+                  "example": "BỘC LỘ"
+                },
+                "parentId": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "parent": {
+                  "type": "string",
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "aggregates": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    },
+    "POST /api/products/autocomplete2": {
+      "method": "POST",
+      "path": "/api/products/autocomplete2",
+      "url": "https://tamdentist.tdental.vn/api/products/autocomplete2",
+      "status_codes": [
+        200
+      ],
+      "call_count": 1,
+      "request_body": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "type2": {
+            "type": "string",
+            "example": "service"
+          },
+          "search": {
+            "type": "string",
+            "example": ""
+          }
+        }
+      },
+      "response_schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "example": "c2f42776-fac3-4813-bb7a-b05b00a64ec1"
+            },
+            "name": {
+              "type": "string",
+              "example": "Niềng Mắc Cài Kim Loại Tiêu Chuẩn"
+            },
+            "nameNoSign": {
+              "type": "string",
+              "example": "Niềng Mắc Cài Kim Loại Tiêu Chuẩn|Nieng Mac Cai Ki"
+            },
+            "defaultCode": {
+              "type": "string",
+              "example": "DV0001"
+            },
+            "priceUnit": {
+              "type": "string",
+              "nullable": true
+            },
+            "purchasePrice": {
+              "type": "string",
+              "nullable": true
+            },
+            "standardPrice": {
+              "type": "number"
+            },
+            "categId": {
+              "type": "string",
+              "example": "cb4cb417-9778-4416-8d5a-afe30053b73c"
+            },
+            "categ": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "example": "cb4cb417-9778-4416-8d5a-afe30053b73c"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "Niềng răng"
+                },
+                "completeName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "parentId": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "parent": {
+                  "type": "string",
+                  "nullable": true
+                }
+              }
+            },
+            "type": {
+              "type": "string",
+              "example": "service"
+            },
+            "type2": {
+              "type": "string",
+              "example": "service"
+            },
+            "listPrice": {
+              "type": "number"
+            },
+            "firm": {
+              "type": "string",
+              "nullable": true
+            },
+            "laboPrice": {
+              "type": "string",
+              "nullable": true
+            },
+            "uomId": {
+              "type": "string",
+              "example": "f9284d91-daa3-4d12-b956-b05b00a64ec2"
+            },
+            "uom": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "example": "f9284d91-daa3-4d12-b956-b05b00a64ec2"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "Ca"
+                },
+                "active": {
+                  "type": "boolean"
+                },
+                "uomType": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "categoryName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "categoryId": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "factor": {
+                  "type": "number"
+                },
+                "factorInv": {
+                  "type": "number"
+                }
+              }
+            },
+            "quantity": {
+              "type": "number"
+            },
+            "isLabo": {
+              "type": "boolean"
+            },
+            "displayName": {
+              "type": "string",
+              "example": "[DV0001] Niềng Mắc Cài Kim Loại Tiêu Chuẩn"
+            },
+            "stepConfigs": {
+              "type": "string",
+              "nullable": true
+            },
+            "taxId": {
+              "type": "string",
+              "nullable": true
+            },
+            "tax": {
+              "type": "string",
+              "nullable": true
+            },
+            "companyName": {
+              "type": "string",
+              "example": "Tấm Dentist Thủ Đức"
+            }
+          }
+        }
+      }
+    },
+    "GET /api/Partners/GetPagedPartnersCustomer": {
+      "method": "GET",
+      "path": "/api/Partners/GetPagedPartnersCustomer",
+      "url": "https://tamdentist.tdental.vn/api/Partners/GetPagedPartnersCustomer?limit=20&offset=0&isActive=true&columns=displayName&columns=manipulation&columns=phone&columns=dateOfBirth&columns=appointmentDate&columns=nextAppointmentDate&columns=saleOrderDate&columns=valueOrderState&columns=orderResidual&columns=totalDebit&columns=amountTreatmentTotal&columns=amountRevenueTotal&columns=cardTypeName&columns=categories&columns=companyName",
+      "status_codes": [
+        200
+      ],
+      "call_count": 1,
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "example": "7d47407f-767d-42f7-a3e0-b3eb008993f1"
+                },
+                "ref": {
+                  "type": "string",
+                  "example": "T059709"
+                },
+                "avatar": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "displayName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "name": {
+                  "type": "string",
+                  "example": "Lương Thị Diệu Linh"
+                },
+                "phone": {
+                  "type": "string",
+                  "example": "0822961512"
+                },
+                "email": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "street": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "cityName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "districtName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "wardName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "cityNameV2": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "wardNameV2": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "birthYear": {
+                  "type": "integer"
+                },
+                "birthMonth": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "birthDay": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "orderState": {
+                  "type": "string",
+                  "example": "none"
+                },
+                "orderResidual": {
+                  "type": "number"
+                },
+                "totalDebit": {
+                  "type": "number"
+                },
+                "amountTreatmentTotal": {
+                  "type": "number"
+                },
+                "amountRevenueTotal": {
+                  "type": "number"
+                },
+                "jobTitle": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "cardType": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "sourceId": {
+                  "type": "string",
+                  "example": "82fc6269-37a3-4702-8889-afe3007cf044"
+                },
+                "sourceName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "companyName": {
+                  "type": "string",
+                  "example": "Tấm Dentist Thủ Đức"
+                },
+                "date": {
+                  "type": "string",
+                  "example": "2026-02-08T08:20:10.498"
+                },
+                "companyId": {
+                  "type": "string",
+                  "example": "b178d5ee-d9ac-477e-088e-08db9a4c4cf4"
+                },
+                "appointmentDate": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "nextAppointmentDate": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "saleOrderDate": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "lastTreatmentCompleteDate": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "memberLevel": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "amountBalance": {
+                  "type": "number"
+                },
+                "customerType": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "categories": {
+                  "type": "array"
+                },
+                "dateOfBirth": {
+                  "type": "string",
+                  "example": "--/--/2006"
+                },
+                "age": {
+                  "type": "string",
+                  "example": "20"
+                },
+                "address": {
+                  "type": "string",
+                  "example": ""
+                },
+                "addressV2": {
+                  "type": "string",
+                  "example": ""
+                },
+                "active": {
+                  "type": "boolean"
+                },
+                "userId": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "saleName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "gender": {
+                  "type": "string",
+                  "example": "female"
+                },
+                "genderDisplay": {
+                  "type": "string",
+                  "example": "Nữ"
+                },
+                "comment": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "treatmentStatus": {
+                  "type": "string",
+                  "example": "none"
+                },
+                "usedAddressV2": {
+                  "type": "boolean"
+                },
+                "marketingStaffId": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "contactStatusId": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "potentialLevel": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "serviceInterests": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "marketingStaff": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "contactStatus": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "countryId": {
+                  "type": "string",
+                  "example": "1ab9c25c-c6ca-4c05-9042-b0670114aee9"
+                },
+                "country": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "salePartnerId": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "customerStatus": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "unActiveBy": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "unActiveDate": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "unActiveReason": {
+                  "type": "string",
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "aggregates": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    },
+    "POST /api/StockReports/GetExportImportInventoryReport": {
+      "method": "POST",
+      "path": "/api/StockReports/GetExportImportInventoryReport",
+      "url": "https://tamdentist.tdental.vn/api/StockReports/GetExportImportInventoryReport",
+      "status_codes": [
+        200
+      ],
+      "call_count": 1,
+      "request_body": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "example": "dde8b85e-e35a-41fa-4a6b-08de107d59ec"
+          },
+          "dateFrom": {
+            "type": "string",
+            "example": "2026-02-01T00:00:00"
+          },
+          "dateTo": {
+            "type": "string",
+            "example": "2026-02-28T23:59:59"
+          }
+        }
+      }
+    },
+    "GET /api/CrmTasks/CountTasksByType": {
+      "method": "GET",
+      "path": "/api/CrmTasks/CountTasksByType",
+      "url": "https://tamdentist.tdental.vn/api/CrmTasks/CountTasksByType?dateCreateFrom=2026-02-01&dateCreateTo=2026-02-28",
+      "status_codes": [
+        200
+      ],
+      "call_count": 1,
+      "response_schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "stage": {
+              "type": "string",
+              "nullable": true
+            },
+            "total": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "GET /api/ApplicationUsers": {
+      "method": "GET",
+      "path": "/api/ApplicationUsers",
+      "url": "https://tamdentist.tdental.vn/api/ApplicationUsers?limit=20&offset=0",
+      "status_codes": [
+        200
+      ],
+      "call_count": 2,
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "example": "b19424da-e016-41c8-b992-17181969c924"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "Admin"
+                },
+                "userName": {
+                  "type": "string",
+                  "example": "admin"
+                },
+                "partnerId": {
+                  "type": "string",
+                  "example": "733fd0dc-ec01-4933-8a94-afc7006cf360"
+                },
+                "active": {
+                  "type": "boolean"
+                },
+                "phoneNumber": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "jobId": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "jobName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "ref": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "avatar": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "employees": {
+                  "type": "array"
+                },
+                "teamMembers": {
+                  "type": "array"
+                }
+              }
+            }
+          },
+          "aggregates": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    },
+    "GET /api/CrmTaskCategories": {
+      "method": "GET",
+      "path": "/api/CrmTaskCategories",
+      "url": "https://tamdentist.tdental.vn/api/CrmTaskCategories?offset=0&limit=9999&active=true",
+      "status_codes": [
+        200
+      ],
+      "call_count": 1,
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array"
+          },
+          "aggregates": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    },
+    "GET /api/CrmTasks/GetPagedV2": {
+      "method": "GET",
+      "path": "/api/CrmTasks/GetPagedV2",
+      "url": "https://tamdentist.tdental.vn/api/CrmTasks/GetPagedV2?dateCreateFrom=2026-02-01&dateCreateTo=2026-02-28&limit=20&offset=0",
+      "status_codes": [
+        200
+      ],
+      "call_count": 1,
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array"
+          },
+          "aggregates": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    }
+  }
+}

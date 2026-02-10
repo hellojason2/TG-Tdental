@@ -1,0 +1,50 @@
+{
+  "metadata": {
+    "target_url": "https://tamdentist.tdental.vn/",
+    "scraped_at": "2026-02-08T02:24:50.482842",
+    "total_routes": 0,
+    "visited_routes": 0,
+    "total_api_calls": 1,
+    "unique_endpoints": 1,
+    "forms_found": 0,
+    "tables_found": 0
+  },
+  "routes": [],
+  "api_endpoints": {
+    "POST /api/Account/Login": {
+      "method": "POST",
+      "path": "/api/Account/Login",
+      "url": "https://tamdentist.tdental.vn/api/Account/Login",
+      "status_codes": [
+        200
+      ],
+      "request_bodies": [
+        {
+          "rememberMe": false,
+          "userName": "dataconnect",
+          "password": "mask_password_for_demo"
+        }
+      ],
+      "response_samples": [
+        {
+          "succeeded": false,
+          "message": "Tên tài khoản của bạn hoặc Mật khẩu không đúng. Vui lòng thử lại",
+          "token": null,
+          "refreshToken": null,
+          "tenantId": null,
+          "configs": null,
+          "user": null,
+          "sessionId": null,
+          "requiresTwoFactor": false,
+          "userId": null,
+          "deviceId": null
+        }
+      ],
+      "call_count": 1
+    }
+  },
+  "forms": [],
+  "tables": [],
+  "page_structures": {},
+  "inferred_schema": {}
+}

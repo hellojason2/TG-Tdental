@@ -1,0 +1,94 @@
+{
+  "url": "https://tamdentist.tdental.vn/api/PartnerSources/Autocomplete",
+  "method": "POST",
+  "status": 200,
+  "content_type": "application/json; charset=utf-8",
+  "path": "/api/PartnerSources/Autocomplete",
+  "query": "",
+  "request_headers": {
+    "sec-ch-ua-platform": "\"Windows\"",
+    "data-type": "json",
+    "authorization": "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJlYzBhOGNkMi00NGI5LTQ1MDEtOTg3Zi05OTJlYjJlOTQ3NTYiLCJ1bmlxdWVfbmFtZSI6ImRhdGFjb25uZWN0IiwiY29tcGFueV9pZCI6ImRkZThiODVlLWUzNWEtNDFmYS00YTZiLTA4ZGUxMDdkNTllYyIsInVzZXJfcm9vdCI6IkZhbHNlIiwicGFydG5lcl9pZCI6IjE3ZGVkMjdhLWYwNjYtNDc1Yi05YWI5LWIzZTkwMGFlNmZjMSIsImlzX2hlYWRfb2ZmaWNlIjoiRmFsc2UiLCJzZXNzaW9uX2lkIjoiN2Y4Mjg1MzM2Njg3MDVjYjkwMjU2MWJmN2JjNTcwYzU0MWY2NTZhZCIsIm5iZiI6MTc3MDU0MDIwNSwiZXhwIjoxNzcxMTQ1MDA1LCJpYXQiOjE3NzA1NDAyMDV9.bdgrb-mAZmONWNbd9n5k2ytY0hHOL27Hmq_KeKQjjds",
+    "referer": "https://tamdentist.tdental.vn/",
+    "accept-language": "vi",
+    "sec-ch-ua": "\"HeadlessChrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+    "sec-ch-ua-mobile": "?0",
+    "cids": "dde8b85e-e35a-41fa-4a6b-08de107d59ec,c6b4b453-d260-46d4-4fd9-08db24f7ae8e,b178d5ee-d9ac-477e-088e-08db9a4c4cf4,765f6593-2b19-4d06-cc8c-08dc4d479451,cad65000-6ff3-47c7-cc8d-08dc4d479451,6861c928-0e13-4664-c781-08dcdfa45074,f0f6361e-b99d-4ac7-4108-08dd8159c64a",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "accept": "application/json, text/plain, */*",
+    "content-type": "application/json",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJlYzBhOGNkMi00NGI5LTQ1MDEtOTg3Zi05OTJlYjJlOTQ3NTYiLCJ1bmlxdWVfbmFtZSI6ImRhdGFjb25uZWN0IiwiY29tcGFueV9pZCI6ImRkZThiODVlLWUzNWEtNDFmYS00YTZiLTA4ZGUxMDdkNTllYyIsInVzZXJfcm9vdCI6IkZhbHNlIiwicGFydG5lcl9pZCI6IjE3ZGVkMjdhLWYwNjYtNDc1Yi05YWI5LWIzZTkwMGFlNmZjMSIsImlzX2hlYWRfb2ZmaWNlIjoiRmFsc2UiLCJzZXNzaW9uX2lkIjoiN2Y4Mjg1MzM2Njg3MDVjYjkwMjU2MWJmN2JjNTcwYzU0MWY2NTZhZCIsIm5iZiI6MTc3MDU0MDIwNSwiZXhwIjoxNzcxMTQ1MDA1LCJpYXQiOjE3NzA1NDAyMDV9.bdgrb-mAZmONWNbd9n5k2ytY0hHOL27Hmq_KeKQjjds"
+  },
+  "response_headers": {
+    "strict-transport-security": "max-age=31536000; includeSubDomains",
+    "access-control-allow-origin": "*",
+    "access-control-expose-headers": "Content-Disposition",
+    "content-length": "1001",
+    "date": "Sun, 08 Feb 2026 08:43:37 GMT",
+    "content-type": "application/json; charset=utf-8"
+  },
+  "request_body": {
+    "offset": 0,
+    "limit": 9999,
+    "isActive": true
+  },
+  "response_body": [
+    {
+      "id": "4c91d2d6-e689-4640-b859-b2f4009c4d2f",
+      "name": "MKT",
+      "type": "normal",
+      "isCollaborators": false,
+      "isActive": true
+    },
+    {
+      "id": "17fdc413-4519-4b4b-8250-b23f009c2610",
+      "name": "ĐNCB",
+      "type": "normal",
+      "isCollaborators": false,
+      "isActive": true
+    },
+    {
+      "id": "f2971d00-b4bd-4f33-83a6-b14d0098e37c",
+      "name": "Khách cũ",
+      "type": "normal",
+      "isCollaborators": false,
+      "isActive": true
+    },
+    {
+      "id": "50a286ad-d4ba-45fa-84f0-afe3007cfc1b",
+      "name": "Hotline",
+      "type": "normal",
+      "isCollaborators": false,
+      "isActive": true
+    },
+    {
+      "id": "c7b3d31a-6325-4cf7-abae-afe3007cf6f8",
+      "name": "Khách hàng giới thiệu",
+      "type": "normal",
+      "isCollaborators": false,
+      "isActive": true
+    },
+    {
+      "id": "82fc6269-37a3-4702-8889-afe3007cf044",
+      "name": "Khách vãng lai",
+      "type": "normal",
+      "isCollaborators": false,
+      "isActive": true
+    },
+    {
+      "id": "4cacef5f-60d4-4ddb-a244-afe3007cea14",
+      "name": "Nội bộ giới thiệu",
+      "type": "normal",
+      "isCollaborators": false,
+      "isActive": true
+    },
+    {
+      "id": "f3efa245-838e-4b5a-b8f6-afe3007ce234",
+      "name": "Sale Online",
+      "type": "normal",
+      "isCollaborators": false,
+      "isActive": true
+    }
+  ],
+  "timestamp": "2026-02-08T02:43:37.434367"
+}

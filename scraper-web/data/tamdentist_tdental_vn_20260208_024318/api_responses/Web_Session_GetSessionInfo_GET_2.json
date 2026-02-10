@@ -1,0 +1,755 @@
+{
+  "url": "https://tamdentist.tdental.vn/Web/Session/GetSessionInfo",
+  "method": "GET",
+  "status": 200,
+  "content_type": "application/json; charset=utf-8",
+  "path": "/Web/Session/GetSessionInfo",
+  "query": "",
+  "request_headers": {
+    "sec-ch-ua-platform": "\"Windows\"",
+    "authorization": "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJlYzBhOGNkMi00NGI5LTQ1MDEtOTg3Zi05OTJlYjJlOTQ3NTYiLCJ1bmlxdWVfbmFtZSI6ImRhdGFjb25uZWN0IiwiY29tcGFueV9pZCI6ImRkZThiODVlLWUzNWEtNDFmYS00YTZiLTA4ZGUxMDdkNTllYyIsInVzZXJfcm9vdCI6IkZhbHNlIiwicGFydG5lcl9pZCI6IjE3ZGVkMjdhLWYwNjYtNDc1Yi05YWI5LWIzZTkwMGFlNmZjMSIsImlzX2hlYWRfb2ZmaWNlIjoiRmFsc2UiLCJzZXNzaW9uX2lkIjoiN2Y4Mjg1MzM2Njg3MDVjYjkwMjU2MWJmN2JjNTcwYzU0MWY2NTZhZCIsIm5iZiI6MTc3MDU0MDIwNSwiZXhwIjoxNzcxMTQ1MDA1LCJpYXQiOjE3NzA1NDAyMDV9.bdgrb-mAZmONWNbd9n5k2ytY0hHOL27Hmq_KeKQjjds",
+    "referer": "https://tamdentist.tdental.vn/",
+    "sec-ch-ua": "\"HeadlessChrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+    "sec-ch-ua-mobile": "?0",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "accept": "application/json, text/plain, */*",
+    "content-type": "application/json",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJlYzBhOGNkMi00NGI5LTQ1MDEtOTg3Zi05OTJlYjJlOTQ3NTYiLCJ1bmlxdWVfbmFtZSI6ImRhdGFjb25uZWN0IiwiY29tcGFueV9pZCI6ImRkZThiODVlLWUzNWEtNDFmYS00YTZiLTA4ZGUxMDdkNTllYyIsInVzZXJfcm9vdCI6IkZhbHNlIiwicGFydG5lcl9pZCI6IjE3ZGVkMjdhLWYwNjYtNDc1Yi05YWI5LWIzZTkwMGFlNmZjMSIsImlzX2hlYWRfb2ZmaWNlIjoiRmFsc2UiLCJzZXNzaW9uX2lkIjoiN2Y4Mjg1MzM2Njg3MDVjYjkwMjU2MWJmN2JjNTcwYzU0MWY2NTZhZCIsIm5iZiI6MTc3MDU0MDIwNSwiZXhwIjoxNzcxMTQ1MDA1LCJpYXQiOjE3NzA1NDAyMDV9.bdgrb-mAZmONWNbd9n5k2ytY0hHOL27Hmq_KeKQjjds"
+  },
+  "response_headers": {
+    "strict-transport-security": "max-age=31536000; includeSubDomains",
+    "content-length": "15670",
+    "date": "Sun, 08 Feb 2026 08:43:25 GMT",
+    "content-type": "application/json; charset=utf-8"
+  },
+  "request_body": null,
+  "response_body": {
+    "id": "ec0a8cd2-44b9-4501-987f-992eb2e94756",
+    "name": "dataconnect",
+    "userName": "dataconnect",
+    "userPartnerId": "17ded27a-f066-475b-9ab9-b3e900ae6fc1",
+    "partnerId": "17ded27a-f066-475b-9ab9-b3e900ae6fc1",
+    "userCompanies": {
+      "currentCompany": {
+        "id": "dde8b85e-e35a-41fa-4a6b-08de107d59ec",
+        "name": "Nha khoa Tấm Dentist",
+        "isHead": false
+      },
+      "allowedCompanies": [
+        {
+          "id": "c6b4b453-d260-46d4-4fd9-08db24f7ae8e",
+          "name": "Tấm Dentist Quận 3",
+          "isHead": false
+        },
+        {
+          "id": "b178d5ee-d9ac-477e-088e-08db9a4c4cf4",
+          "name": "Tấm Dentist Thủ Đức",
+          "isHead": false
+        },
+        {
+          "id": "765f6593-2b19-4d06-cc8c-08dc4d479451",
+          "name": "Tấm Dentist Gò Vấp",
+          "isHead": false
+        },
+        {
+          "id": "cad65000-6ff3-47c7-cc8d-08dc4d479451",
+          "name": "Tấm Dentist Đống Đa",
+          "isHead": false
+        },
+        {
+          "id": "6861c928-0e13-4664-c781-08dcdfa45074",
+          "name": "Tấm Dentist Quận 7",
+          "isHead": false
+        },
+        {
+          "id": "f0f6361e-b99d-4ac7-4108-08dd8159c64a",
+          "name": "Tấm Dentist Quận 10",
+          "isHead": false
+        },
+        {
+          "id": "dde8b85e-e35a-41fa-4a6b-08de107d59ec",
+          "name": "Nha khoa Tấm Dentist",
+          "isHead": false
+        }
+      ]
+    },
+    "expirationDate": "2026-09-19T10:43:29",
+    "isAdmin": false,
+    "permissions": [
+      "Basic.Overview.Read",
+      "System.Company.Create",
+      "Basic.ProductRequest.Delete",
+      "Catalog.LaboBridge.Delete",
+      "Basic.Partner.UpdateCompany",
+      "EInvoiceReport.S1-HKD.Read",
+      "Catalog.PartnerCategory.Delete",
+      "EInvoiceReport.OutWarehouse.DeleteDraft",
+      "Basic.Partner.Delete",
+      "EInvoiceReport.InCashBookHKD.Create",
+      "Catalog.LaboBiteJoint.Read",
+      "Basic.Partner.LinkCompany",
+      "Catalog.SurveyTag.Delete",
+      "Basic.EInvoice.DownloadEInvoice",
+      "Card.Card.Read",
+      "System.Company.Update",
+      "SMS.Config.Read",
+      "Card.Type.Read",
+      "Salary.ChamCong.Update",
+      "Report.Stock",
+      "Account.PhieuThuChi.Update",
+      "Basic.Invoice.Create",
+      "Online.Question.Update",
+      "Basic.Automation.View",
+      "Medicine.ToaThuoc.Create",
+      "Basic.Appointment.Delete",
+      "Stock.Picking.Read",
+      "Online.Question.Read",
+      "Salary.HrPayslipRun.Create",
+      "Report.PartnerOldNew",
+      "SMS.Account.Update",
+      "Crm.Task.Update",
+      "Basic.Partner.PhoneNumber.Hide",
+      "CallCenter.CallComposer.Create",
+      "Basic.Invoice.Cancel",
+      "ServiceCard.Type.Update",
+      "Crm.TaskType.Create",
+      "Catalog.SamplePrescription.Delete",
+      "System.Company.Read",
+      "Salary.SalaryPayment.Read",
+      "CallCenter.Agent.Read",
+      "System.Config",
+      "Catalog.Commission.Create",
+      "Report.Sale.Overview.HideRevenue",
+      "Basic.EInvoice.ModifyEInvoice",
+      "HeadOffice.PaymentRequest.Read",
+      "Account.Read",
+      "Card.Type.Create",
+      "SMS.Campaign.Update",
+      "Crm.Task.UpdateNotify",
+      "Catalog.Products.Create",
+      "Report.AccountPartner.ExportFile",
+      "Report.Revenue.ExportFile",
+      "EInvoiceReport.OutCashBookHKD.Print",
+      "Stock.Picking.Delete",
+      "Stock.StockInventoryCriteria.Update",
+      "HO.Catalog.PartnerCrmStage.Update",
+      "Basic.CustomerReceipt.Delete",
+      "Catalog.History.Update",
+      "Basic.EInvoice.ExportEInvoice",
+      "CallCenter.CallCenter.Delete",
+      "System.ApplicationRole.Delete",
+      "Purchase.Order.Delete",
+      "Catalog.LaboBiteJoint.Delete",
+      "Account.PhieuThuChi.Read",
+      "Catalog.History.Delete",
+      "ServiceCard.Type.Create",
+      "Basic.EInvoice.Read",
+      "SMS.Config.Delete",
+      "Survey.Question.Update",
+      "Report.Sale.ByRevenue",
+      "Online.Question.Create",
+      "Basic.AccountPayment.Read",
+      "EInvoiceReport.SalaryReport.Update",
+      "Basic.SaleOrder.Cancel",
+      "Catalog.Employee.Update",
+      "Basic.Automation.Create",
+      "Account.Export",
+      "ServiceCard.Card.Create",
+      "Basic.DotKham.Update",
+      "Purchase.Order.Create",
+      "SMS.Account.Delete",
+      "Basic.SaleOrder.Create",
+      "EInvoiceReport.BusinessActivity.ExportReport",
+      "Basic.Appointment.Update",
+      "Catalog.PartnerTitle.Read",
+      "Basic.AccountPayment.Delete",
+      "Basic.ProductRequest.Create",
+      "EInvoiceReport.S7-HKD.ExportReport",
+      "Catalog.Insurance.Create",
+      "Basic.Partner.Note.Create",
+      "Basic.EInvoice.UpdateEInvoice",
+      "Online.Survey.Read",
+      "Salary.ChamCong.Delete",
+      "Catalog.LaboFinishLine.Update",
+      "Crm.TaskType.Update",
+      "SaleCoupon.SaleCouponProgram.Update",
+      "EInvoiceReport.OutCashBookHKD.Update",
+      "ServiceCard.Type.Delete",
+      "Stock.Inventory.Read",
+      "SMS.Campaign.Read",
+      "Online.Survey.Update",
+      "Report.ResInsuranceReports",
+      "Catalog.SurveyTag.Read",
+      "Basic.SaleOrderPayment.Cancel",
+      "Catalog.SamplePrescription.Create",
+      "HeadOffice.PaymentRequest.Update",
+      "Comission.Agent",
+      "System.Company.Delete",
+      "Report.AppointmentReceiptReports.ExportFile",
+      "Basic.Automation.Update",
+      "Stock.Inventory.Delete",
+      "Catalog.Employee.Read",
+      "Basic.SaleOrder.DiscountOrder",
+      "Basic.ProductRequest.Update",
+      "EInvoiceReport.S4-HKD.Read",
+      "EInvoiceReport.InCashBookHKD.Print",
+      "Salary.SalaryPayment.Update",
+      "CustomerCare.AppointmentReminder.Read",
+      "Card.Card.Delete",
+      "EInvoiceReport.InWarehouse.DeleteDraft",
+      "Basic.Partner.Update",
+      "CustomerCare.BirthdayGreeting.Read",
+      "Labo.LaboOrder.RecieveLabo",
+      "Catalog.LaboBridge.Read",
+      "Salary.ChamCong.Create",
+      "Hr.Job.Read",
+      "Report.CustomerReceiptReports",
+      "Catalog.PartnerTitle.Delete",
+      "Account.PhieuThuChi.Cancel",
+      "Account.LoaiThuChi.Create",
+      "SMS.Account.Read",
+      "ServiceCard.Type.Read",
+      "EInvoiceReport.OutCashBookHKD.Create",
+      "Basic.Partner.DebtAdjustment",
+      "Crm.Task.Create",
+      "Basic.SaleOrder.UpdateDateLine",
+      "System.ApplicationRole.Update",
+      "ServiceCard.Card.Update",
+      "Catalog.Commission.Update",
+      "HeadOffice.PaymentRequest.Delete",
+      "Salary.HrPayslipRun.Export",
+      "Catalog.PartnerSource.Delete",
+      "System.ApplicationUser.Create",
+      "Survey.Assignment.DeleteUserInput",
+      "Report.AccountPartner",
+      "ServiceCard.Card.Delete",
+      "EInvoiceReport.SalaryReport.CancelConfirmed",
+      "EInvoiceReport.S6-HKD.ExportReport",
+      "Survey.Assignment.Update",
+      "Basic.Advisory.Update",
+      "EInvoiceReport.SalaryReport.Read",
+      "EInvoiceReport.OutCashBookHKD.DeleteDraft",
+      "Account.LoaiThuChi.Read",
+      "Report.Revenue",
+      "Basic.Quote.Create",
+      "EInvoiceReport.OutWarehouse.Create",
+      "Basic.Appointment.Read",
+      "Catalog.Supplier.Update",
+      "Report.Sale.ByService",
+      "SMS.Report.AllSMS",
+      "Catalog.PartnerCategory.Update",
+      "Medicine.ToaThuoc.Delete",
+      "Catalog.Agent.Update",
+      "Comission.Employee",
+      "Report.Sale.ExportFile",
+      "Report.CustomerReceiptReports.ExportFile",
+      "Catalog.Employee.Salary.Update",
+      "SMS.Account.Create",
+      "Account.InternalTransfers.Read",
+      "Crm.TaskType.Delete",
+      "Card.Card.Create",
+      "Report.Overview",
+      "Catalog.PriceList.Read",
+      "SMS.Report.AllMessage",
+      "Catalog.SamplePrescription.Update",
+      "Online.Survey.Delete",
+      "Card.Type.Update",
+      "Survey.UserInput.Create",
+      "Catalog.DeviceLog.Read",
+      "Labo.LaboOrder.ExportLabo",
+      "Catalog.PriceList.ExportItems",
+      "Basic.DotKham.Delete",
+      "Catalog.Employee.Create",
+      "EInvoiceReport.SalaryReport.Create",
+      "SMS.Campaign.Create",
+      "Labo.LaboOrder.Delete",
+      "CallCenter.CallCall.Read",
+      "Basic.DotKham.Create",
+      "Purchase.Order.Cancel",
+      "Catalog.Insurance.Delete",
+      "Catalog.PriceList.UpdateHidden",
+      "EInvoiceReport.OutWarehouse.Update",
+      "Basic.Invoice.Read",
+      "EInvoiceReport.OutCashBookHKD.CancelConfirmed",
+      "Survey.UserInput.Read",
+      "Catalog.PriceList.Create",
+      "Hr.Job.Delete",
+      "EInvoiceReport.InWarehouse.Update",
+      "SMS.Message.Update",
+      "Report.AppointmentReceiptReports",
+      "CustomerCare.AfterTreatment.Read",
+      "Basic.CustomerReceipt.Create",
+      "Labo.LaboOrder.Create",
+      "Account.LoaiThuChi.Update",
+      "Crm.Team.Delete",
+      "EInvoiceReport.InCashBookHKD.Update",
+      "Purchase.Order.Unlock",
+      "SMS.Template.Delete",
+      "Basic.SaleOrderPayment.Full",
+      "EInvoiceReport.SalaryReport.Config",
+      "EInvoiceReport.S5-HKD.ExportReport",
+      "Basic.PartnerAdvance.Read",
+      "Basic.Appointment.MenuView",
+      "Survey.Question.Read",
+      "Stock.Inventory.Update",
+      "Basic.SaleOrderLine.ActionUnlock",
+      "Hr.Job.Update",
+      "CrmTask.Note.Create",
+      "EInvoiceReport.S2-HKD.Read",
+      "ServiceCard.Card.Read",
+      "Stock.Picking.Update",
+      "Basic.Partner.UnLinkCompany",
+      "SMS.Message.Read",
+      "Salary.SalaryPayment.Create",
+      "Basic.AccountPayment.Create",
+      "Basic.Invoice.Delete",
+      "EInvoiceReport.S3-HKD.ExportReport",
+      "Catalog.Commission.Delete",
+      "Crm.Task.UpdateStage",
+      "EInvoiceReport.S1-HKD.ExportReport",
+      "Catalog.Agent.Read",
+      "Catalog.LaboFinishLine.Create",
+      "EInvoiceReport.S4-HKD.ExportReport",
+      "Card.Type.Delete",
+      "Report.ResInsuranceReports.ExportFile",
+      "Stock.StockInventoryCriteria.Create",
+      "Crm.Task.ModifyConfig",
+      "Basic.Appointment.Create",
+      "Catalog.DeviceLog.Revoked",
+      "Catalog.PriceList.Update",
+      "Catalog.DeviceLog.Note",
+      "Basic.Advisory.Delete",
+      "Hr.Job.Create",
+      "Salary.SalaryPayment.Delete",
+      "Basic.SaleOrder.Read",
+      "Basic.ProductRequest.Read",
+      "EInvoiceReport.InCashBookHKD.DeleteDraft",
+      "Stock.StockInventoryCriteria.Read",
+      "Survey.Assignment.Create",
+      "SMS.Template.Create",
+      "Crm.Team.Update",
+      "Crm.Task.UpdateAssignUser",
+      "Basic.Invoice.PrintInvoice",
+      "Catalog.PartnerTitle.Update",
+      "Report.Sale.Overview",
+      "Catalog.Supplier.Read",
+      "SMS.Template.Read",
+      "EInvoiceReport.S2-HKD.ExportReport",
+      "Report.CallTrack",
+      "CallCenter.Agent.Delete",
+      "Labo.LaboOrder.ExportExcel",
+      "Catalog.Commission.Read",
+      "Account.PhieuThuChi.Delete",
+      "Basic.SaleOrderPayment.Delete",
+      "Catalog.LaboFinishLine.Read",
+      "Catalog.Agent.Delete",
+      "Account.PhieuThuChi.Create",
+      "Basic.CustomerReceipt.Read",
+      "Basic.Quote.Update",
+      "HeadOffice.PaymentRequest.Create",
+      "Salary.ChamCong.Read",
+      "Basic.SaleOrder.DiscountLine",
+      "Account.PhieuThuChi.Print",
+      "Doanh thu",
+      "CustomerCare.ThankYouLetter.Read",
+      "EInvoiceReport.InCashBookHKD.CancelConfirmed",
+      "Basic.PartnerAdvance.Create",
+      "Survey.Assignment.Delete",
+      "Catalog.Employee.Commission.Update",
+      "Medicine.MedicineOrder.Read",
+      "Crm.Team.Read",
+      "SMS.Config.Update",
+      "Labo.LaboOrder.Update",
+      "Catalog.Insurance.Read",
+      "Basic.Partner.Read",
+      "Basic.Quote.Read",
+      "Salary.AccountCommonPartnerReport",
+      "Catalog.ProductCategory.Update",
+      "Survey.Question.Create",
+      "Basic.PartnerAdvance.Delete",
+      "EInvoiceReport.InWarehouse.Create",
+      "Catalog.Employee.Delete",
+      "Catalog.PartnerTitle.Create",
+      "System.ApplicationRole.Read",
+      "Basic.EInvoice.DeleteEInvoice",
+      "Report.Sale.ByTime",
+      "Catalog.Agent.Create",
+      "Crm.Team.Create",
+      "Account.LoaiThuChi.Delete",
+      "Basic.Invoice.Update",
+      "EInvoiceReport.S5-HKD.Read",
+      "Crm.TaskType.Read",
+      "EInvoiceReport.InCashBookHKD.Read",
+      "Catalog.PartnerCategory.Read",
+      "Account.AccountTax.Update",
+      "EInvoiceReport.OutWarehouse.Read",
+      "HO.Catalog.PartnerCrmStage.Delete",
+      "Basic.Partner.Export",
+      "CallCenter.CallCenter.Update",
+      "SaleCoupon.SaleCouponProgram.Create",
+      "Report.DayOverview",
+      "HeadOffice.PaymentRequest.PostedCancel",
+      "Catalog.Insurance.Update",
+      "CallCenter.CallCenter.Read",
+      "System.ApplicationUser.Update",
+      "Basic.DotKham.Read",
+      "Account.AccountTax.Create",
+      "Catalog.ProductCategory.Create",
+      "SMS.Message.Create",
+      "Crm.Task.Delete",
+      "Catalog.LaboBridge.Create",
+      "Basic.Invoice.PrintCashReceipt",
+      "Basic.Partner.Note.Update",
+      "SMS.Template.Update",
+      "Catalog.Products.Update",
+      "CallCenter.Agent.Create",
+      "HO.Catalog.PartnerCrmStage.Read",
+      "Medicine.MedicineOrder.Cancel",
+      "Catalog.ToothDiagnosis.Delete",
+      "CallCenter.Agent.Update",
+      "Catalog.LaboBiteJoint.Create",
+      "Catalog.SamplePrescription.Read",
+      "Basic.Advisory.Read",
+      "Catalog.LaboFinishLine.Delete",
+      "Basic.PartnerAdvance.Cancel",
+      "Catalog.LaboBiteJoint.Update",
+      "Catalog.SurveyTag.Create",
+      "Basic.Automation.Delete",
+      "Crm.Task.Read",
+      "EInvoiceReport.SalaryReport.DeleteDraft",
+      "SaleCoupon.SaleCouponProgram.Delete",
+      "Catalog.History.Create",
+      "Online.Question.Delete",
+      "Stock.Inventory.Create",
+      "CrmTask.Note.Update",
+      "Catalog.ToothDiagnosis.Read",
+      "SMS.Config.Create",
+      "Catalog.Supplier.Delete",
+      "Catalog.Supplier.Create",
+      "Basic.PartnerAdvance.Update",
+      "EInvoiceReport.OutCashBookHKD.Read",
+      "Catalog.PriceList.Delete",
+      "Catalog.Products.StandardPrice",
+      "Account.InternalTransfers.Cancel",
+      "Catalog.ToothDiagnosis.Update",
+      "System.ApplicationUser.Read",
+      "Report.Sale.BySaleOrderLine",
+      "Basic.Partner.Note.Delete",
+      "Catalog.ProductCategory.Delete",
+      "Medicine.ToaThuoc.Update",
+      "EInvoiceReport.InWarehouse.Read",
+      "Catalog.PartnerSource.Create",
+      "Account.InternalTransfers.Create",
+      "System.ApplicationRole.Create",
+      "Basic.SaleOrder.UpdatePriceUnitLine",
+      "Labo.LaboOrder.Cancel",
+      "Survey.Question.Delete",
+      "SaleCoupon.SaleCouponProgram.Read",
+      "Survey.Assignment.Read",
+      "Purchase.Order.Update",
+      "Stock.Picking.Create",
+      "Catalog.ToothDiagnosis.Create",
+      "Basic.SaleOrder.Delete",
+      "Online.Survey.Create",
+      "Basic.ProductRequest.Done",
+      "Labo.LaboOrder.Read",
+      "Catalog.PartnerCategory.Create",
+      "Basic.CustomerReceipt.Update",
+      "Salary.HrPayslipRun.Print",
+      "Basic.Advisory.Create",
+      "Crm.Task.UpdateFollower",
+      "Catalog.Products.Delete",
+      "Report.CallTrack.Export",
+      "System.ApplicationUser.Delete",
+      "Account.AccountTax.Delete",
+      "Basic.Partner.Create",
+      "EInvoiceReport.S6-HKD.Read",
+      "Card.Card.Update",
+      "Catalog.ProductCategory.Read",
+      "Basic.SaleOrder.Print",
+      "CallCenter.CallCenter.Create",
+      "Catalog.Products.Read",
+      "Catalog.History.Read",
+      "Report.PartnerOldNew.ExportFile",
+      "Medicine.MedicineOrder.Payment",
+      "CrmTask.Note.Delete",
+      "Salary.HrPayslipRun.Read",
+      "EInvoiceReport.S7-HKD.Read",
+      "Catalog.LaboBridge.Update",
+      "Catalog.PartnerSource.Update",
+      "Salary.HrPayslipRun.Update",
+      "Basic.Quote.Delete",
+      "Stock.StockInventoryCriteria.Delete",
+      "HeadOffice.PaymentRequest.Cancel",
+      "Basic.SaleOrder.Update",
+      "EInvoiceReport.S3-HKD.Read",
+      "Catalog.SurveyTag.Update",
+      "Basic.EInvoice.UpdateTemplateInvoice",
+      "Purchase.Order.Read",
+      "Report.DayOverview.ExportFile",
+      "Account.AccountTax.Read",
+      "Medicine.ToaThuoc.Read",
+      "HO.Catalog.PartnerCrmStage.Create",
+      "Report.WorkList",
+      "Catalog.PartnerSource.Read",
+      "Salary.HrPayslipRun.Cancel"
+    ],
+    "groups": [
+      "base.group_multi_company",
+      "base.group_user",
+      "base.group_multi_company_2",
+      "base.group_automatic_sequence_partner",
+      "base.group_cong_no"
+    ],
+    "rules": [],
+    "modules": [],
+    "settings": null,
+    "expiredIn": 320820,
+    "tenantId": "tamdentist",
+    "isUppercasePartnerName": false,
+    "features": [
+      {
+        "name": "AccountMoveSequenceMixin",
+        "value": true
+      },
+      {
+        "name": "AccountPaymentSequenceMixin",
+        "value": true
+      },
+      {
+        "name": "advanced-treatment-workflow",
+        "value": false
+      },
+      {
+        "name": "AppointmentCareCrmTask",
+        "value": true
+      },
+      {
+        "name": "ApptReminderCareZns",
+        "value": true
+      },
+      {
+        "name": "ChangeLog",
+        "value": true
+      },
+      {
+        "name": "CheckAccessRule",
+        "value": false
+      },
+      {
+        "name": "config-auto-lead-to-baseautomation",
+        "value": true
+      },
+      {
+        "name": "config-general-conv-assign-auto",
+        "value": true
+      },
+      {
+        "name": "CreateAdvancePaymentV2",
+        "value": false
+      },
+      {
+        "name": "CrmTaskDotKham",
+        "value": true
+      },
+      {
+        "name": "CrmTaskV2",
+        "value": false
+      },
+      {
+        "name": "DotKhamActivity",
+        "value": true
+      },
+      {
+        "name": "DotKhamPercentage",
+        "value": false
+      },
+      {
+        "name": "Enable2FA",
+        "value": true
+      },
+      {
+        "name": "flg-advanced-treatment-workflow",
+        "value": false
+      },
+      {
+        "name": "flg-base-automation-trigger",
+        "value": false
+      },
+      {
+        "name": "ImproveLeadAssign",
+        "value": true
+      },
+      {
+        "name": "IrActionCrmTaskCategory",
+        "value": false
+      },
+      {
+        "name": "LeadImportCustomer",
+        "value": true
+      },
+      {
+        "name": "LogPartnerLinkCompany",
+        "value": false
+      },
+      {
+        "name": "MailActivity",
+        "value": true
+      },
+      {
+        "name": "mail_thread_tracking",
+        "value": false
+      },
+      {
+        "name": "MultiCurrency",
+        "value": true
+      },
+      {
+        "name": "new-header",
+        "value": true
+      },
+      {
+        "name": "NewCache",
+        "value": true
+      },
+      {
+        "name": "NewSaleOrder",
+        "value": true
+      },
+      {
+        "name": "NewSmsComposer",
+        "value": false
+      },
+      {
+        "name": "PartnerCustomerSequenceMixin",
+        "value": true
+      },
+      {
+        "name": "PartnerMarketingInfo",
+        "value": false
+      },
+      {
+        "name": "PartnerProfileSummary",
+        "value": false
+      },
+      {
+        "name": "PermissionTreeAll",
+        "value": true
+      },
+      {
+        "name": "PermissionTreeHO",
+        "value": false
+      },
+      {
+        "name": "PrintTemplateConfigV2",
+        "value": false
+      },
+      {
+        "name": "ReportManager",
+        "value": false
+      },
+      {
+        "name": "RoleModule",
+        "value": false
+      },
+      {
+        "name": "RoleRule",
+        "value": true
+      },
+      {
+        "name": "saleorder-invoice-saleman",
+        "value": true
+      },
+      {
+        "name": "service-step-v2",
+        "value": true
+      },
+      {
+        "name": "setup-tenant-generate-config-data",
+        "value": true
+      },
+      {
+        "name": "SimulateConditionV2",
+        "value": true
+      },
+      {
+        "name": "SoftDeleteAccountTax",
+        "value": true
+      },
+      {
+        "name": "sync_tax_lines",
+        "value": true
+      },
+      {
+        "name": "tax-electronic-invoice",
+        "value": true
+      },
+      {
+        "name": "two-factor-authentication",
+        "value": true
+      },
+      {
+        "name": "UpdateApptTeam",
+        "value": true
+      },
+      {
+        "name": "UpdateCustomerDebt",
+        "value": false
+      },
+      {
+        "name": "UserDeviceLog",
+        "value": true
+      },
+      {
+        "name": "ViewCrmTaskRule",
+        "value": true
+      },
+      {
+        "name": "work",
+        "value": true
+      },
+      {
+        "name": "zns-auto-configuration-v2",
+        "value": false
+      },
+      {
+        "name": "CrmTask_NewFlow",
+        "value": true
+      },
+      {
+        "name": "marketing-customer",
+        "value": false
+      },
+      {
+        "name": "flg-hide-show-and-export-pricing",
+        "value": false
+      },
+      {
+        "name": "logout-all-devices-employee",
+        "value": true
+      },
+      {
+        "name": "promotion-program-detail-v2",
+        "value": true
+      },
+      {
+        "name": "instagram-connect-feature",
+        "value": true
+      },
+      {
+        "name": "flg-sync-old-data-dainam",
+        "value": false
+      },
+      {
+        "name": "flg-base-automation-v2",
+        "value": false
+      },
+      {
+        "name": "PartnerSequenceMixin",
+        "value": false
+      }
+    ],
+    "totpEnabled": false
+  },
+  "timestamp": "2026-02-08T02:43:25.567966"
+}

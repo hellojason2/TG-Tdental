@@ -1,0 +1,109 @@
+{
+  "url": "https://tamdentist.tdental.vn/api/Partnercategories/Autocomplete",
+  "method": "POST",
+  "status": 200,
+  "content_type": "application/json; charset=utf-8",
+  "path": "/api/Partnercategories/Autocomplete",
+  "query": "",
+  "request_headers": {
+    "sec-ch-ua-platform": "\"Windows\"",
+    "data-type": "json",
+    "authorization": "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJlYzBhOGNkMi00NGI5LTQ1MDEtOTg3Zi05OTJlYjJlOTQ3NTYiLCJ1bmlxdWVfbmFtZSI6ImRhdGFjb25uZWN0IiwiY29tcGFueV9pZCI6ImRkZThiODVlLWUzNWEtNDFmYS00YTZiLTA4ZGUxMDdkNTllYyIsInVzZXJfcm9vdCI6IkZhbHNlIiwicGFydG5lcl9pZCI6IjE3ZGVkMjdhLWYwNjYtNDc1Yi05YWI5LWIzZTkwMGFlNmZjMSIsImlzX2hlYWRfb2ZmaWNlIjoiRmFsc2UiLCJzZXNzaW9uX2lkIjoiN2Y4Mjg1MzM2Njg3MDVjYjkwMjU2MWJmN2JjNTcwYzU0MWY2NTZhZCIsIm5iZiI6MTc3MDU0MDIwNSwiZXhwIjoxNzcxMTQ1MDA1LCJpYXQiOjE3NzA1NDAyMDV9.bdgrb-mAZmONWNbd9n5k2ytY0hHOL27Hmq_KeKQjjds",
+    "referer": "https://tamdentist.tdental.vn/",
+    "accept-language": "vi",
+    "sec-ch-ua": "\"HeadlessChrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+    "sec-ch-ua-mobile": "?0",
+    "cids": "dde8b85e-e35a-41fa-4a6b-08de107d59ec,c6b4b453-d260-46d4-4fd9-08db24f7ae8e,b178d5ee-d9ac-477e-088e-08db9a4c4cf4,765f6593-2b19-4d06-cc8c-08dc4d479451,cad65000-6ff3-47c7-cc8d-08dc4d479451,6861c928-0e13-4664-c781-08dcdfa45074,f0f6361e-b99d-4ac7-4108-08dd8159c64a",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "accept": "application/json, text/plain, */*",
+    "content-type": "application/json",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJlYzBhOGNkMi00NGI5LTQ1MDEtOTg3Zi05OTJlYjJlOTQ3NTYiLCJ1bmlxdWVfbmFtZSI6ImRhdGFjb25uZWN0IiwiY29tcGFueV9pZCI6ImRkZThiODVlLWUzNWEtNDFmYS00YTZiLTA4ZGUxMDdkNTllYyIsInVzZXJfcm9vdCI6IkZhbHNlIiwicGFydG5lcl9pZCI6IjE3ZGVkMjdhLWYwNjYtNDc1Yi05YWI5LWIzZTkwMGFlNmZjMSIsImlzX2hlYWRfb2ZmaWNlIjoiRmFsc2UiLCJzZXNzaW9uX2lkIjoiN2Y4Mjg1MzM2Njg3MDVjYjkwMjU2MWJmN2JjNTcwYzU0MWY2NTZhZCIsIm5iZiI6MTc3MDU0MDIwNSwiZXhwIjoxNzcxMTQ1MDA1LCJpYXQiOjE3NzA1NDAyMDV9.bdgrb-mAZmONWNbd9n5k2ytY0hHOL27Hmq_KeKQjjds"
+  },
+  "response_headers": {
+    "strict-transport-security": "max-age=31536000; includeSubDomains",
+    "access-control-allow-origin": "*",
+    "access-control-expose-headers": "Content-Disposition",
+    "content-length": "1205",
+    "date": "Sun, 08 Feb 2026 08:43:37 GMT",
+    "content-type": "application/json; charset=utf-8"
+  },
+  "request_body": {
+    "limit": 9999,
+    "offset": 0
+  },
+  "response_body": [
+    {
+      "id": "5b3d1ac9-4969-456d-83e6-afe3007cc049",
+      "name": "Bác sĩ (17)",
+      "completeName": null,
+      "color": "7"
+    },
+    {
+      "id": "3dc87667-7c07-4837-aa78-afe3007ccc2c",
+      "name": "Bác sĩ (12)",
+      "completeName": null,
+      "color": "6"
+    },
+    {
+      "id": "3e957aa1-99ae-497f-bd14-b05e002e14f6",
+      "name": "Bác sĩ (08)",
+      "completeName": null,
+      "color": "3"
+    },
+    {
+      "id": "87048e7e-2ef1-4cf9-a751-b05f0033bc98",
+      "name": "Bác sĩ (17) Full",
+      "completeName": null,
+      "color": "5"
+    },
+    {
+      "id": "11ded2f2-94bd-4a0a-8633-b13b00a58334",
+      "name": "Bác sĩ 06",
+      "completeName": null,
+      "color": "9"
+    },
+    {
+      "id": "f7ce825f-be85-4344-9705-b13b00a58fb8",
+      "name": "Bác sĩ 09",
+      "completeName": null,
+      "color": "3"
+    },
+    {
+      "id": "0c0059c5-eb36-4e3d-9488-b15f00b24934",
+      "name": "Bác sĩ 03",
+      "completeName": null,
+      "color": "4"
+    },
+    {
+      "id": "642573b8-b48c-413d-8e9b-b18500785ab3",
+      "name": "Bác sĩ 11",
+      "completeName": null,
+      "color": "9"
+    },
+    {
+      "id": "1df9c20f-3e46-4212-a052-b20600926e55",
+      "name": "Bác sĩ 26",
+      "completeName": null,
+      "color": "6"
+    },
+    {
+      "id": "43fa7407-5d11-40f7-b851-b20a006dc74d",
+      "name": "Bác sĩ 23",
+      "completeName": null,
+      "color": "10"
+    },
+    {
+      "id": "4e899d38-c914-4b4a-9e9a-b21700970d0d",
+      "name": "Bác Sĩ 21",
+      "completeName": null,
+      "color": "11"
+    },
+    {
+      "id": "d1262c76-0102-485c-b2eb-b226008fbb50",
+      "name": "Bác Sĩ 22",
+      "completeName": null,
+      "color": "10"
+    }
+  ],
+  "timestamp": "2026-02-08T02:43:37.435395"
+}

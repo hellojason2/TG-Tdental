@@ -1,0 +1,18 @@
+{
+  "script_urls": [
+    "https://gc-statics.tdental.vn/resources/4.2.3.prod-2/polyfills.79fdbbc2e877ec28.js",
+    "https://gc-statics.tdental.vn/resources/4.2.3.prod-2/main.2a890ccab23ce207.js"
+  ],
+  "api_base_urls": [],
+  "route_definitions": [],
+  "store_modules": [],
+  "component_names": [],
+  "framework_detection": {
+    "vue_detected": false,
+    "react_detected": false,
+    "angular_detected": true,
+    "framework": "Angular",
+    "api_base": null,
+    "store_type": null
+  }
+}
