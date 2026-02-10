@@ -5,6 +5,7 @@ Run: python3 viewer.py
 Open: http://localhost:8899
 """
 import json
+import os
 import decimal
 import uuid
 from datetime import datetime, date
@@ -15,7 +16,7 @@ import psycopg2
 import psycopg2.extras
 import uvicorn
 
-DB_URL = "postgresql://postgres:PuQAsTSyIMQOGjOYzjpqnkWbDHeHJjYr@shortline.proxy.rlwy.net:16355/railway"
+DB_URL = os.environ.get("DATABASE_URL", "postgresql://postgres:PuQAsTSyIMQOGjOYzjpqnkWbDHeHJjYr@shortline.proxy.rlwy.net:16355/railway")
 
 app = FastAPI(title="TDental Viewer")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -981,4 +982,5 @@ async def get_category_items(table: str = Path(...)):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8899)
+    port = int(os.environ.get("PORT", 8899))
+    uvicorn.run(app, host="0.0.0.0", port=port)
