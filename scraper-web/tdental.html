@@ -4624,28 +4624,45 @@
                     </tbody>
                 </table>
             </div>
-            <!-- Permission Editor Panel (shown when clicking a user) -->
-            <div id="permissionEditor"
-                style="display:none;margin-top:20px;background:#fff;border-radius:10px;border:1px solid var(--border);padding:24px">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-                    <h3 style="margin:0;font-size:15px;color:var(--text)">Phân quyền cho: <span id="permUserName"
-                            style="color:var(--primary)"></span></h3>
-                    <div style="display:flex;gap:8px">
-                        <button class="btn-primary" onclick="savePermissions()"
-                            style="font-size:12px;padding:6px 16px">Lưu quyền</button>
-                        <button class="btn-outline" onclick="closePermEditor()"
-                            style="font-size:12px;padding:6px 16px">Đóng</button>
+            <!-- Role Permission Matrix -->
+            <div id="permissionMatrix"
+                style="margin-top:24px;background:#fff;border-radius:10px;border:1px solid var(--border);padding:24px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+                    <div>
+                        <h3 style="margin:0;font-size:16px;font-weight:700;color:var(--text)">🔐 Phân quyền theo vai trò
+                        </h3>
+                        <p style="margin:4px 0 0;font-size:12px;color:var(--text-muted)">Thiết lập quyền truy cập cho
+                            từng vai trò. Thay đổi sẽ áp dụng cho tất cả người dùng thuộc vai trò đó.</p>
                     </div>
+                    <button class="btn-primary" onclick="saveRolePermissions()" style="font-size:13px;padding:8px 20px">
+                        💾 Lưu phân quyền
+                    </button>
                 </div>
-                <div style="display:flex;gap:8px;margin-bottom:16px">
-                    <button class="btn-outline" onclick="checkAllPerms(true)" style="font-size:11px;padding:4px 12px">✅
-                        Chọn tất cả</button>
-                    <button class="btn-outline" onclick="checkAllPerms(false)" style="font-size:11px;padding:4px 12px">❌
-                        Bỏ chọn tất cả</button>
-                </div>
-                <div id="permCheckboxGrid"
-                    style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">
-                    <!-- Rendered by JS -->
+                <div style="overflow-x:auto">
+                    <table style="width:100%;border-collapse:collapse;font-size:13px" id="permMatrixTable">
+                        <thead>
+                            <tr style="background:#f8fafc">
+                                <th
+                                    style="text-align:left;padding:12px 16px;font-weight:600;color:var(--text-secondary);border-bottom:2px solid var(--border);min-width:200px">
+                                    Trang / Chức năng</th>
+                                <th
+                                    style="text-align:center;padding:12px 16px;font-weight:600;border-bottom:2px solid var(--border);min-width:120px">
+                                    <span
+                                        style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;background:#fee2e2;color:#dc2626">🔑
+                                        Admin</span>
+                                </th>
+                                <th
+                                    style="text-align:center;padding:12px 16px;font-weight:600;border-bottom:2px solid var(--border);min-width:120px">
+                                    <span
+                                        style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;background:#dbeafe;color:#2563eb">👁️
+                                        Viewer</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="permMatrixBody">
+                            <!-- Rendered by JS -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -5473,6 +5490,10 @@
         }
 
         function navigate(page) {
+            // Close any open overlays that could block interactions
+            closeDetail();
+            closeModal();
+
             // Permission enforcement — skip check for 'users' page (admin-only handled separately)
             if (page !== 'users' && !hasPermission(page)) {
                 alert('⛔ Bạn không có quyền truy cập trang này');
@@ -6719,6 +6740,8 @@
                                 <div class="rec-card" onclick='showDetail(${JSON.stringify(c).replace(/'/g, "&#39;")})'>
                                     <div class="rec-card-actions">
                                         <button onclick="event.stopPropagation(); openModal('edit-appointment', {appointment: {partner_display_name:'${esc(name)}', partner_id:${c.id || 0}}})" title="Sửa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                                        <button onclick="event.stopPropagation(); alert('Gọi: ' + '${esc(name)}')" title="Gọi điện"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></button>
+                                        <button onclick="event.stopPropagation(); showDetail(${JSON.stringify(c).replace(/'/g, '&#39;')})" title="Xem hồ sơ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></button>
                                     </div>
                                     <div class="badge badge-${statusColor}" style="margin-bottom:8px;display:inline-flex;align-items:center;gap:4px;cursor:pointer" onclick="event.stopPropagation(); showStatusPopover(this, '${c.id || 0}', '${statusClass}')">${statusText}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10" style="opacity:0.7"><path d="M6 9l6 6 6-6"/></svg></div>
                                     <div class="rec-card-name" style="color:var(--primary);font-weight:600;margin-bottom:4px">
@@ -6758,6 +6781,8 @@
                             <div class="rec-card" onclick="showDetail({name:'${c.name}',ref:'KH'})">
                                 <div class="rec-card-actions">
                                     <button onclick="event.stopPropagation(); openModal('reception')" title="Sửa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                                    <button onclick="event.stopPropagation(); alert('Gọi: ${c.name}')" title="Gọi điện"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></button>
+                                    <button onclick="event.stopPropagation(); showDetail({name:'${c.name}',ref:'KH'})" title="Xem hồ sơ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></button>
                                 </div>
                                 <div class="badge badge-${statusColor}" style="margin-bottom:8px;display:inline-flex;align-items:center;gap:4px;cursor:pointer" onclick="event.stopPropagation(); showStatusPopover(this, '0', '${c.status}')">${statusText}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10" style="opacity:0.7"><path d="M6 9l6 6 6-6"/></svg></div>
                                 <div class="rec-card-name" style="color:var(--primary);font-weight:600;margin-bottom:4px">
@@ -7301,7 +7326,7 @@
             const tbody = document.getElementById('usersTableBody');
             if (!tbody) return;
             tbody.innerHTML = users.map((u, i) => `
-                <tr style="cursor:pointer" onclick="openPermEditor('${u.id}')">
+                <tr>
                     <td>${i + 1}</td>
                     <td><strong>${esc(u.name)}</strong></td>
                     <td style="color:var(--text-muted)">${esc(u.email)}</td>
@@ -7329,65 +7354,86 @@
                     </td>
                 </tr>
             `).join('');
+            // Also render the permission matrix
+            loadPermMatrix();
         }
 
-        // ── Permission Editor ─────────────────────────────
+        // ── Role Permission Matrix ───────────────────────────
 
-        let editingPermUserId = null;
+        function getRoleDefaults() {
+            const stored = localStorage.getItem('tdental_role_defaults');
+            if (stored) return JSON.parse(stored);
+            // Return default
+            return {
+                admin: PAGE_PERMISSIONS.map(p => p.key),
+                viewer: ['dashboard', 'customers', 'calendar'],
+            };
+        }
 
-        function openPermEditor(userId) {
-            const users = getUsers();
-            const user = users.find(u => u.id === userId);
-            if (!user) return;
-            editingPermUserId = userId;
-            document.getElementById('permUserName').textContent = user.name + ` (${user.role === 'admin' ? 'Admin' : 'Viewer'})`;
-            const grid = document.getElementById('permCheckboxGrid');
-            grid.innerHTML = PAGE_PERMISSIONS.map(p => {
-                const checked = user.permissions && user.permissions[p.key] ? 'checked' : '';
+        function saveRoleDefaults(defaults) {
+            localStorage.setItem('tdental_role_defaults', JSON.stringify(defaults));
+            // Also update ROLE_DEFAULTS in-memory
+            ROLE_DEFAULTS.admin = defaults.admin;
+            ROLE_DEFAULTS.viewer = defaults.viewer;
+        }
+
+        function loadPermMatrix() {
+            const tbody = document.getElementById('permMatrixBody');
+            if (!tbody) return;
+            const defaults = getRoleDefaults();
+            tbody.innerHTML = PAGE_PERMISSIONS.map((p, i) => {
+                const adminChecked = defaults.admin.includes(p.key);
+                const viewerChecked = defaults.viewer.includes(p.key);
+                const bgColor = i % 2 === 0 ? '#ffffff' : '#f9fafb';
                 return `
-                    <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#f9fafb;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all 0.15s;user-select:none"
-                        onmouseenter="this.style.background='#eff6ff';this.style.borderColor='#93c5fd'"
-                        onmouseleave="this.style.background='#f9fafb';this.style.borderColor='var(--border)'">
-                        <input type="checkbox" data-perm="${p.key}" ${checked}
-                            style="width:18px;height:18px;accent-color:var(--primary);cursor:pointer;flex-shrink:0">
-                        <span style="font-size:16px">${p.icon}</span>
-                        <span style="font-size:13px;font-weight:500;color:var(--text)">${p.label}</span>
-                    </label>
+                    <tr style="background:${bgColor};transition:background 0.15s" onmouseenter="this.style.background='#eff6ff'" onmouseleave="this.style.background='${bgColor}'">
+                        <td style="padding:12px 16px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:10px">
+                            <span style="font-size:18px;width:24px;text-align:center">${p.icon}</span>
+                            <span style="font-weight:500;color:var(--text)">${p.label}</span>
+                        </td>
+                        <td style="text-align:center;padding:12px 16px;border-bottom:1px solid var(--border-light)">
+                            <input type="checkbox" data-role="admin" data-perm="${p.key}" ${adminChecked ? 'checked' : ''} disabled
+                                style="width:20px;height:20px;accent-color:#dc2626;cursor:not-allowed;opacity:0.7"
+                                title="Admin luôn có toàn quyền">
+                        </td>
+                        <td style="text-align:center;padding:12px 16px;border-bottom:1px solid var(--border-light)">
+                            <input type="checkbox" data-role="viewer" data-perm="${p.key}" ${viewerChecked ? 'checked' : ''}
+                                style="width:20px;height:20px;accent-color:#2563eb;cursor:pointer">
+                        </td>
+                    </tr>
                 `;
             }).join('');
-            document.getElementById('permissionEditor').style.display = 'block';
-            document.getElementById('permissionEditor').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        function closePermEditor() {
-            document.getElementById('permissionEditor').style.display = 'none';
-            editingPermUserId = null;
-        }
-
-        function checkAllPerms(val) {
-            document.querySelectorAll('#permCheckboxGrid input[type=checkbox]').forEach(cb => cb.checked = val);
-        }
-
-        function savePermissions() {
-            if (!editingPermUserId) return;
-            const users = getUsers();
-            const user = users.find(u => u.id === editingPermUserId);
-            if (!user) return;
-            const perms = {};
-            document.querySelectorAll('#permCheckboxGrid input[data-perm]').forEach(cb => {
-                perms[cb.dataset.perm] = cb.checked;
+        function saveRolePermissions() {
+            const defaults = getRoleDefaults();
+            // Admin always has all permissions
+            defaults.admin = PAGE_PERMISSIONS.map(p => p.key);
+            // Read viewer checkboxes
+            defaults.viewer = [];
+            document.querySelectorAll('#permMatrixBody input[data-role="viewer"]').forEach(cb => {
+                if (cb.checked) defaults.viewer.push(cb.dataset.perm);
             });
-            user.permissions = perms;
+            saveRoleDefaults(defaults);
+
+            // Apply to all existing users
+            const users = getUsers();
+            users.forEach(u => {
+                const rolePerms = defaults[u.role] || [];
+                u.permissions = Object.fromEntries(PAGE_PERMISSIONS.map(p => [p.key, rolePerms.includes(p.key)]));
+            });
             saveUsers(users);
-            // If editing the current user, update current user too
+
+            // Update current user if affected
             const current = getCurrentUser();
-            if (current.id === editingPermUserId) {
-                localStorage.setItem('tdental_current_user', JSON.stringify(user));
+            const updatedCurrent = users.find(u => u.id === current.id);
+            if (updatedCurrent) {
+                localStorage.setItem('tdental_current_user', JSON.stringify(updatedCurrent));
                 enforceSidebarPermissions();
             }
-            closePermEditor();
+
             loadUsersTable();
-            alert('✅ Đã lưu phân quyền cho ' + user.name);
+            alert('✅ Đã lưu phân quyền thành công!');
         }
 
         // ── User CRUD ─────────────────────────────────────
@@ -7426,7 +7472,8 @@
                 </div>
             `;
             document.getElementById('modalContainer').innerHTML = modalHTML;
-            document.getElementById('modalOverlay').classList.add('active');
+            document.getElementById('modalOverlay').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
         }
 
         function editUserModal(userId) {
