@@ -9,4 +9,4 @@ COPY scraper-web/ .
 
 EXPOSE 8899
 
-CMD ["python", "viewer.py"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8899"]

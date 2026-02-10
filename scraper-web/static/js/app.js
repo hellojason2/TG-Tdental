@@ -108,9 +108,12 @@ async function handleLogin() {
             return;
         }
 
-        // Save session
+        // Save session + set cookie for server-side auth
         localStorage.setItem('tdental_token', data.token);
         localStorage.setItem('tdental_current_user', JSON.stringify(data.user));
+        const expDate = new Date();
+        expDate.setTime(expDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+        document.cookie = 'tdental_session=' + data.token + ';expires=' + expDate.toUTCString() + ';path=/;SameSite=Lax';
 
         // Remember me cookies
         if (remember) {
@@ -139,7 +142,9 @@ async function logoutUser() {
     } catch (e) { }
     localStorage.removeItem('tdental_token');
     localStorage.removeItem('tdental_current_user');
-    showLoginScreen();
+    // Clear session cookie and redirect to login page
+    document.cookie = 'tdental_session=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
+    window.location.href = '/login';
 }
 
 async function checkSession() {
@@ -246,7 +251,9 @@ async function init() {
         hideLoginScreen();
         await initApp();
     } else {
-        showLoginScreen();
+        // No valid session — redirect to server login page
+        document.cookie = 'tdental_session=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
+        window.location.href = '/login';
     }
 }
 
