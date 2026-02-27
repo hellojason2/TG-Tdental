@@ -841,7 +841,11 @@ function navigate(page) {
     if (page === 'dashboard') loadDashboard();
     if (page === 'customers') loadCustomers();
     if (page === 'reception') loadReception();
-    if (page === 'calendar') { updateCalDateLabel(); loadCalendar(); }
+    if (page === 'calendar') {
+        initCalendarView();
+        updateCalDateLabel();
+        loadCalendar();
+    }
     if (page === 'treatments') { loadTreatStates(); loadTreatments(); }
     if (page === 'reports') loadReports();
     if (page === 'locations') loadBranchList();
@@ -853,30 +857,260 @@ function navigate(page) {
     if (page === 'commission') loadCommission();
     if (page === 'categories') loadCategories();
     if (page === 'users') loadUsersTable();
-    if (page === 'settings') { /* static page, no data to load */ }
+    if (page === 'settings') { loadSettings(); }
+}
+
+async function loadSettings() {
+    // Load settings from API and populate form
+    try {
+        const response = await fetch('/api/settings', {
+            headers: authHeaders()
+        });
+        if (response.ok) {
+            const settings = await response.json();
+            // Populate checkboxes based on saved settings
+            const settingIds = [
+                'setting_marketing', 'setting_appointment_reminder', 'setting_multi_unit',
+                'setting_pharmacy', 'setting_sms_brandname', 'setting_survey',
+                'setting_insurance', 'setting_inventory_check', 'setting_customer_survey',
+                'setting_foreign_currency', 'setting_refund', 'setting_head_office',
+                'setting_shared_partners', 'setting_shared_products'
+            ];
+            settingIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && settings[id] !== undefined) {
+                    el.checked = settings[id];
+                }
+            });
+        }
+    } catch (e) {
+        console.error('Failed to load settings:', e);
+    }
+}
+
+async function saveSettings() {
+    // Collect all settings from checkboxes
+    const settingIds = [
+        'setting_marketing', 'setting_appointment_reminder', 'setting_multi_unit',
+        'setting_pharmacy', 'setting_sms_brandname', 'setting_survey',
+        'setting_insurance', 'setting_inventory_check', 'setting_customer_survey',
+        'setting_foreign_currency', 'setting_refund', 'setting_head_office',
+        'setting_shared_partners', 'setting_shared_products'
+    ];
+    const settings = {};
+    settingIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            settings[id] = el.checked;
+        }
+    });
+
+    try {
+        const response = await fetch('/api/settings', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                ...authHeaders()
+            },
+            body: JSON.stringify(settings)
+        });
+        if (response.ok) {
+            alert('Đã lưu cấu hình thành công!');
+        } else {
+            alert('Lỗi khi lưu cấu hình');
+        }
+    } catch (e) {
+        console.error('Failed to save settings:', e);
+        alert('Lỗi khi lưu cấu hình: ' + e.message);
+    }
 }
 
 function switchSettingsTab(el, tab) {
     document.querySelectorAll('.settings-nav-item').forEach(i => i.classList.remove('active'));
     el.classList.add('active');
-    // For now, only 'general' tab has content; others show a placeholder
     const content = document.getElementById('settingsContent');
-    if (tab === 'general') {
-        content.querySelectorAll('.settings-section').forEach(s => s.style.display = '');
-    } else {
-        const labels = {
-            'branches': 'Chi nhánh',
-            'permissions': 'Nhóm quyền',
-            'team': 'Cấu hình Team',
-            'other': 'Cấu hình khác',
-            'activity': 'Lịch sử hoạt động'
-        };
-        content.innerHTML = `<div class="settings-section"><div style="text-align:center;padding:60px 20px;color:var(--text-muted)">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="margin-bottom:12px;opacity:0.4"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-                        <div style="font-size:15px;margin-bottom:4px">${labels[tab] || tab}</div>
-                        <div style="font-size:12px">Tính năng đang phát triển</div>
-                    </div></div>`;
+
+    // Update page header based on tab
+    const tabTitles = {
+        'general': 'Cấu hình chung',
+        'branches': 'Chi nhánh',
+        'permissions': 'Nhóm quyền',
+        'team': 'Cấu hình Team',
+        'other': 'Cấu hình khác',
+        'activity': 'Lịch sử hoạt động'
+    };
+    const pageHeader = document.querySelector('#page-settings .page-header h2');
+    if (pageHeader) {
+        pageHeader.textContent = tabTitles[tab] || 'Cấu hình';
     }
+
+    // Show/hide apply button based on tab
+    const applyBtn = document.querySelector('#page-settings .page-header-actions button');
+    if (applyBtn) {
+        applyBtn.style.display = (tab === 'general') ? '' : 'none';
+    }
+
+    if (tab === 'general') {
+        // Show general settings section - get the original HTML from the page
+        const settingsSection = document.querySelector('.page-content#page-settings .settings-section');
+        if (settingsSection) {
+            content.innerHTML = settingsSection.outerHTML;
+        }
+        // Load settings after rendering
+        setTimeout(loadSettings, 100);
+    } else if (tab === 'branches') {
+        // Show branches list
+        content.innerHTML = `<div class="settings-section">
+            <h3 style="color:var(--primary);font-size:14px;font-weight:700;margin-bottom:16px;text-transform:uppercase;letter-spacing:0.3px">DANH SÁCH CHI NHÁNH</h3>
+            <div id="branchesList" style="text-align:center;padding:20px">
+                <div style="color:var(--text-muted)">Đang tải...</div>
+            </div>
+        </div>`;
+        loadBranches();
+    } else if (tab === 'permissions') {
+        // Show permissions matrix - this is in the HTML but we need to show it
+        showPermissionsTab(content);
+    } else if (tab === 'team') {
+        content.innerHTML = `<div class="settings-section"><div style="text-align:center;padding:60px 20px;color:var(--text-muted)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="margin-bottom:12px;opacity:0.4"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            <div style="font-size:15px;margin-bottom:4px">Cấu hình Team</div>
+            <div style="font-size:12px">Tính năng đang phát triển</div>
+        </div></div>`;
+    } else if (tab === 'other') {
+        content.innerHTML = `<div class="settings-section"><div style="text-align:center;padding:60px 20px;color:var(--text-muted)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="margin-bottom:12px;opacity:0.4"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            <div style="font-size:15px;margin-bottom:4px">Cấu hình khác</div>
+            <div style="font-size:12px">Tính năng đang phát triển</div>
+        </div></div>`;
+    } else if (tab === 'activity') {
+        content.innerHTML = `<div class="settings-section"><div style="text-align:center;padding:60px 20px;color:var(--text-muted)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="margin-bottom:12px;opacity:0.4"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            <div style="font-size:15px;margin-bottom:4px">Lịch sử hoạt động</div>
+            <div style="font-size:12px">Tính năng đang phát triển</div>
+        </div></div>`;
+    }
+}
+
+async function loadBranches() {
+    try {
+        const response = await fetch('/api/companies', {
+            headers: authHeaders()
+        });
+        const branches = await response.json();
+        const container = document.getElementById('branchesList');
+
+        if (!branches || branches.length === 0) {
+            container.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text-muted)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="margin-bottom:12px;opacity:0.4"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <div style="font-size:15px;margin-bottom:4px">Chưa có chi nhánh</div>
+                <div style="font-size:12px">Thêm chi nhánh mới để bắt đầu</div>
+            </div>`;
+            return;
+        }
+
+        let html = `<table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead>
+                <tr style="background:#f8fafc">
+                    <th style="text-align:left;padding:12px 16px;font-weight:600;border-bottom:2px solid var(--border)">Tên chi nhánh</th>
+                    <th style="text-align:left;padding:12px 16px;font-weight:600;border-bottom:2px solid var(--border)">Địa chỉ</th>
+                    <th style="text-align:left;padding:12px 16px;font-weight:600;border-bottom:2px solid var(--border)">Điện thoại</th>
+                    <th style="text-align:center;padding:12px 16px;font-weight:600;border-bottom:2px solid var(--border)">Trạng thái</th>
+                </tr>
+            </thead>
+            <tbody>`;
+        branches.forEach(branch => {
+            html += `<tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:12px 16px">${branch.name || '-'}</td>
+                <td style="padding:12px 16px">${branch.address || '-'}</td>
+                <td style="padding:12px 16px">${branch.phone || '-'}</td>
+                <td style="padding:12px 16px;text-align:center">
+                    <span style="display:inline-block;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;background:${branch.active ? '#dcfce7' : '#fee2e2'};color:${branch.active ? '#16a34a' : '#dc2626'}">
+                        ${branch.active ? 'Hoạt động' : 'Không hoạt động'}
+                    </span>
+                </td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    } catch (e) {
+        console.error('Failed to load branches:', e);
+        document.getElementById('branchesList').innerHTML = `<div style="color:red;padding:20px">Lỗi khi tải danh sách chi nhánh</div>`;
+    }
+}
+
+function showPermissionsTab(content) {
+    // Show the permission matrix from the HTML
+    content.innerHTML = `
+        <div class="settings-section">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+                <div>
+                    <h3 style="margin:0;font-size:16px;font-weight:700;color:var(--text)">Phân quyền theo vai trò</h3>
+                    <p style="margin:4px 0 0;font-size:12px;color:var(--text-muted)">Thiết lập quyền truy cập cho từng vai trò.</p>
+                </div>
+                <button class="btn-primary" onclick="saveRolePermissions()" style="font-size:13px;padding:8px 20px">💾 Lưu phân quyền</button>
+            </div>
+            <div style="overflow-x:auto">
+                <table style="width:100%;border-collapse:collapse;font-size:13px" id="permMatrixTable">
+                    <thead>
+                        <tr style="background:#f8fafc">
+                            <th style="text-align:left;padding:12px 16px;font-weight:600;color:var(--text-secondary);border-bottom:2px solid var(--border);min-width:200px">Trang / Chức năng</th>
+                            <th style="text-align:center;padding:12px 16px;font-weight:600;border-bottom:2px solid var(--border);min-width:120px">
+                                <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;background:#fee2e2;color:#dc2626">🔑 Admin</span>
+                            </th>
+                            <th style="text-align:center;padding:12px 16px;font-weight:600;border-bottom:2px solid var(--border);min-width:120px">
+                                <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;background:#dbeafe;color:#2563eb">👁️ Viewer</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="permMatrixBody">
+                        ${renderPermissionMatrix()}
+                    </tbody>
+                </table>
+            </div>
+        </div>`;
+}
+
+function renderPermissionMatrix() {
+    const permissions = [
+        { key: 'dashboard', name: 'Dashboard', admin: true, viewer: true },
+        { key: 'customers', name: 'Khách hàng', admin: true, viewer: true },
+        { key: 'calendar', name: 'Lịch hẹn', admin: true, viewer: true },
+        { key: 'treatments', name: 'Điều trị', admin: true, viewer: false },
+        { key: 'labo', name: 'Labo', admin: true, viewer: false },
+        { key: 'products', name: 'Sản phẩm', admin: true, viewer: false },
+        { key: 'inventory', name: 'Kho', admin: true, viewer: false },
+        { key: 'suppliers', name: 'Đối tác', admin: true, viewer: false },
+        { key: 'finance', name: 'Tài chính', admin: true, viewer: false },
+        { key: 'reports', name: 'Báo cáo', admin: true, viewer: true },
+        { key: 'settings', name: 'Cấu hình', admin: true, viewer: false }
+    ];
+
+    return permissions.map(p => `
+        <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:12px 16px;font-weight:500">${p.name}</td>
+            <td style="text-align:center;padding:12px 16px">
+                <input type="checkbox" ${p.admin ? 'checked' : ''} data-perm="${p.key}" data-role="admin">
+            </td>
+            <td style="text-align:center;padding:12px 16px">
+                <input type="checkbox" ${p.viewer ? 'checked' : ''} data-perm="${p.key}" data-role="viewer">
+            </td>
+        </tr>
+    `).join('');
+}
+
+function saveRolePermissions() {
+    // Collect permissions from the matrix
+    const permissions = {};
+    document.querySelectorAll('#permMatrixBody input[type="checkbox"]').forEach(cb => {
+        const perm = cb.dataset.perm;
+        const role = cb.dataset.role;
+        if (!permissions[role]) permissions[role] = {};
+        permissions[role][perm] = cb.checked;
+    });
+
+    // Save to localStorage for now (can be extended to API)
+    localStorage.setItem('role_permissions', JSON.stringify(permissions));
+    alert('Đã lưu phân quyền thành công!');
 }
 
 /* ═══ SIDEBAR SUBMENU ACCORDION ═══ */
@@ -946,7 +1180,7 @@ function selectBranch(id, name) {
     if (currentPageView === 'calendar') loadAppointments();
     if (currentPageView === 'locations') loadBranchList();
     if (currentPageView === 'purchase') { purchasePage = 1; loadPurchase(); }
-    if (currentPageView === 'inventory') { inventoryPage = 1; loadInventory(); }
+    if (currentPageView === 'inventory') { inventoryPage = 1; initInventoryPage(); loadInventory(); }
     if (currentPageView === 'salary') { salaryPage = 1; loadSalary(); }
     if (currentPageView === 'cashbook') { cashbookPage = 1; loadCashbook(); }
     if (currentPageView === 'callcenter') { callcenterPage = 1; loadCallCenter(); }
@@ -1072,6 +1306,61 @@ document.addEventListener('click', () => {
 
 // ══ RECEPTION ══
 let recPage = 1;
+let recState = '';
+let recDebounce = null;
+
+function switchTaskTab(btn, tab) {
+    // Switch between main tabs (Công việc / Loại công việc)
+    document.querySelectorAll('#taskMainTabs .tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+
+    const tasksPanel = document.getElementById('page-reception');
+    const taskTypesPanel = document.querySelector('#page-reception .task-types-panel');
+
+    if (tab === 'tasks') {
+        // Show tasks list
+        tasksPanel.querySelector('.card').style.display = '';
+        if (taskTypesPanel) taskTypesPanel.style.display = 'none';
+    } else if (tab === 'task_types') {
+        // Show task types - hide tasks, show types panel
+        tasksPanel.querySelector('.card').style.display = 'none';
+        if (taskTypesPanel) taskTypesPanel.style.display = '';
+    }
+}
+
+function filterTaskState(btn) {
+    // Filter tasks by status
+    document.querySelectorAll('#taskStatusTabs .tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    recState = btn.dataset.state || '';
+    recPage = 1;
+    loadReception();
+}
+
+function debounceTaskSearch() {
+    clearTimeout(recDebounce);
+    recDebounce = setTimeout(() => {
+        recPage = 1;
+        loadReception();
+    }, 300);
+}
+
+// Helper function to get state display name and badge class
+function getReceptionStateInfo(state) {
+    const stateMap = {
+        'waiting': { label: 'Chờ khám', class: 'waiting' },
+        'confirmed': { label: 'Xác nhận', class: 'confirmed' },
+        'examination': { label: 'Đang khám', class: 'examination' },
+        'in_progress': { label: 'Đang khám', class: 'in_progress' },
+        'done': { label: 'Hoàn thành', class: 'done' },
+        'completed': { label: 'Hoàn thành', class: 'completed' },
+        'paid': { label: 'Đã thanh toán', class: 'paid' },
+        'cancel': { label: 'Hủy', class: 'cancel' },
+        'draft': { label: 'Nháp', class: 'draft' }
+    };
+    return stateMap[state] || { label: state || '---', class: '' };
+}
+
 async function loadReception() {
     try {
         const companyParam = currentCompanyId ? `?company=${currentCompanyId}` : '';
@@ -1085,22 +1374,86 @@ async function loadReception() {
 
         const listParams = new URLSearchParams({ page: recPage, per_page: 20, sort: 'date', order: 'desc' });
         if (currentCompanyId) listParams.append('company', currentCompanyId);
+        if (recState) listParams.append('state', recState);
         const res = await fetch(`${API}/api/appointments?${listParams}`);
         const data = await res.json();
-        const tbody = document.getElementById('receptionBody');
-        if (!data.items.length) { tbody.innerHTML = '<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--text-muted)">Không có dữ liệu</td></tr>'; return; }
-        tbody.innerHTML = data.items.map((a, i) => {
-            const badge = apptBadge(a.state);
-            return `<tr>
-                        <td>${(recPage - 1) * 20 + i + 1}</td>
-                        <td><div class="cell-name"><div class="avatar" style="width:28px;height:28px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="name-info"><div class="primary-name">${esc(a.partner_display_name)}</div></div></div></td>
-                        <td>${esc(a.partner_phone || '---')}</td>
-                        <td>${esc(a.doctor_name || '---')}</td>
-                        <td>${esc(a.company_name || '---')}</td>
-                        <td>${fmtDate(a.date)}</td>
-                        <td style="max-width:150px">${esc(a.note || a.reason || '---')}</td>
-                        <td>${badge}</td>
-                    </tr>`;
+        const container = document.getElementById('receptionCards');
+        if (!data.items.length) {
+            container.innerHTML = '<div class="empty-card">Không có dữ liệu</div>';
+            renderGenericPagination('receptionPagination', data, p => { recPage = p; loadReception(); });
+            return;
+        }
+        container.innerHTML = data.items.map((a, i) => {
+            const stateInfo = getReceptionStateInfo(a.state);
+            const phone = a.partner_phone || '';
+            return `<div class="reception-card">
+                <div class="reception-card-header">
+                    <div class="reception-card-title">
+                        <div class="reception-card-avatar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="reception-card-name">${esc(a.partner_display_name)}</div>
+                            <div class="reception-card-phone">${esc(phone)}</div>
+                        </div>
+                    </div>
+                    <span class="reception-card-badge ${stateInfo.class}">${stateInfo.label}</span>
+                </div>
+                <div class="reception-card-body">
+                    <div class="reception-card-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        <span class="reception-card-label">Ngày hẹn:</span>
+                        <span class="reception-card-value">${fmtDate(a.date)}</span>
+                    </div>
+                    <div class="reception-card-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                            <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                        <span class="reception-card-label">Bác sĩ:</span>
+                        <span class="reception-card-value">${esc(a.doctor_name || '---')}</span>
+                    </div>
+                    <div class="reception-card-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        <span class="reception-card-label">Chi nhánh:</span>
+                        <span class="reception-card-value">${esc(a.company_name || '---')}</span>
+                    </div>
+                    ${a.note || a.reason ? `<div class="reception-card-note">${esc(a.note || a.reason)}</div>` : ''}
+                </div>
+                <div class="reception-card-actions">
+                    <button class="btn btn-edit" onclick="openEditReception('${a.id}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        Sửa
+                    </button>
+                    <button class="btn btn-call" onclick="callReceptionPhone('${phone}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+                        </svg>
+                        Gọi điện
+                    </button>
+                    <button class="btn btn-view" onclick="viewReceptionProfile('${a.partner_id}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        Xem hồ sơ
+                    </button>
+                </div>
+            </div>`;
         }).join('');
         renderGenericPagination('receptionPagination', data, p => { recPage = p; loadReception(); });
     } catch (e) {
@@ -1110,29 +1463,109 @@ async function loadReception() {
         document.getElementById('recDone').textContent = '5';
         document.getElementById('recTreating').textContent = '2';
         document.getElementById('recPaid').textContent = '4';
-        // Fallback table data
+        // Fallback card data
         const fallbackAppts = [
-            { partner_display_name: 'Nguyễn Văn An', partner_phone: '0988123456', doctor_name: 'BS. Trần Thị B', company_name: 'Tấm Dentist Quận 3', date: '2026-02-09', note: 'Nhổ răng khôn', state: 'confirmed' },
-            { partner_display_name: 'Phạm Thị Mai', partner_phone: '0977123456', doctor_name: 'BS. Nguyễn Văn A', company_name: 'Tấm Dentist Thủ Đức', date: '2026-02-09', note: 'Tái khám', state: 'done' },
-            { partner_display_name: 'Trần Văn Bình', partner_phone: '0966123456', doctor_name: 'BS. Lê Văn C', company_name: 'Tấm Dentist Quận 3', date: '2026-02-09', note: 'Tẩy trắng', state: 'waiting' },
-            { partner_display_name: 'Lê Thị Hương', partner_phone: '0911223344', doctor_name: 'BS. Trần Thị B', company_name: 'Tấm Dentist Gò Vấp', date: '2026-02-09', note: 'Chỉnh nha', state: 'examination' },
-            { partner_display_name: 'Đỗ Minh Tuấn', partner_phone: '0933445566', doctor_name: 'BS. Nguyễn Văn A', company_name: 'Tấm Dentist Quận 3', date: '2026-02-09', note: 'Cạo vôi', state: 'confirmed' }
+            { id: '1', partner_display_name: 'Nguyễn Văn An', partner_phone: '0988123456', doctor_name: 'BS. Trần Thị B', company_name: 'Tấm Dentist Quận 3', date: '2026-02-27', note: 'Nhổ răng khôn', state: 'confirmed', partner_id: 'p1' },
+            { id: '2', partner_display_name: 'Phạm Thị Mai', partner_phone: '0977123456', doctor_name: 'BS. Nguyễn Văn A', company_name: 'Tấm Dentist Thủ Đức', date: '2026-02-27', note: 'Tái khám', state: 'done', partner_id: 'p2' },
+            { id: '3', partner_display_name: 'Trần Văn Bình', partner_phone: '0966123456', doctor_name: 'BS. Lê Văn C', company_name: 'Tấm Dentist Quận 3', date: '2026-02-27', note: 'Tẩy trắng', state: 'waiting', partner_id: 'p3' },
+            { id: '4', partner_display_name: 'Lê Thị Hương', partner_phone: '0911223344', doctor_name: 'BS. Trần Thị B', company_name: 'Tấm Dentist Gò Vấp', date: '2026-02-27', note: 'Chỉnh nha', state: 'examination', partner_id: 'p4' },
+            { id: '5', partner_display_name: 'Đỗ Minh Tuấn', partner_phone: '0933445566', doctor_name: 'BS. Nguyễn Văn A', company_name: 'Tấm Dentist Quận 3', date: '2026-02-27', note: 'Cạo vôi', state: 'confirmed', partner_id: 'p5' }
         ];
-        const tbody = document.getElementById('receptionBody');
-        tbody.innerHTML = fallbackAppts.map((a, i) => {
-            const badge = apptBadge(a.state);
-            return `<tr>
-                        <td>${i + 1}</td>
-                        <td><div class="cell-name"><div class="avatar" style="width:28px;height:28px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="name-info"><div class="primary-name">${esc(a.partner_display_name)}</div></div></div></td>
-                        <td>${esc(a.partner_phone)}</td>
-                        <td>${esc(a.doctor_name)}</td>
-                        <td>${esc(a.company_name)}</td>
-                        <td>${fmtDate(a.date)}</td>
-                        <td style="max-width:150px">${esc(a.note)}</td>
-                        <td>${badge}</td>
-                    </tr>`;
+        const container = document.getElementById('receptionCards');
+        container.innerHTML = fallbackAppts.map((a, i) => {
+            const stateInfo = getReceptionStateInfo(a.state);
+            const phone = a.partner_phone || '';
+            return `<div class="reception-card">
+                <div class="reception-card-header">
+                    <div class="reception-card-title">
+                        <div class="reception-card-avatar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="reception-card-name">${esc(a.partner_display_name)}</div>
+                            <div class="reception-card-phone">${esc(phone)}</div>
+                        </div>
+                    </div>
+                    <span class="reception-card-badge ${stateInfo.class}">${stateInfo.label}</span>
+                </div>
+                <div class="reception-card-body">
+                    <div class="reception-card-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        <span class="reception-card-label">Ngày hẹn:</span>
+                        <span class="reception-card-value">${fmtDate(a.date)}</span>
+                    </div>
+                    <div class="reception-card-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                            <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                        <span class="reception-card-label">Bác sĩ:</span>
+                        <span class="reception-card-value">${esc(a.doctor_name)}</span>
+                    </div>
+                    <div class="reception-card-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        <span class="reception-card-label">Chi nhánh:</span>
+                        <span class="reception-card-value">${esc(a.company_name)}</span>
+                    </div>
+                    ${a.note ? `<div class="reception-card-note">${esc(a.note)}</div>` : ''}
+                </div>
+                <div class="reception-card-actions">
+                    <button class="btn btn-edit" onclick="openEditReception('${a.id}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        Sửa
+                    </button>
+                    <button class="btn btn-call" onclick="callReceptionPhone('${phone}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+                        </svg>
+                        Gọi điện
+                    </button>
+                    <button class="btn btn-view" onclick="viewReceptionProfile('${a.partner_id}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        Xem hồ sơ
+                    </button>
+                </div>
+            </div>`;
         }).join('');
     }
+}
+
+// Helper functions for reception card actions
+function openEditReception(id) {
+    console.log('Edit reception:', id);
+    // TODO: Implement edit modal
+    alert('Chức năng sửa đang được phát triển');
+}
+
+function callReceptionPhone(phone) {
+    if (!phone) {
+        alert('Không có số điện thoại');
+        return;
+    }
+    window.location.href = `tel:${phone}`;
+}
+
+function viewReceptionProfile(partnerId) {
+    console.log('View profile:', partnerId);
+    // TODO: Navigate to customer profile
+    alert('Chức năng xem hồ sơ đang được phát triển');
 }
 
 // ══ CALENDAR VIEW ══
@@ -1146,6 +1579,39 @@ const CAL_SLOT_HEIGHT = 80; // px per hour
 
 const VI_DAYS = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
 
+// Initialize calendar view based on current mode (call when navigating to calendar page)
+function initCalendarView() {
+    const gridView = document.getElementById('calendarGridView');
+    const listView = document.getElementById('calendarListView');
+
+    // Sync toggle buttons with current mode
+    const modeButtons = document.querySelectorAll('#calModeToggle button');
+    modeButtons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.mode === calCurrentMode) {
+            btn.classList.add('active');
+        }
+    });
+
+    // Sync view toggle with current view
+    const viewButtons = document.querySelectorAll('#calViewToggle button');
+    viewButtons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.view === calCurrentView) {
+            btn.classList.add('active');
+        }
+    });
+
+    // Show/hide correct view
+    if (calCurrentMode === 'grid') {
+        if (gridView) gridView.style.display = 'block';
+        if (listView) listView.classList.remove('active');
+    } else {
+        if (gridView) gridView.style.display = 'none';
+        if (listView) listView.classList.add('active');
+    }
+}
+
 function formatCalDate(d) {
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -1157,7 +1623,24 @@ function formatCalDateLabel(d) {
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const yyyy = d.getFullYear();
-    return `${VI_DAYS[d.getDay()]} - ${dd}/${mm}/${yyyy}`;
+
+    if (calCurrentView === 'month') {
+        const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+                           'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+        return `${monthNames[d.getMonth()]} ${yyyy}`;
+    } else if (calCurrentView === 'week') {
+        const startOfWeek = new Date(d);
+        startOfWeek.setDate(d.getDate() - d.getDay());
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        const startDD = String(startOfWeek.getDate()).padStart(2, '0');
+        const startMM = String(startOfWeek.getMonth() + 1).padStart(2, '0');
+        const endDD = String(endOfWeek.getDate()).padStart(2, '0');
+        const endMM = String(endOfWeek.getMonth() + 1).padStart(2, '0');
+        return `${startDD}/${startMM} - ${endDD}/${endMM}/${yyyy}`;
+    } else {
+        return `${VI_DAYS[d.getDay()]} - ${dd}/${mm}/${yyyy}`;
+    }
 }
 
 function updateCalDateLabel() {
@@ -1191,7 +1674,7 @@ function switchCalendarMode(mode, btn) {
     const gridView = document.getElementById('calendarGridView');
     const listView = document.getElementById('calendarListView');
     if (mode === 'grid') {
-        gridView.style.display = '';
+        gridView.style.display = 'block';
         listView.classList.remove('active');
         loadCalendar();
     } else {
@@ -1219,12 +1702,185 @@ function getApptColor(state, color) {
     return 'cal-confirmed';
 }
 
+// Build month view calendar grid
+function buildMonthView(data) {
+    const year = calCurrentDate.getFullYear();
+    const month = calCurrentDate.getMonth();
+    const today = new Date();
+
+    // Get first day of month and number of days
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startDayOfWeek = firstDay.getDay(); // 0 = Sunday
+
+    // Get days from previous month
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
+
+    // Group appointments by date
+    const appointmentsByDate = {};
+    (data.appointments || []).forEach(appt => {
+        const apptDate = new Date(appt.date);
+        const dateKey = `${apptDate.getFullYear()}-${String(apptDate.getMonth() + 1).padStart(2, '0')}-${String(apptDate.getDate()).padStart(2, '0')}`;
+        if (!appointmentsByDate[dateKey]) appointmentsByDate[dateKey] = [];
+        appointmentsByDate[dateKey].push(appt);
+    });
+
+    let html = '<div class="calendar-month-grid">';
+
+    // Day headers
+    const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+    dayNames.forEach(day => {
+        html += `<div class="calendar-month-header">${day}</div>`;
+    });
+
+    // Calculate total cells needed (6 rows max)
+    const totalCells = Math.ceil((daysInMonth + startDayOfWeek) / 7) * 7;
+
+    for (let i = 0; i < totalCells; i++) {
+        let dayNum, isOtherMonth = false, cellDate;
+
+        if (i < startDayOfWeek) {
+            // Previous month days
+            dayNum = prevMonthLastDay - startDayOfWeek + i + 1;
+            isOtherMonth = true;
+            cellDate = new Date(year, month - 1, dayNum);
+        } else if (i >= startDayOfWeek + daysInMonth) {
+            // Next month days
+            dayNum = i - startDayOfWeek - daysInMonth + 1;
+            isOtherMonth = true;
+            cellDate = new Date(year, month + 1, dayNum);
+        } else {
+            // Current month days
+            dayNum = i - startDayOfWeek + 1;
+            cellDate = new Date(year, month, dayNum);
+        }
+
+        const dateKey = `${cellDate.getFullYear()}-${String(cellDate.getMonth() + 1).padStart(2, '0')}-${String(cellDate.getDate()).padStart(2, '0')}`;
+        const isToday = cellDate.toDateString() === today.toDateString();
+        const dayAppointments = appointmentsByDate[dateKey] || [];
+
+        html += `<div class="calendar-month-day${isOtherMonth ? ' other-month' : ''}${isToday ? ' today' : ''}" data-date="${dateKey}">`;
+        html += `<div class="calendar-month-day-number">${dayNum}</div>`;
+
+        // Show up to 3 appointments
+        const maxVisible = 3;
+        dayAppointments.slice(0, maxVisible).forEach(appt => {
+            const time = new Date(appt.date);
+            const timeStr = `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
+            const name = stripIdPrefix(appt.partner_display_name || '');
+            const stateClass = appt.state || 'confirmed';
+            html += `<div class="calendar-month-appt ${stateClass}" title="${esc(name)} - ${timeStr}">${timeStr} ${esc(name)}</div>`;
+        });
+
+        if (dayAppointments.length > maxVisible) {
+            html += `<div class="calendar-month-more">+${dayAppointments.length - maxVisible} khác</div>`;
+        }
+
+        html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
+}
+
+// Build week view calendar grid
+function buildWeekView(data) {
+    const today = calCurrentDate;
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+
+    const dayNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+
+    let html = '<div class="calendar-week-grid">';
+
+    // Empty corner cell
+    html += '<div class="calendar-week-header-cell"></div>';
+
+    // Day headers
+    for (let i = 0; i < 7; i++) {
+        const dayDate = new Date(startOfWeek);
+        dayDate.setDate(startOfWeek.getDate() + i);
+        const isToday = dayDate.toDateString() === today.toDateString();
+        const dayNum = dayDate.getDate();
+        html += `<div class="calendar-week-header-cell${isToday ? ' today' : ''}">${dayNames[i]} ${dayNum}</div>`;
+    }
+
+    // Time column
+    html += '<div class="calendar-week-time-col">';
+    for (let h = CAL_START_HOUR; h <= CAL_END_HOUR; h++) {
+        html += `<div class="calendar-week-time-slot">${String(h).padStart(2, '0')}:00</div>`;
+    }
+    html += '</div>';
+
+    // Day columns
+    for (let i = 0; i < 7; i++) {
+        const dayDate = new Date(startOfWeek);
+        dayDate.setDate(startOfWeek.getDate() + i);
+        const dateKey = `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, '0')}-${String(dayDate.getDate()).padStart(2, '0')}`;
+
+        // Get appointments for this day
+        const dayAppointments = (data.appointments || []).filter(appt => {
+            const apptDate = new Date(appt.date);
+            return apptDate.toDateString() === dayDate.toDateString();
+        });
+
+        html += '<div class="calendar-week-day-col">';
+        for (let h = CAL_START_HOUR; h <= CAL_END_HOUR; h++) {
+            html += `<div class="calendar-week-hour-slot" data-hour="${h}"></div>`;
+        }
+
+        // Overlay appointments
+        dayAppointments.forEach(appt => {
+            const apptTime = new Date(appt.date);
+            const hour = apptTime.getHours();
+            const minute = apptTime.getMinutes();
+            const duration = appt.duration_minutes || 30;
+
+            if (hour < CAL_START_HOUR || hour > CAL_END_HOUR) return;
+
+            const topOffset = (hour - CAL_START_HOUR) * 60 + minute;
+            const height = Math.max(duration, 30);
+            const name = stripIdPrefix(appt.partner_display_name || '');
+            const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+            const stateClass = appt.state || 'confirmed';
+
+            html += `<div class="cal-appt-card ${stateClass}" style="top:${topOffset}px;height:${height}px;left:2px;right:2px;position:absolute;z-index:1" title="${esc(name)} - ${timeStr}">
+                <span class="cal-status-dot ${appt.state || ''}"></span>
+                <div class="cal-name">${esc(name)}</div>
+                <div class="cal-time">${timeStr}</div>
+            </div>`;
+        });
+
+        html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
+}
+
 function buildCalendarGrid(data) {
     const grid = document.getElementById('calendarGrid');
     const loading = document.getElementById('calendarLoading');
     const doctors = data.doctors || ['Không xác định'];
     const appointments = data.appointments || [];
 
+    // Render based on current view
+    if (calCurrentView === 'month') {
+        grid.innerHTML = buildMonthView(data);
+        loading.style.display = 'none';
+        grid.style.display = 'block';
+        return;
+    }
+
+    if (calCurrentView === 'week') {
+        grid.innerHTML = buildWeekView(data);
+        loading.style.display = 'none';
+        grid.style.display = 'block';
+        return;
+    }
+
+    // Default: day view (doctor columns)
     // Build time column
     let timeColHTML = '<div class="calendar-time-column">';
     timeColHTML += '<div class="calendar-time-header"></div>';
@@ -1319,9 +1975,35 @@ async function loadCalendar() {
     grid.style.display = 'none';
 
     try {
-        const dateStr = formatCalDate(calCurrentDate);
+        let url = '';
         const companyParam = currentCompanyId ? `&company=${currentCompanyId}` : '';
-        const data = await (await fetch(`${API}/api/appointments/calendar?date=${dateStr}${companyParam}`)).json();
+
+        if (calCurrentView === 'month') {
+            // For month view, get start and end of month
+            const year = calCurrentDate.getFullYear();
+            const month = calCurrentDate.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startStr = formatCalDate(firstDay);
+            const endStr = formatCalDate(lastDay);
+            url = `${API}/api/appointments/calendar?start_date=${startStr}&end_date=${endStr}${companyParam}`;
+        } else if (calCurrentView === 'week') {
+            // For week view, get start and end of week
+            const today = calCurrentDate;
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - today.getDay());
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            const startStr = formatCalDate(startOfWeek);
+            const endStr = formatCalDate(endOfWeek);
+            url = `${API}/api/appointments/calendar?start_date=${startStr}&end_date=${endStr}${companyParam}`;
+        } else {
+            // Day view - single date
+            const dateStr = formatCalDate(calCurrentDate);
+            url = `${API}/api/appointments/calendar?date=${dateStr}${companyParam}`;
+        }
+
+        const data = await (await fetch(url)).json();
         calData = data;
         buildCalendarGrid(data);
     } catch (e) {
@@ -1492,7 +2174,11 @@ async function loadTreatStates() {
 }
 async function loadTreatments() {
     const search = document.getElementById('treatSearch')?.value || '';
+    const dateFrom = document.getElementById('treatDateFrom')?.value || '';
+    const dateTo = document.getElementById('treatDateTo')?.value || '';
     const params = new URLSearchParams({ page: treatPage, per_page: 20, search, state: treatState, sort: 'date_order', order: 'desc' });
+    if (dateFrom) params.append('date_from', dateFrom);
+    if (dateTo) params.append('date_to', dateTo);
     document.getElementById('treatBody').innerHTML = '<tr><td colspan="10" class="loading"><div class="spinner"></div>Đang tải...</td></tr>';
     try {
         const data = await (await fetch(`${API}/api/sale-orders?${params}`)).json();
@@ -1547,11 +2233,226 @@ async function loadTreatments() {
 }
 
 // ══ REPORTS ══
+// Reports state variables
+let reportDateType = 'day';
+let reportTab = 'time';
+let reportCompany = '';
+
+// Initialize default dates on first load
+function initReportDates() {
+    const dateFromEl = document.getElementById('rptDateFrom');
+    const dateToEl = document.getElementById('rptDateTo');
+    if (dateFromEl && dateToEl && !dateFromEl.value && !dateToEl.value) {
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        dateFromEl.value = firstDay.toISOString().split('T')[0];
+        dateToEl.value = now.toISOString().split('T')[0];
+    }
+}
+
+// Switch between Ngày/Tháng
+function switchReportDateType(btn) {
+    document.querySelectorAll('#rptDateTypeTabs .tab').forEach(t => {
+        t.classList.remove('active');
+        t.style.borderColor = 'var(--border)';
+    });
+    btn.classList.add('active');
+    btn.style.borderColor = 'var(--primary)';
+    reportDateType = btn.dataset.type;
+
+    // Set default date range based on type
+    const dateFromEl = document.getElementById('rptDateFrom');
+    const dateToEl = document.getElementById('rptDateTo');
+    const now = new Date();
+
+    if (reportDateType === 'day') {
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        dateFromEl.value = firstDay.toISOString().split('T')[0];
+        dateToEl.value = now.toISOString().split('T')[0];
+    } else {
+        dateFromEl.value = `${now.getFullYear()}-01-01`;
+        dateToEl.value = `${now.getFullYear()}-12-31`;
+    }
+
+    loadReports();
+}
+
+// Switch report tabs
+function switchReportTab(btn) {
+    document.querySelectorAll('#rptTabs .tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    reportTab = btn.dataset.tab;
+
+    const statsSection = document.getElementById('reportStats');
+    const monthlyPanel = document.getElementById('rptMonthly')?.closest('.dash-panel');
+    const companyPanel = document.getElementById('rptCompany')?.closest('.dash-panel');
+    const doctorsPanel = document.getElementById('rptDoctors')?.closest('.dash-panel');
+    const servicesPanel = document.getElementById('rptServices')?.closest('.dash-panel');
+
+    // Show/hide based on tab
+    if (reportTab === 'time') {
+        if (statsSection) statsSection.style.display = 'grid';
+        if (monthlyPanel) monthlyPanel.style.display = 'block';
+        if (companyPanel) companyPanel.style.display = 'block';
+        if (doctorsPanel) doctorsPanel.style.display = 'block';
+        if (servicesPanel) servicesPanel.style.display = 'block';
+    } else if (reportTab === 'service') {
+        if (statsSection) statsSection.style.display = 'grid';
+        if (monthlyPanel) monthlyPanel.style.display = 'none';
+        if (companyPanel) companyPanel.style.display = 'block';
+        if (doctorsPanel) doctorsPanel.style.display = 'none';
+        if (servicesPanel) servicesPanel.style.display = 'block';
+    } else if (reportTab === 'doctor') {
+        if (statsSection) statsSection.style.display = 'grid';
+        if (monthlyPanel) monthlyPanel.style.display = 'none';
+        if (companyPanel) companyPanel.style.display = 'block';
+        if (doctorsPanel) doctorsPanel.style.display = 'block';
+        if (servicesPanel) servicesPanel.style.display = 'none';
+    } else if (reportTab === 'customer') {
+        if (statsSection) statsSection.style.display = 'grid';
+        if (monthlyPanel) monthlyPanel.style.display = 'none';
+        if (companyPanel) companyPanel.style.display = 'block';
+        if (doctorsPanel) doctorsPanel.style.display = 'none';
+        if (servicesPanel) servicesPanel.style.display = 'none';
+    } else if (reportTab === 'source') {
+        if (statsSection) statsSection.style.display = 'grid';
+        if (monthlyPanel) monthlyPanel.style.display = 'none';
+        if (companyPanel) companyPanel.style.display = 'block';
+        if (doctorsPanel) doctorsPanel.style.display = 'none';
+        if (servicesPanel) servicesPanel.style.display = 'none';
+    } else if (reportTab === 'company') {
+        if (statsSection) statsSection.style.display = 'grid';
+        if (monthlyPanel) monthlyPanel.style.display = 'none';
+        if (companyPanel) companyPanel.style.display = 'block';
+        if (doctorsPanel) doctorsPanel.style.display = 'none';
+        if (servicesPanel) servicesPanel.style.display = 'none';
+    }
+}
+
+// Export report (print or download)
+function exportReport(type) {
+    const dateFrom = document.getElementById('rptDateFrom')?.value || '';
+    const dateTo = document.getElementById('rptDateTo')?.value || '';
+    const company = document.getElementById('rptCompanyFilter')?.value || '';
+
+    const orders = document.getElementById('rptOrders')?.textContent || '---';
+    const revenue = document.getElementById('rptRevenue')?.textContent || '---';
+    const paid = document.getElementById('rptPaid')?.textContent || '---';
+    const debt = document.getElementById('rptDebt')?.textContent || '---';
+
+    const dateRange = dateFrom && dateTo ? `${fmtDate(dateFrom)} - ${fmtDate(dateTo)}` : document.getElementById('rptDateRange')?.textContent || 'Toàn thời gian';
+
+    const reportData = {
+        title: 'BÁO CÁO DOANH THU',
+        dateRange,
+        company: company || 'Tất cả chi nhánh',
+        tab: reportTab,
+        stats: { orders, revenue, paid, debt },
+        dateType: reportDateType,
+        generatedAt: new Date().toLocaleString('vi-VN')
+    };
+
+    if (type === 'print') {
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Báo cáo doanh thu - TDental</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; }
+                    h1 { text-align: center; color: #2563eb; }
+                    .header { text-align: center; margin-bottom: 20px; }
+                    .info { margin-bottom: 20px; }
+                    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
+                    .stat-item { border: 1px solid #ddd; padding: 15px; text-align: center; }
+                    .stat-label { font-size: 12px; color: #666; }
+                    .stat-value { font-size: 18px; font-weight: bold; color: #2563eb; }
+                    .footer { margin-top: 30px; text-align: right; font-size: 12px; color: #666; }
+                    @media print { body { padding: 0; } }
+                </style>
+            </head>
+            <body>
+                <h1>${reportData.title}</h1>
+                <div class="header">
+                    <div class="info">
+                        <strong>Thời gian:</strong> ${reportData.dateRange}<br>
+                        <strong>Chi nhánh:</strong> ${reportData.company}<br>
+                        <strong>Loại báo cáo:</strong> ${reportData.tab === 'time' ? 'Theo thời gian' : reportData.tab === 'service' ? 'Theo dịch vụ' : reportData.tab === 'doctor' ? 'Theo nhân viên' : reportData.tab === 'customer' ? 'Theo khách hàng' : reportData.tab === 'source' ? 'Theo nguồn khách hàng' : 'Theo chi nhánh'}
+                    </div>
+                </div>
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Tổng phiếu điều trị</div>
+                        <div class="stat-value">${reportData.stats.orders}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Tổng doanh thu</div>
+                        <div class="stat-value">${reportData.stats.revenue}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Đã thu</div>
+                        <div class="stat-value">${reportData.stats.paid}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Công nợ</div>
+                        <div class="stat-value">${reportData.stats.debt}</div>
+                    </div>
+                </div>
+                <div class="footer">
+                    Ngày in: ${reportData.generatedAt}
+                </div>
+                <script>window.print();</script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    } else if (type === 'download') {
+        const csvContent = [
+            ['BÁO CÁO DOANH THU'],
+            ['Thời gian', reportData.dateRange],
+            ['Chi nhánh', reportData.company],
+            ['Loại báo cáo', reportData.tab === 'time' ? 'Theo thời gian' : reportData.tab === 'service' ? 'Theo dịch vụ' : reportData.tab === 'doctor' ? 'Theo nhân viên' : reportData.tab === 'customer' ? 'Theo khách hàng' : reportData.tab === 'source' ? 'Theo nguồn khách hàng' : 'Theo chi nhánh'],
+            [''],
+            ['Chỉ tiêu', 'Giá trị'],
+            ['Tổng phiếu điều trị', reportData.stats.orders],
+            ['Tổng doanh thu', reportData.stats.revenue],
+            ['Đã thu', reportData.stats.paid],
+            ['Công nợ', reportData.stats.debt],
+            [''],
+            ['Ngày tạo báo cáo', reportData.generatedAt]
+        ].map(row => row.join(',')).join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const fileName = `bao_cao_doanh_thu_${new Date().toISOString().split('T')[0]}.csv`;
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        link.click();
+    }
+}
+
 async function loadReports() {
+    // Initialize default dates on first call
+    initReportDates();
+
+    const dateFrom = document.getElementById('rptDateFrom')?.value || '';
+    const dateTo = document.getElementById('rptDateTo')?.value || '';
+    const company = reportCompany;
+
+    // Build query params
+    const overviewParams = new URLSearchParams();
+    if (dateFrom) overviewParams.append('date_from', dateFrom);
+    if (dateTo) overviewParams.append('date_to', dateTo);
+    if (company) overviewParams.append('company_id', company);
+
+    const revenueParams = new URLSearchParams(overviewParams);
+    revenueParams.append('date_type', reportDateType);
+
     try {
         const [overview, revenue] = await Promise.all([
-            (await fetch(`${API}/api/reports/overview`)).json(),
-            (await fetch(`${API}/api/reports/revenue`)).json()
+            (await fetch(`${API}/api/reports/overview?${overviewParams}`)).json(),
+            (await fetch(`${API}/api/reports/revenue?${revenueParams}`)).json()
         ]);
         document.getElementById('rptOrders').textContent = fmt(overview.total_orders);
         document.getElementById('rptRevenue').textContent = formatMoney(overview.total_revenue);
@@ -1565,8 +2466,10 @@ async function loadReports() {
             const daysInMonth = today.getDate();
             document.getElementById('rptChartAvg').textContent = formatMoney(Math.round((overview.total_revenue || 0) / Math.max(daysInMonth, 1)));
         }
-        // Set date range
-        if (document.getElementById('rptDateRange')) {
+        // Set date range display
+        if (dateFrom && dateTo) {
+            document.getElementById('rptDateRange').textContent = `${fmtDate(dateFrom)} - ${fmtDate(dateTo)}`;
+        } else {
             const now = new Date();
             document.getElementById('rptDateRange').textContent = `01/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} - ${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
         }
@@ -1881,7 +2784,10 @@ function deleteCustomer(id, name) {
 }
 
 // ── DETAIL PANEL ──
+let _detailCustomer = null;
+
 function showDetail(c) {
+    _detailCustomer = c;
     document.getElementById('detailOverlay').classList.add('open');
     document.getElementById('detailPanel').classList.add('open');
     document.getElementById('detailBreadcrumbName').textContent = `[${c.ref}] ${c.name}`;
@@ -1893,9 +2799,9 @@ function showDetail(c) {
                 <div class="detail-name">
                     <h3>[${esc(c.ref)}] ${esc(c.display_name || c.name)}</h3>
                     <div class="meta">
-                        ${c.gender_display ? `<span>♂ ${esc(c.gender_display)}</span>` : ''}
-                        ${c.phone ? `<span>📞 ${esc(c.phone)}</span>` : ''}
-                        ${c.source_name ? `<span>🏠 ${esc(c.source_name)}</span>` : ''}
+                        ${c.gender_display ? `<span>&#9794; ${esc(c.gender_display)}</span>` : ''}
+                        ${c.phone ? `<span>&#128222; ${esc(c.phone)}</span>` : ''}
+                        ${c.source_name ? `<span>&#127968; ${esc(c.source_name)}</span>` : ''}
                     </div>
                 </div>
             </div>
@@ -1910,36 +2816,303 @@ function showDetail(c) {
             <div class="detail-stat-card green"><div class="label">Doanh thu</div><div class="value">${formatMoney(c.amount_revenue_total)}</div></div>
             <div class="detail-stat-card red"><div class="label">Công nợ</div><div class="value">${formatMoney(c.total_debit)}</div></div>
         </div>
-        <div class="detail-tabs">
-            <button class="detail-tab active">Hồ sơ</button>
-            <button class="detail-tab">Lịch hẹn</button>
-            <button class="detail-tab">Phiếu điều trị</button>
-            <button class="detail-tab">Đợt khám</button>
+        <div class="detail-tabs" id="detailTabBar">
+            <button class="detail-tab active" onclick="showDetailTab('profile')">Hồ sơ</button>
+            <button class="detail-tab" onclick="showDetailTab('appointments')">Lịch hẹn</button>
+            <button class="detail-tab" onclick="showDetailTab('treatments')">Phiếu điều trị</button>
+            <button class="detail-tab" onclick="showDetailTab('visits')">Đợt khám</button>
+            <button class="detail-tab" onclick="showDetailTab('teeth')">Tình trạng răng</button>
+            <button class="detail-tab" onclick="showDetailTab('quotations')">Báo giá</button>
+            <button class="detail-tab" onclick="showDetailTab('labo')">Labo</button>
+            <button class="detail-tab" onclick="showDetailTab('images')">Hình ảnh</button>
+            <button class="detail-tab" onclick="showDetailTab('advance')">Tạm ứng</button>
+            <button class="detail-tab" onclick="showDetailTab('debt')">Sổ công nợ</button>
         </div>
-        <div class="detail-section">
-            <h4>Thông tin cá nhân</h4>
-            <div class="detail-grid">
-                <div class="lbl">Họ tên</div><div class="val">${esc(c.display_name || c.name)}</div>
-                <div class="lbl">Mã KH</div><div class="val">${esc(c.ref)}</div>
-                <div class="lbl">Điện thoại</div><div class="val">${esc(c.phone || '---')}</div>
-                <div class="lbl">Email</div><div class="val">${esc(c.email || '---')}</div>
-                <div class="lbl">Giới tính</div><div class="val">${esc(c.gender_display || '---')}</div>
-                <div class="lbl">Năm sinh</div><div class="val">${c.birth_year || '---'}</div>
-                <div class="lbl">Địa chỉ</div><div class="val">${esc(c.address || c.street || '---')}</div>
-                <div class="lbl">Quận/Huyện</div><div class="val">${esc(c.district_name || '---')}</div>
-                <div class="lbl">Thành phố</div><div class="val">${esc(c.city_name || '---')}</div>
-                <div class="lbl">Chi nhánh</div><div class="val">${esc(c.company_name || '---')}</div>
-                <div class="lbl">Nguồn</div><div class="val">${esc(c.source_name || '---')}</div>
-                <div class="lbl">Trạng thái</div><div class="val">${esc(c.treatment_status || '---')}</div>
-                <div class="lbl">Ngày tạo</div><div class="val">${c.created_at ? fmtDate(c.created_at) : '---'}</div>
+        <div id="detailTabContent"></div>
+    `;
+    // Render default tab
+    _renderDetailTab('profile', c);
+}
+
+function showDetailTab(tabKey) {
+    if (!_detailCustomer) return;
+    // Update active tab button
+    const bar = document.getElementById('detailTabBar');
+    if (bar) {
+        bar.querySelectorAll('.detail-tab').forEach(btn => btn.classList.remove('active'));
+        const tabMap = {
+            profile: 0, appointments: 1, treatments: 2, visits: 3,
+            teeth: 4, quotations: 5, labo: 6, images: 7, advance: 8, debt: 9
+        };
+        const idx = tabMap[tabKey];
+        if (idx !== undefined && bar.children[idx]) {
+            bar.children[idx].classList.add('active');
+        }
+    }
+    _renderDetailTab(tabKey, _detailCustomer);
+}
+
+function _renderDetailTab(tabKey, c) {
+    const container = document.getElementById('detailTabContent');
+    if (!container) return;
+    switch (tabKey) {
+        case 'profile':
+            container.innerHTML = `
+                <div class="detail-section">
+                    <h4>Thông tin cá nhân</h4>
+                    <div class="detail-grid">
+                        <div class="lbl">Họ tên</div><div class="val">${esc(c.display_name || c.name)}</div>
+                        <div class="lbl">Mã KH</div><div class="val">${esc(c.ref)}</div>
+                        <div class="lbl">Điện thoại</div><div class="val">${esc(c.phone || '---')}</div>
+                        <div class="lbl">Email</div><div class="val">${esc(c.email || '---')}</div>
+                        <div class="lbl">Giới tính</div><div class="val">${esc(c.gender_display || '---')}</div>
+                        <div class="lbl">Năm sinh</div><div class="val">${c.birth_year || '---'}</div>
+                        <div class="lbl">Địa chỉ</div><div class="val">${esc(c.address || c.street || '---')}</div>
+                        <div class="lbl">Quận/Huyện</div><div class="val">${esc(c.district_name || '---')}</div>
+                        <div class="lbl">Thành phố</div><div class="val">${esc(c.city_name || '---')}</div>
+                        <div class="lbl">Chi nhánh</div><div class="val">${esc(c.company_name || '---')}</div>
+                        <div class="lbl">Nguồn</div><div class="val">${esc(c.source_name || '---')}</div>
+                        <div class="lbl">Trạng thái</div><div class="val">${esc(c.treatment_status || '---')}</div>
+                        <div class="lbl">Ngày tạo</div><div class="val">${c.created_at ? fmtDate(c.created_at) : '---'}</div>
+                    </div>
+                </div>`;
+            break;
+        case 'appointments':
+            container.innerHTML = _detailLoadingHtml();
+            fetch(`${API}/api/appointments?partner_id=${c.id}&per_page=50`)
+                .then(r => r.json())
+                .then(data => {
+                    const rows = data.items || data || [];
+                    if (!rows.length) { container.innerHTML = _detailEmptyHtml('Chưa có lịch hẹn'); return; }
+                    container.innerHTML = `<div style="padding:12px 0;">
+                        <table class="detail-treatment-table">
+                            <thead><tr><th>Ngày hẹn</th><th>Dịch vụ</th><th>Bác sĩ</th><th>Trạng thái</th></tr></thead>
+                            <tbody>${rows.map(a => `<tr>
+                                <td>${a.appointment_date ? fmtDate(a.appointment_date) : '---'}</td>
+                                <td>${esc(a.service_name || a.name || '---')}</td>
+                                <td>${esc(a.doctor_name || '---')}</td>
+                                <td>${esc(a.state || '---')}</td>
+                            </tr>`).join('')}</tbody>
+                        </table></div>`;
+                })
+                .catch(() => { container.innerHTML = _detailEmptyHtml('Không thể tải dữ liệu'); });
+            break;
+        case 'treatments':
+            container.innerHTML = _detailLoadingHtml();
+            fetch(`${API}/api/treatment-orders?partner_id=${c.id}&per_page=50`)
+                .then(r => r.json())
+                .then(data => {
+                    const rows = data.items || data || [];
+                    if (!rows.length) { container.innerHTML = _detailEmptyHtml('Chưa có phiếu điều trị'); return; }
+                    container.innerHTML = `<div style="padding:12px 0;">
+                        <table class="detail-treatment-table">
+                            <thead><tr><th>Mã phiếu</th><th>Ngày</th><th>Bác sĩ</th><th>Tổng tiền</th><th>Trạng thái</th></tr></thead>
+                            <tbody>${rows.map(t => `<tr>
+                                <td>${esc(t.name || '---')}</td>
+                                <td>${t.date ? fmtDate(t.date) : '---'}</td>
+                                <td>${esc(t.doctor_name || '---')}</td>
+                                <td>${formatMoney(t.amount_total)}</td>
+                                <td>${esc(t.state || '---')}</td>
+                            </tr>`).join('')}</tbody>
+                        </table></div>`;
+                })
+                .catch(() => { container.innerHTML = _detailEmptyHtml('Không thể tải dữ liệu'); });
+            break;
+        case 'visits':
+            container.innerHTML = _detailLoadingHtml();
+            fetch(`${API}/api/examination-periods?partner_id=${c.id}&per_page=50`)
+                .then(r => r.json())
+                .then(data => {
+                    const rows = data.items || data || [];
+                    if (!rows.length) { container.innerHTML = _detailEmptyHtml('Chưa có đợt khám'); return; }
+                    container.innerHTML = `<div style="padding:12px 0;">
+                        <table class="detail-treatment-table">
+                            <thead><tr><th>Mã đợt</th><th>Ngày bắt đầu</th><th>Ngày kết thúc</th><th>Trạng thái</th></tr></thead>
+                            <tbody>${rows.map(v => `<tr>
+                                <td>${esc(v.name || '---')}</td>
+                                <td>${v.date_start ? fmtDate(v.date_start) : '---'}</td>
+                                <td>${v.date_end ? fmtDate(v.date_end) : '---'}</td>
+                                <td>${esc(v.state || '---')}</td>
+                            </tr>`).join('')}</tbody>
+                        </table></div>`;
+                })
+                .catch(() => { container.innerHTML = _detailEmptyHtml('Không thể tải dữ liệu'); });
+            break;
+        case 'teeth':
+            container.innerHTML = _renderTeethChart(c.id);
+            break;
+        case 'quotations':
+            container.innerHTML = _detailLoadingHtml();
+            fetch(`${API}/api/quotations?partner_id=${c.id}&per_page=50`)
+                .then(r => r.json())
+                .then(data => {
+                    const rows = data.items || data || [];
+                    if (!rows.length) { container.innerHTML = _detailEmptyHtml('Chưa có báo giá'); return; }
+                    container.innerHTML = `<div style="padding:12px 0;">
+                        <table class="detail-treatment-table">
+                            <thead><tr><th>Mã báo giá</th><th>Ngày</th><th>Tổng tiền</th><th>Trạng thái</th></tr></thead>
+                            <tbody>${rows.map(q => `<tr>
+                                <td>${esc(q.name || '---')}</td>
+                                <td>${q.date ? fmtDate(q.date) : (q.date_order ? fmtDate(q.date_order) : '---')}</td>
+                                <td>${formatMoney(q.amount_total)}</td>
+                                <td>${esc(q.state || '---')}</td>
+                            </tr>`).join('')}</tbody>
+                        </table></div>`;
+                })
+                .catch(() => { container.innerHTML = _detailEmptyHtml('Không thể tải dữ liệu'); });
+            break;
+        case 'labo':
+            container.innerHTML = _detailLoadingHtml();
+            fetch(`${API}/api/sale-orders?partner_id=${c.id}&per_page=50`)
+                .then(r => r.json())
+                .then(data => {
+                    const rows = data.items || data || [];
+                    if (!rows.length) { container.innerHTML = _detailEmptyHtml('Chưa có phiếu Labo'); return; }
+                    container.innerHTML = `<div style="padding:12px 0;">
+                        <table class="detail-treatment-table">
+                            <thead><tr><th>Mã phiếu</th><th>Dịch vụ</th><th>Răng</th><th>Trạng thái</th><th>Ngày</th></tr></thead>
+                            <tbody>${rows.map(l => `<tr>
+                                <td>${esc(l.name || '---')}</td>
+                                <td>${esc(l.product_name || l.service_name || '---')}</td>
+                                <td>${esc(l.teeth || '---')}</td>
+                                <td>${esc(l.state || '---')}</td>
+                                <td>${l.date_order ? fmtDate(l.date_order) : (l.date ? fmtDate(l.date) : '---')}</td>
+                            </tr>`).join('')}</tbody>
+                        </table></div>`;
+                })
+                .catch(() => { container.innerHTML = _detailEmptyHtml('Không thể tải dữ liệu'); });
+            break;
+        case 'images':
+            container.innerHTML = `
+                <div style="padding: 20px; text-align: center;">
+                    <div style="border: 2px dashed #CBD5E1; border-radius: 12px; padding: 40px; margin: 20px;">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <polyline points="21 15 16 10 5 21"/>
+                        </svg>
+                        <p style="color: #64748B; margin-top: 12px;">Chưa có hình ảnh</p>
+                        <p style="color: #94A3B8; font-size: 12px;">Kéo thả hoặc nhấn để tải lên</p>
+                    </div>
+                </div>`;
+            break;
+        case 'advance':
+            container.innerHTML = _detailLoadingHtml();
+            fetch(`${API}/api/customer-receipts?partner_id=${c.id}&per_page=50`)
+                .then(r => r.json())
+                .then(data => {
+                    const rows = data.items || data || [];
+                    if (!rows.length) { container.innerHTML = _detailEmptyHtml('Chưa có tạm ứng'); return; }
+                    container.innerHTML = `<div style="padding:12px 0;">
+                        <table class="detail-treatment-table">
+                            <thead><tr><th>Ngày</th><th>Trạng thái</th><th>Bác sĩ</th><th>Ghi chú</th></tr></thead>
+                            <tbody>${rows.map(a => `<tr>
+                                <td>${a.date ? fmtDate(a.date) : '---'}</td>
+                                <td>${esc(a.state || '---')}</td>
+                                <td>${esc(a.doctor_name || '---')}</td>
+                                <td>${esc(a.reason || a.note || '---')}</td>
+                            </tr>`).join('')}</tbody>
+                        </table></div>`;
+                })
+                .catch(() => { container.innerHTML = _detailEmptyHtml('Không thể tải dữ liệu'); });
+            break;
+        case 'debt':
+            container.innerHTML = _detailLoadingHtml();
+            fetch(`${API}/api/payments?partner_id=${c.id}&per_page=50`)
+                .then(r => r.json())
+                .then(data => {
+                    const rows = data.items || data || [];
+                    const totalDebt = c.total_debit || 0;
+                    const summaryHtml = `
+                        <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+                            <span style="font-size:13px;color:#991B1B;font-weight:600;">Tổng công nợ</span>
+                            <span style="font-size:16px;font-weight:700;color:#DC2626;">${formatMoney(totalDebt)} đ</span>
+                        </div>`;
+                    if (!rows.length) {
+                        container.innerHTML = summaryHtml + _detailEmptyHtml('Không có công nợ');
+                        return;
+                    }
+                    let running = 0;
+                    const tableRows = rows.map(p => {
+                        const amount = p.amount || p.amount_total || 0;
+                        const type = p.payment_type || p.type || '';
+                        const isIncoming = type === 'inbound' || type === 'thu';
+                        running += isIncoming ? amount : -amount;
+                        return `<tr>
+                            <td>${p.date ? fmtDate(p.date) : '---'}</td>
+                            <td>${esc(p.name || '---')}</td>
+                            <td style="color:${isIncoming ? '#16A34A' : '#DC2626'}">${isIncoming ? 'Thu' : 'Chi'}</td>
+                            <td style="color:${isIncoming ? '#16A34A' : '#DC2626'}">${isIncoming ? '+' : '-'}${formatMoney(amount)}</td>
+                            <td>${formatMoney(running)}</td>
+                            <td>${esc(p.note || p.ref || '---')}</td>
+                        </tr>`;
+                    }).join('');
+                    container.innerHTML = summaryHtml + `<div style="padding:0 0 12px;">
+                        <table class="detail-treatment-table">
+                            <thead><tr><th>Ngày</th><th>Mã phiếu</th><th>Loại</th><th>Số tiền</th><th>Tồn</th><th>Ghi chú</th></tr></thead>
+                            <tbody>${tableRows}</tbody>
+                        </table></div>`;
+                })
+                .catch(() => {
+                    const totalDebt = c.total_debit || 0;
+                    container.innerHTML = `
+                        <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+                            <span style="font-size:13px;color:#991B1B;font-weight:600;">Tổng công nợ</span>
+                            <span style="font-size:16px;font-weight:700;color:#DC2626;">${formatMoney(totalDebt)} đ</span>
+                        </div>` + _detailEmptyHtml('Không thể tải dữ liệu');
+                });
+            break;
+        default:
+            container.innerHTML = _detailEmptyHtml('Tab không tồn tại');
+    }
+}
+
+function _renderTeethChart(partnerId) {
+    const upperRight = [18,17,16,15,14,13,12,11];
+    const upperLeft  = [21,22,23,24,25,26,27,28];
+    const lowerLeft  = [31,32,33,34,35,36,37,38];
+    const lowerRight = [48,47,46,45,44,43,42,41];
+    const toothEl = n => `<div class="tooth" data-tooth="${n}" style="width:36px;height:36px;border:2px solid #CBD5E1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#475569;cursor:pointer;background:white;transition:all 0.15s;">${n}</div>`;
+    const sep = `<div style="width:2px;background:#E2E8F0;margin:0 4px;"></div>`;
+    return `
+    <div style="padding:20px;">
+        <h4 style="margin-bottom:16px;font-size:15px;font-weight:600;">Sơ đồ răng</h4>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="display:flex;gap:2px;align-items:center;">
+                ${upperRight.map(toothEl).join('')}${sep}${upperLeft.map(toothEl).join('')}
+            </div>
+            <div style="width:100%;height:1px;background:#E2E8F0;margin:8px 0;"></div>
+            <div style="display:flex;gap:2px;align-items:center;">
+                ${lowerRight.map(toothEl).join('')}${sep}${lowerLeft.map(toothEl).join('')}
             </div>
         </div>
-    `;
+        <div style="display:flex;gap:16px;margin-top:16px;font-size:12px;color:#64748B;flex-wrap:wrap;">
+            <span><span style="display:inline-block;width:12px;height:12px;background:white;border:2px solid #CBD5E1;border-radius:3px;vertical-align:middle;"></span> Bình thường</span>
+            <span><span style="display:inline-block;width:12px;height:12px;background:#DBEAFE;border:2px solid #3B82F6;border-radius:3px;vertical-align:middle;"></span> Đã điều trị</span>
+            <span><span style="display:inline-block;width:12px;height:12px;background:#FEF3C7;border:2px solid #F59E0B;border-radius:3px;vertical-align:middle;"></span> Cần điều trị</span>
+            <span><span style="display:inline-block;width:12px;height:12px;background:#FEE2E2;border:2px solid #EF4444;border-radius:3px;vertical-align:middle;"></span> Đã nhổ</span>
+        </div>
+    </div>`;
+}
+
+function _detailLoadingHtml() {
+    return `<div style="padding:40px;text-align:center;color:#94A3B8;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite;margin-bottom:8px;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        <p style="font-size:13px;">Đang tải...</p>
+    </div>`;
+}
+
+function _detailEmptyHtml(msg) {
+    return `<div style="padding:40px;text-align:center;color:#94A3B8;">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:8px;"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+        <p style="font-size:13px;">${esc(msg)}</p>
+    </div>`;
 }
 
 function closeDetail() {
     document.getElementById('detailOverlay').classList.remove('open');
     document.getElementById('detailPanel').classList.remove('open');
+    _detailCustomer = null;
 }
 
 // ── HELPERS ──
@@ -2375,8 +3548,9 @@ async function loadDashboard() {
 // ══ PAGE STATE VARS ══
 let purchasePage = 1, purchaseSearchKey = '';
 let inventoryPage = 1, inventorySearchKey = '';
+let inventoryDateStart = '', inventoryDateEnd = '', inventoryProductFilter = '';
 let salaryPage = 1, salarySearchKey = '';
-let cashbookPage = 1, cashbookSearchKey = '';
+let cashbookPage = 1, cashbookSearchKey = '', cashbookType = 'cash';
 let callcenterPage = 1, callcenterSearchKey = '';
 let commissionPage = 1, commissionSearchKey = '';
 
@@ -2421,6 +3595,14 @@ function switchInventoryTab(btn) {
 }
 
 function loadInventory() {
+    // Update filter values from inputs
+    const dateStartEl = document.getElementById('inventoryDateStart');
+    const dateEndEl = document.getElementById('inventoryDateEnd');
+    const productFilterEl = document.getElementById('inventoryProductFilter');
+    if (dateStartEl) inventoryDateStart = dateStartEl.value;
+    if (dateEndEl) inventoryDateEnd = dateEndEl.value;
+    if (productFilterEl) inventoryProductFilter = productFilterEl.value;
+
     switch (currentInventoryTab) {
         case 'stock_summary': return loadStockSummary();
         case 'stock_in': return loadStockIn();
@@ -2453,7 +3635,18 @@ function loadStockSummary() {
     const body = document.getElementById('inventoryTableBody');
     body.innerHTML = '<tr><td colspan="10" class="loading"><div class="spinner"></div>Đang tải...</td></tr>';
 
-    fetch(API + `/api/stock-moves/summary?page=${inventoryPage}&per_page=20&search=${encodeURIComponent(inventorySearchKey)}`)
+    // Build query params
+    let params = new URLSearchParams({
+        page: inventoryPage,
+        per_page: 20,
+        search: inventorySearchKey
+    });
+    if (inventoryDateStart) params.append('date_from', inventoryDateStart);
+    if (inventoryDateEnd) params.append('date_to', inventoryDateEnd);
+    if (inventoryProductFilter) params.append('product_id', inventoryProductFilter);
+    if (currentCompanyId) params.append('company', currentCompanyId);
+
+    fetch(API + `/api/stock-moves/summary?${params.toString()}`)
         .then(r => r.json()).then(data => {
             if (!data.items || data.items.length === 0) {
                 body.innerHTML = '<tr><td colspan="10" style="padding:40px;text-align:center;color:#9ca3af">Không có dữ liệu</td></tr>';
@@ -2511,7 +3704,18 @@ function loadStockPickings(type) {
     const body = document.getElementById('inventoryTableBody');
     body.innerHTML = '<tr><td colspan="7" class="loading"><div class="spinner"></div>Đang tải...</td></tr>';
 
-    fetch(API + `/api/stock-pickings?picking_type=${type}&page=${inventoryPage}&per_page=20&search=${encodeURIComponent(inventorySearchKey)}${currentCompanyId ? '&company=' + currentCompanyId : ''}`)
+    // Build query params
+    let params = new URLSearchParams({
+        picking_type: type,
+        page: inventoryPage,
+        per_page: 20,
+        search: inventorySearchKey
+    });
+    if (inventoryDateStart) params.append('date_from', inventoryDateStart);
+    if (inventoryDateEnd) params.append('date_to', inventoryDateEnd);
+    if (currentCompanyId) params.append('company', currentCompanyId);
+
+    fetch(API + `/api/stock-pickings?${params.toString()}`)
         .then(r => r.json()).then(data => {
             if (!data.items || data.items.length === 0) {
                 body.innerHTML = '<tr><td colspan="7" style="padding:40px;text-align:center;color:#9ca3af">Không có dữ liệu</td></tr>';
@@ -2550,7 +3754,17 @@ function loadStockHistory() {
     const body = document.getElementById('inventoryTableBody');
     body.innerHTML = '<tr><td colspan="9" class="loading"><div class="spinner"></div>Đang tải...</td></tr>';
 
-    fetch(API + `/api/stock-moves?page=${inventoryPage}&per_page=20&search=${encodeURIComponent(inventorySearchKey)}`)
+    // Build query params
+    let params = new URLSearchParams({
+        page: inventoryPage,
+        per_page: 20,
+        search: inventorySearchKey
+    });
+    if (inventoryDateStart) params.append('date_from', inventoryDateStart);
+    if (inventoryDateEnd) params.append('date_to', inventoryDateEnd);
+    if (currentCompanyId) params.append('company', currentCompanyId);
+
+    fetch(API + `/api/stock-moves?${params.toString()}`)
         .then(r => r.json()).then(data => {
             if (!data.items || data.items.length === 0) {
                 body.innerHTML = '<tr><td colspan="9" style="padding:40px;text-align:center;color:#9ca3af">Không có dữ liệu</td></tr>';
@@ -2592,99 +3806,245 @@ function loadEmptyTab() {
     document.getElementById('inventoryPagination').innerHTML = '';
 }
 
+// Initialize inventory page - load products for filter dropdown
+function initInventoryPage() {
+    // Set default date range (first day of month to today)
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const dateStartEl = document.getElementById('inventoryDateStart');
+    const dateEndEl = document.getElementById('inventoryDateEnd');
+    if (dateStartEl) dateStartEl.value = firstDayOfMonth.toISOString().split('T')[0];
+    if (dateEndEl) dateEndEl.value = today.toISOString().split('T')[0];
+    inventoryDateStart = dateStartEl ? dateStartEl.value : '';
+    inventoryDateEnd = dateEndEl ? dateEndEl.value : '';
+
+    // Load products for filter
+    loadInventoryProducts();
+}
+
+// Load products for filter dropdown
+function loadInventoryProducts() {
+    const productFilterEl = document.getElementById('inventoryProductFilter');
+    if (!productFilterEl) return;
+
+    fetch(API + `/api/products?per_page=1000${currentCompanyId ? '&company=' + currentCompanyId : ''}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.items && data.items.length > 0) {
+                let html = '<option value="">Tất cả sản phẩm</option>';
+                data.items.forEach(p => {
+                    html += `<option value="${p.id}">${esc(p.name)} (${esc(p.default_code || '---')})</option>`;
+                });
+                productFilterEl.innerHTML = html;
+            }
+        })
+        .catch(() => {
+            // Silently fail - keep default option
+        });
+}
+
+// Export inventory to Excel
+function exportInventoryExcel() {
+    let params = new URLSearchParams({
+        search: inventorySearchKey,
+        export: 'excel'
+    });
+    if (inventoryDateStart) params.append('date_from', inventoryDateStart);
+    if (inventoryDateEnd) params.append('date_to', inventoryDateEnd);
+    if (inventoryProductFilter) params.append('product_id', inventoryProductFilter);
+    if (currentCompanyId) params.append('company', currentCompanyId);
+
+    window.open(API + `/api/stock-moves/summary?${params.toString()}`, '_blank');
+}
+
 // ── SALARY (Employees) ──
 function loadSalary() {
-    fetch(API + `/api/employees?page=${salaryPage}&per_page=20&search=${encodeURIComponent(salarySearchKey)}${currentCompanyId ? '&company=' + currentCompanyId : ''}`)
-        .then(r => r.json()).then(data => {
-            const body = document.getElementById('salaryTableBody');
-            if (!data.items || data.items.length === 0) {
-                body.innerHTML = '<tr><td colspan="5" style="padding:40px;text-align:center;color:#9ca3af">Không có dữ liệu</td></tr>';
-                return;
-            }
-            body.innerHTML = data.items.map(e => `
-                        <tr style="border-bottom:1px solid #f3f4f6" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
-                            <td style="padding:12px;font-weight:500">${esc(e.name || '---')}</td>
-                            <td style="padding:12px">${esc(e.hr_job || '---')}</td>
-                            <td style="padding:12px">${esc(e.company_name || '---')}</td>
-                            <td style="padding:12px;text-align:center">${e.is_doctor ? '<span class="badge badge-blue">Bác sĩ</span>' : '---'}</td>
-                            <td style="padding:12px;text-align:center"><span class="badge ${e.active ? 'badge-green' : 'badge-red'}">${e.active ? 'Hoạt động' : 'Nghỉ'}</span></td>
-                        </tr>
-                    `).join('');
-            renderGenericPagination('salaryPagination', data, p => { salaryPage = p; loadSalary(); });
-        }).catch(() => {
-            document.getElementById('salaryTableBody').innerHTML = '<tr><td colspan="5" style="padding:40px;text-align:center;color:#9ca3af">Lỗi tải dữ liệu</td></tr>';
-        });
+    const body = document.getElementById('salaryTableBody');
+    if (!body) return;
+
+    // Show empty state with proper salary columns - no salary API/data available yet
+    body.innerHTML = `
+        <tr>
+            <td colspan="11" style="padding:60px 20px;text-align:center">
+                <div style="margin-bottom:16px">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                </div>
+                <p style="color:#6b7280;font-size:15px;margin:0 0 8px 0">Chưa có dữ liệu bảng lương</p>
+                <p style="color:#9ca3af;font-size:13px;margin:0">Dữ liệu lương sẽ được hiển thị khi có bảng lương cho kỳ được chọn</p>
+            </td>
+        </tr>
+    `;
+    document.getElementById('salaryPagination').innerHTML = '';
 }
 
 // ── CASHBOOK (Payments) ──
+function switchCashbookTab(btn, type) {
+    cashbookType = type;
+    document.querySelectorAll('#cashbookTabs .tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    cashbookPage = 1;
+    loadCashbook();
+}
+
 function loadCashbook() {
-    fetch(API + `/api/payments?page=${cashbookPage}&per_page=20&search=${encodeURIComponent(cashbookSearchKey)}${currentCompanyId ? '&company=' + currentCompanyId : ''}`)
+    // First, fetch summary stats
+    fetch(API + `/api/payments/summary?journal_type=${cashbookType}`)
+        .then(r => r.json()).then(summary => {
+            // Update summary stats
+            const startBalance = 0; // Simplified: assume 0 for now, could track running balance
+            const totalIncome = summary.total_income || 0;
+            const totalExpense = summary.total_expense || 0;
+            const endBalance = summary.balance || 0;
+
+            document.getElementById('cbStart').textContent = Number(startBalance).toLocaleString('vi-VN') + 'đ';
+            document.getElementById('cbIncome').textContent = Number(totalIncome).toLocaleString('vi-VN') + 'đ';
+            document.getElementById('cbExpense').textContent = Number(totalExpense).toLocaleString('vi-VN') + 'đ';
+            document.getElementById('cbEnd').textContent = Number(endBalance).toLocaleString('vi-VN') + 'đ';
+        }).catch(() => {
+            document.getElementById('cbStart').textContent = '0đ';
+            document.getElementById('cbIncome').textContent = '0đ';
+            document.getElementById('cbExpense').textContent = '0đ';
+            document.getElementById('cbEnd').textContent = '0đ';
+        });
+
+    // Then fetch paginated data
+    const journalFilter = cashbookType ? `&journal_type=${cashbookType}` : '';
+    fetch(API + `/api/payments?page=${cashbookPage}&per_page=20&search=${encodeURIComponent(cashbookSearchKey)}${currentCompanyId ? '&company=' + currentCompanyId : ''}${journalFilter}`)
         .then(r => r.json()).then(data => {
             const body = document.getElementById('cashbookTableBody');
             if (!data.items || data.items.length === 0) {
-                body.innerHTML = '<tr><td colspan="5" style="padding:40px;text-align:center;color:#9ca3af">Không có dữ liệu</td></tr>';
+                body.innerHTML = '<tr><td colspan="11" style="padding:40px;text-align:center;color:#9ca3af">Không có dữ liệu</td></tr>';
                 return;
             }
-            body.innerHTML = data.items.map(p => `
-                        <tr style="border-bottom:1px solid #f3f4f6" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
-                            <td style="padding:12px;font-weight:500;color:#3b82f6">${esc(p.id?.substring(0, 8) || '---')}</td>
-                            <td style="padding:12px">${esc(p.order_name || '---')}</td>
-                            <td style="padding:12px">${p.date ? new Date(p.date).toLocaleDateString('vi-VN') : '---'}</td>
-                            <td style="padding:12px"><span class="badge ${p.state === 'posted' ? 'badge-green' : p.state === 'draft' ? 'badge-yellow' : 'badge-gray'}">${esc(p.state || '---')}</span></td>
-                            <td style="padding:12px;text-align:right;font-weight:600">${p.amount ? Number(p.amount).toLocaleString('vi-VN') + 'đ' : '---'}</td>
-                        </tr>
-                    `).join('');
+
+            // Calculate running balance for each row (reverse to calculate from oldest to newest)
+            let runningBalance = 0;
+            const reversedItems = [...data.items].reverse();
+            const itemsWithBalance = reversedItems.map(p => {
+                runningBalance += Number(p.amount_signed || p.amount || 0);
+                return { ...p, balance: runningBalance };
+            }).reverse(); // Reverse back for display (newest first)
+
+            // Status label mapping
+            const statusMap = {
+                'posted': 'Đã ghi sổ',
+                'draft': 'Nháp',
+                'cancel': 'Đã hủy',
+                'cancelled': 'Đã hủy'
+            };
+
+            body.innerHTML = itemsWithBalance.map(p => {
+                const isIncome = p.payment_type === 'inbound';
+                const statusLabel = statusMap[p.state] || p.display_state || p.state || '---';
+                const statusClass = p.state === 'posted' ? 'badge-green' : p.state === 'draft' ? 'badge-yellow' : 'badge-red';
+
+                return `
+                    <tr style="border-bottom:1px solid #f3f4f6" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
+                        <td style="padding:12px">${p.date ? new Date(p.date).toLocaleDateString('vi-VN') : '---'}</td>
+                        <td style="padding:12px;font-weight:500;color:#3b82f6">${esc(p.name || '---')}</td>
+                        <td style="padding:12px"><span class="badge ${isIncome ? 'badge-blue' : 'badge-orange'}">${isIncome ? 'Thu' : 'Chi'}</span></td>
+                        <td style="padding:12px">${esc(p.display_payment_type || p.journal_name || '---')}</td>
+                        <td style="padding:12px">${esc(p.partner_name || '---')}</td>
+                        <td style="padding:12px;text-align:right;color:#10b981;font-weight:600">${isIncome && p.amount ? Number(p.amount).toLocaleString('vi-VN') + 'đ' : ''}</td>
+                        <td style="padding:12px;text-align:right;color:#ef4444;font-weight:600">${!isIncome && p.amount ? Number(p.amount).toLocaleString('vi-VN') + 'đ' : ''}</td>
+                        <td style="padding:12px;text-align:right;font-weight:600">${Number(p.balance || 0).toLocaleString('vi-VN')}đ</td>
+                        <td style="padding:12px"><span class="badge ${statusClass}">${esc(statusLabel)}</span></td>
+                        <td style="padding:12px">${esc(p.journal_name || '---')}</td>
+                        <td style="padding:12px"><button class="btn-icon" title="Xem chi tiết">👁</button></td>
+                    </tr>
+                `;
+            }).join('');
             renderGenericPagination('cashbookPagination', data, p => { cashbookPage = p; loadCashbook(); });
         }).catch(() => {
-            document.getElementById('cashbookTableBody').innerHTML = '<tr><td colspan="5" style="padding:40px;text-align:center;color:#9ca3af">Lỗi tải dữ liệu</td></tr>';
+            document.getElementById('cashbookTableBody').innerHTML = '<tr><td colspan="11" style="padding:40px;text-align:center;color:#9ca3af">Lỗi tải dữ liệu</td></tr>';
         });
 }
 
-// ── CALL CENTER (Customers with phone) ──
+// ── CALL CENTER (Call History / Lịch sử cuộc gọi) ──
 function loadCallCenter() {
-    fetch(API + `/api/callcenter?page=${callcenterPage}&per_page=20&search=${encodeURIComponent(callcenterSearchKey)}${currentCompanyId ? '&company=' + currentCompanyId : ''}`)
+    fetch(API + `/api/call-logs?page=${callcenterPage}&per_page=20&search=${encodeURIComponent(callcenterSearchKey)}${currentCompanyId ? '&company=' + currentCompanyId : ''}`)
         .then(r => r.json()).then(data => {
             const body = document.getElementById('callcenterTableBody');
             if (!data.items || data.items.length === 0) {
-                body.innerHTML = '<tr><td colspan="5" style="padding:40px;text-align:center;color:#9ca3af">Không có dữ liệu</td></tr>';
+                body.innerHTML = `<tr>
+                    <td colspan="9" style="padding:60px 20px;text-align:center">
+                        <div style="margin-bottom:16px">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5">
+                                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+                            </svg>
+                        </div>
+                        <div style="font-size:16px;font-weight:500;color:#374151;margin-bottom:8px">Chưa có lịch sử cuộc gọi</div>
+                        <div style="font-size:14px;color:#9ca3af">Dữ liệu cuộc gọi sẽ hiển thị khi tích hợp tổng đài</div>
+                    </td>
+                </tr>`;
+                document.getElementById('callcenterPagination').innerHTML = '';
                 return;
             }
             body.innerHTML = data.items.map(c => `
-                        <tr style="border-bottom:1px solid #f3f4f6;cursor:pointer" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''" onclick="showDetail(${JSON.stringify(c).replace(/"/g, '&quot;')})">
-                            <td style="padding:12px;font-weight:500">${esc(c.display_name || c.name || '---')}</td>
-                            <td style="padding:12px;font-family:monospace">${esc(c.phone || '---')}</td>
-                            <td style="padding:12px">${c.appointment_date ? new Date(c.appointment_date).toLocaleDateString('vi-VN') : '---'}</td>
-                            <td style="padding:12px"><span class="badge badge-blue">${esc(c.contact_status || 'Chưa liên hệ')}</span></td>
-                            <td style="padding:12px">${esc(c.source_name || '---')}</td>
+                        <tr style="border-bottom:1px solid #f3f4f6;cursor:pointer" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
+                            <td style="padding:12px;font-weight:500">${esc(c.call_time || '---')}</td>
+                            <td style="padding:12px;font-family:monospace">${esc(c.caller_number || '---')}</td>
+                            <td style="padding:12px;font-family:monospace">${esc(c.receiver_number || '---')}</td>
+                            <td style="padding:12px"><span class="badge ${c.direction === 'outbound' ? 'badge-green' : 'badge-blue'}">${c.direction === 'outbound' ? 'Gọi ra' : 'Gọi vào'}</span></td>
+                            <td style="padding:12px"><span class="badge badge-${c.status === 'answered' ? 'green' : c.status === 'missed' ? 'red' : 'gray'}">${esc(c.status_display || '---')}</span></td>
+                            <td style="padding:12px">${esc(c.duration || '---')}</td>
+                            <td style="padding:12px">${esc(c.employee_name || '---')}</td>
+                            <td style="padding:12px">${esc(c.customer_name || '---')}</td>
+                            <td style="padding:12px">${c.recording_url ? '<span style="color:#3b82f6;cursor:pointer">Nghe</span>' : '---'}</td>
                         </tr>
                     `).join('');
             renderGenericPagination('callcenterPagination', data, p => { callcenterPage = p; loadCallCenter(); });
         }).catch(() => {
-            document.getElementById('callcenterTableBody').innerHTML = '<tr><td colspan="5" style="padding:40px;text-align:center;color:#9ca3af">Lỗi tải dữ liệu</td></tr>';
+            document.getElementById('callcenterTableBody').innerHTML = '<tr><td colspan="9" style="padding:40px;text-align:center;color:#9ca3af">Lỗi tải dữ liệu</td></tr>';
         });
 }
 
-// ── COMMISSION (Employees for hoa hồng) ──
+// ── COMMISSION / REFERRAL (Người giới thiệu) ──
 function loadCommission() {
-    fetch(API + `/api/employees?page=${commissionPage}&per_page=20&search=${encodeURIComponent(commissionSearchKey)}${currentCompanyId ? '&company=' + currentCompanyId : ''}`)
+    fetch(API + `/api/referrals?page=${commissionPage}&per_page=20&search=${encodeURIComponent(commissionSearchKey)}${currentCompanyId ? '&company=' + currentCompanyId : ''}`)
         .then(r => r.json()).then(data => {
             const body = document.getElementById('commissionTableBody');
             if (!data.items || data.items.length === 0) {
-                body.innerHTML = '<tr><td colspan="5" style="padding:40px;text-align:center;color:#9ca3af">Không có dữ liệu</td></tr>';
+                body.innerHTML = `<tr>
+                    <td colspan="9" style="padding:60px 20px;text-align:center">
+                        <div style="margin-bottom:16px">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                        </div>
+                        <div style="font-size:16px;font-weight:500;color:#374151;margin-bottom:8px">Chưa có người giới thiệu</div>
+                        <div style="font-size:14px;color:#9ca3af">Thêm người giới thiệu để theo dõi hoa hồng</div>
+                    </td>
+                </tr>`;
+                document.getElementById('commissionPagination').innerHTML = '';
                 return;
             }
-            body.innerHTML = data.items.map(e => `
+            const fmtMoney = v => v ? Number(v).toLocaleString('vi-VN') + ' đ' : '0 đ';
+            body.innerHTML = data.items.map(r => `
                         <tr style="border-bottom:1px solid #f3f4f6" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
-                            <td style="padding:12px;font-weight:500">${esc(e.name || '---')}</td>
-                            <td style="padding:12px">${esc(e.hr_job || '---')}</td>
-                            <td style="padding:12px">${esc(e.company_name || '---')}</td>
-                            <td style="padding:12px;text-align:center">${e.is_doctor ? '<span class="badge badge-blue">Bác sĩ</span>' : '---'}</td>
-                            <td style="padding:12px;text-align:center"><span class="badge ${e.active ? 'badge-green' : 'badge-red'}">${e.active ? 'Hoạt động' : 'Nghỉ'}</span></td>
+                            <td style="padding:12px;font-weight:500;font-family:monospace">${esc(r.referral_code || '---')}</td>
+                            <td style="padding:12px;font-weight:500">${esc(r.name || '---')}</td>
+                            <td style="padding:12px">${r.date_of_birth ? new Date(r.date_of_birth).toLocaleDateString('vi-VN') : '---'}</td>
+                            <td style="padding:12px">${esc(r.gender || '---')}</td>
+                            <td style="padding:12px;font-family:monospace">${esc(r.phone || '---')}</td>
+                            <td style="padding:12px;text-align:center;font-weight:500">${r.referred_count || 0}</td>
+                            <td style="padding:12px;text-align:right;font-weight:500;color:#10b981">${fmtMoney(r.total_revenue)}</td>
+                            <td style="padding:12px;text-align:right;font-weight:500;color:#8b5cf6">${fmtMoney(r.commission_earned)}</td>
+                            <td style="padding:12px">
+                                <button style="padding:4px 8px;margin-right:4px;background:#f3f4f6;border:none;border-radius:4px;cursor:pointer" onclick="editReferral('${r.id}')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                </button>
+                                <button style="padding:4px 8px;background:#fee2e2;border:none;border-radius:4px;cursor:pointer" onclick="deleteReferral('${r.id}')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                                </button>
+                            </td>
                         </tr>
                     `).join('');
             renderGenericPagination('commissionPagination', data, p => { commissionPage = p; loadCommission(); });
         }).catch(() => {
-            document.getElementById('commissionTableBody').innerHTML = '<tr><td colspan="5" style="padding:40px;text-align:center;color:#9ca3af">Lỗi tải dữ liệu</td></tr>';
+            document.getElementById('commissionTableBody').innerHTML = '<tr><td colspan="9" style="padding:40px;text-align:center;color:#9ca3af">Lỗi tải dữ liệu</td></tr>';
         });
 }
 
