@@ -354,7 +354,7 @@ async function saveModalEntry(type) {
             throw new Error(errorData.message || 'Lỗi khi lưu dữ liệu');
         }
 
-        alert('Thành công!');
+        showToast('Lưu thành công!', 'success');
         closeModal();
         // Refresh current page data
         if (currentPageView === 'dashboard') loadDashboard();
@@ -363,7 +363,7 @@ async function saveModalEntry(type) {
         if (currentPageView === 'calendar') loadAppointments();
 
     } catch (e) {
-        alert(e.message);
+        showToast(e.message || 'Có lỗi xảy ra', 'error');
     } finally {
         btn.disabled = false;
         btn.textContent = originalText;
@@ -410,13 +410,13 @@ async function saveEditAppointment() {
             throw new Error(errData.message || 'Lỗi khi cập nhật');
         }
 
-        alert('Đã cập nhật lịch hẹn!');
+        showToast('Đã cập nhật lịch hẹn!', 'success');
         closeModal();
         if (currentPageView === 'dashboard') loadDashboard();
         else if (currentPageView === 'calendar') loadCalendar();
         else if (currentPageView === 'reception') loadReception();
     } catch (e) {
-        alert(e.message);
+        showToast(e.message || 'Có lỗi xảy ra', 'error');
     } finally {
         btn.disabled = false;
         btn.textContent = originalText;
@@ -431,13 +431,13 @@ async function deleteEditAppointment(apptId) {
             const errData = await res.json();
             throw new Error(errData.message || 'Lỗi khi xóa');
         }
-        alert('Đã xóa lịch hẹn!');
+        showToast('Đã xóa lịch hẹn!', 'success');
         closeModal();
         if (currentPageView === 'dashboard') loadDashboard();
         else if (currentPageView === 'calendar') loadCalendar();
         else if (currentPageView === 'reception') loadReception();
     } catch (e) {
-        alert('Lỗi: ' + e.message);
+        showToast('Lỗi: ' + e.message, 'error');
     }
 }
 
@@ -508,10 +508,10 @@ function saveStatus(btn, partnerId) {
                     else if (currentPageView === 'calendar') loadAppointments();
                     else if (currentPageView === 'dashboard') loadDashboard();
                 } else {
-                    alert('Lỗi: ' + (data.message || 'Không thể cập nhật'));
+                    showToast('Lỗi: ' + (data.message || 'Không thể cập nhật'), 'error');
                 }
             })
-            .catch(e => alert('Lỗi: ' + e.message));
+            .catch(e => showToast('Lỗi: ' + e.message, 'error'));
     }
     popover.remove();
     activeStatusPopover = null;
@@ -812,12 +812,12 @@ function navigate(page) {
 
     // Permission enforcement — skip check for 'users' page (admin-only handled separately)
     if (page !== 'users' && !hasPermission(page)) {
-        alert('⛔ Bạn không có quyền truy cập trang này');
+        showToast('Bạn không có quyền truy cập trang này', 'error');
         return;
     }
     // Users page is admin-only
     if (page === 'users' && getCurrentUser().role !== 'admin') {
-        alert('⛔ Chỉ Admin mới có quyền quản lý người dùng');
+        showToast('Chỉ Admin mới có quyền quản lý người dùng', 'error');
         return;
     }
 
@@ -1072,10 +1072,104 @@ document.addEventListener('click', () => {
 
 // ══ RECEPTION ══
 let recPage = 1;
+let recStateFilter = '';
+let recSearchDebounce = null;
+
+function debounceRecSearch() {
+    clearTimeout(recSearchDebounce);
+    recSearchDebounce = setTimeout(() => { recPage = 1; loadReception(); }, 300);
+}
+
+function filterReceptionState(btn) {
+    document.querySelectorAll('#recFilterTabs .tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    recStateFilter = btn.dataset.recState || '';
+    recPage = 1;
+    loadReception();
+}
+
+// Build state label and class for reception cards
+function recStateInfo(state) {
+    const map = {
+        'waiting':     { label: 'Chờ khám',   cls: 'waiting' },
+        'confirmed':   { label: 'Chờ khám',   cls: 'confirmed' },
+        'examination': { label: 'Đang khám',  cls: 'examining' },
+        'in_progress': { label: 'Đang khám',  cls: 'examining' },
+        'done':        { label: 'Hoàn thành', cls: 'done' },
+        'paid':        { label: 'Đã thanh toán', cls: 'paid' },
+        'completed':   { label: 'Hoàn thành', cls: 'done' },
+        'cancel':      { label: 'Hủy',        cls: 'cancel' },
+        'cancelled':   { label: 'Hủy',        cls: 'cancel' },
+    };
+    return map[state] || { label: state || '---', cls: '' };
+}
+
+function renderReceptionCard(a) {
+    const name = esc(a.partner_display_name || a.name || 'Không tên');
+    const phone = esc(a.partner_phone || a.phone || '---');
+    const doctor = esc(a.doctor_name || '---');
+    const branch = esc(a.company_name || '---');
+    const note = esc(a.note || a.reason || '');
+    const { label: stateLabel, cls: stateClass } = recStateInfo(a.state);
+    const partnerId = a.partner_id || a.id || 0;
+    const apptId = a.id || 0;
+
+    // Get initials from name (strip [T####] prefix first)
+    const cleanName = name.replace(/^\[\s*T?\d+\]\s*/i, '');
+    const parts = cleanName.split(/\s+/);
+    const initials = parts.length >= 2
+        ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+        : cleanName.substring(0, 2).toUpperCase();
+
+    // Parse date/time
+    let dateStr = '---', timeStr = '---';
+    if (a.date) {
+        const dt = new Date(a.date);
+        if (!isNaN(dt)) {
+            dateStr = `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`;
+            const h = dt.getHours(), m = dt.getMinutes();
+            if (h > 0 || m > 0) timeStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+        }
+    }
+    if (a.time && timeStr === '---') timeStr = esc(a.time);
+
+    return `<div class="reception-card">
+        <div class="reception-card-header">
+            <div class="reception-card-avatar">${initials}</div>
+            <div class="reception-card-info">
+                <div class="reception-card-name">${name}</div>
+                <div class="reception-card-phone">${phone}</div>
+            </div>
+            <span class="badge rec-card-status ${stateClass}" style="margin-left:auto">${stateLabel}</span>
+        </div>
+        <div class="reception-card-body">
+            <div><span class="reception-card-label">Bác sĩ:</span> ${doctor}</div>
+            <div><span class="reception-card-label">Chi nhánh:</span> ${branch}</div>
+            <div><span class="reception-card-label">Ngày hẹn:</span> ${dateStr}</div>
+            <div><span class="reception-card-label">Giờ:</span> ${timeStr}</div>
+        </div>
+        ${note ? `<div class="reception-card-note">${note}</div>` : ''}
+        <div class="reception-card-actions">
+            <button class="btn-sm" onclick="window.open('tel:${phone.replace(/[^0-9+]/g,'')}')" title="Gọi điện">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+            </button>
+            <button class="btn-sm" onclick="openEditReception(${apptId})" title="Sửa lịch hẹn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="btn-sm" onclick="viewReceptionProfile(${apptId}, ${partnerId})" title="Xem hồ sơ">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            </button>
+        </div>
+    </div>`;
+}
+
 async function loadReception() {
+    const grid = document.getElementById('receptionCardGrid');
+    if (grid) grid.innerHTML = '<div class="loading" style="grid-column:1/-1;padding:40px;text-align:center"><div class="spinner"></div>Đang tải...</div>';
+
     try {
-        const companyParam = currentCompanyId ? `?company=${currentCompanyId}` : '';
-        const states = await (await fetch(`${API}/api/appointments/states${companyParam}`)).json();
+        const companyParam = currentCompanyId ? `&company=${currentCompanyId}` : '';
+        const states = await (await fetch(`${API}/api/appointments/states?${companyParam.replace(/^&/,'')}`)).json();
         const stateMap = {};
         states.forEach(s => stateMap[s.state] = s.c);
         document.getElementById('recWaiting').textContent = fmt(stateMap['waiting'] || stateMap['confirmed'] || 0);
@@ -1083,26 +1177,23 @@ async function loadReception() {
         document.getElementById('recTreating').textContent = fmt(stateMap['examination'] || stateMap['in_progress'] || 0);
         document.getElementById('recPaid').textContent = fmt(stateMap['paid'] || stateMap['completed'] || 0);
 
+        const search = document.getElementById('recSearch')?.value || '';
         const listParams = new URLSearchParams({ page: recPage, per_page: 20, sort: 'date', order: 'desc' });
         if (currentCompanyId) listParams.append('company', currentCompanyId);
+        if (recStateFilter) listParams.append('state', recStateFilter);
+        if (search) listParams.append('search', search);
+
         const res = await fetch(`${API}/api/appointments?${listParams}`);
         const data = await res.json();
-        const tbody = document.getElementById('receptionBody');
-        if (!data.items.length) { tbody.innerHTML = '<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--text-muted)">Không có dữ liệu</td></tr>'; return; }
-        tbody.innerHTML = data.items.map((a, i) => {
-            const badge = apptBadge(a.state);
-            return `<tr>
-                        <td>${(recPage - 1) * 20 + i + 1}</td>
-                        <td><div class="cell-name"><div class="avatar" style="width:28px;height:28px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="name-info"><div class="primary-name">${esc(a.partner_display_name)}</div></div></div></td>
-                        <td>${esc(a.partner_phone || '---')}</td>
-                        <td>${esc(a.doctor_name || '---')}</td>
-                        <td>${esc(a.company_name || '---')}</td>
-                        <td>${fmtDate(a.date)}</td>
-                        <td style="max-width:150px">${esc(a.note || a.reason || '---')}</td>
-                        <td>${badge}</td>
-                    </tr>`;
-        }).join('');
+
+        if (!data.items || !data.items.length) {
+            if (grid) grid.innerHTML = '<div style="grid-column:1/-1;padding:60px;text-align:center;color:var(--text-muted)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="margin-bottom:12px;opacity:0.3"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><div>Không có dữ liệu</div></div>';
+            return;
+        }
+
+        if (grid) grid.innerHTML = data.items.map(a => renderReceptionCard(a)).join('');
         renderGenericPagination('receptionPagination', data, p => { recPage = p; loadReception(); });
+
     } catch (e) {
         console.warn('Reception load error, using fallback:', e);
         // Fallback stat cards
@@ -1110,28 +1201,58 @@ async function loadReception() {
         document.getElementById('recDone').textContent = '5';
         document.getElementById('recTreating').textContent = '2';
         document.getElementById('recPaid').textContent = '4';
-        // Fallback table data
+        // Fallback card data
         const fallbackAppts = [
-            { partner_display_name: 'Nguyễn Văn An', partner_phone: '0988123456', doctor_name: 'BS. Trần Thị B', company_name: 'Tấm Dentist Quận 3', date: '2026-02-09', note: 'Nhổ răng khôn', state: 'confirmed' },
-            { partner_display_name: 'Phạm Thị Mai', partner_phone: '0977123456', doctor_name: 'BS. Nguyễn Văn A', company_name: 'Tấm Dentist Thủ Đức', date: '2026-02-09', note: 'Tái khám', state: 'done' },
-            { partner_display_name: 'Trần Văn Bình', partner_phone: '0966123456', doctor_name: 'BS. Lê Văn C', company_name: 'Tấm Dentist Quận 3', date: '2026-02-09', note: 'Tẩy trắng', state: 'waiting' },
-            { partner_display_name: 'Lê Thị Hương', partner_phone: '0911223344', doctor_name: 'BS. Trần Thị B', company_name: 'Tấm Dentist Gò Vấp', date: '2026-02-09', note: 'Chỉnh nha', state: 'examination' },
-            { partner_display_name: 'Đỗ Minh Tuấn', partner_phone: '0933445566', doctor_name: 'BS. Nguyễn Văn A', company_name: 'Tấm Dentist Quận 3', date: '2026-02-09', note: 'Cạo vôi', state: 'confirmed' }
+            { id: 1, partner_id: 1, partner_display_name: 'Nguyễn Văn An', partner_phone: '0988123456', doctor_name: 'BS. Trần Thị B', company_name: 'Tấm Dentist Quận 3', date: '2026-02-09T08:30:00', note: 'Nhổ răng khôn', state: 'confirmed' },
+            { id: 2, partner_id: 2, partner_display_name: 'Phạm Thị Mai', partner_phone: '0977123456', doctor_name: 'BS. Nguyễn Văn A', company_name: 'Tấm Dentist Thủ Đức', date: '2026-02-09T09:00:00', note: 'Tái khám', state: 'done' },
+            { id: 3, partner_id: 3, partner_display_name: 'Trần Văn Bình', partner_phone: '0966123456', doctor_name: 'BS. Lê Văn C', company_name: 'Tấm Dentist Quận 3', date: '2026-02-09T10:00:00', note: 'Tẩy trắng', state: 'waiting' },
+            { id: 4, partner_id: 4, partner_display_name: 'Lê Thị Hương', partner_phone: '0911223344', doctor_name: 'BS. Trần Thị B', company_name: 'Tấm Dentist Gò Vấp', date: '2026-02-09T14:00:00', note: 'Chỉnh nha', state: 'examination' },
+            { id: 5, partner_id: 5, partner_display_name: 'Đỗ Minh Tuấn', partner_phone: '0933445566', doctor_name: 'BS. Nguyễn Văn A', company_name: 'Tấm Dentist Quận 3', date: '2026-02-09T15:30:00', note: 'Cạo vôi', state: 'cancel' }
         ];
-        const tbody = document.getElementById('receptionBody');
-        tbody.innerHTML = fallbackAppts.map((a, i) => {
-            const badge = apptBadge(a.state);
-            return `<tr>
-                        <td>${i + 1}</td>
-                        <td><div class="cell-name"><div class="avatar" style="width:28px;height:28px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="name-info"><div class="primary-name">${esc(a.partner_display_name)}</div></div></div></td>
-                        <td>${esc(a.partner_phone)}</td>
-                        <td>${esc(a.doctor_name)}</td>
-                        <td>${esc(a.company_name)}</td>
-                        <td>${fmtDate(a.date)}</td>
-                        <td style="max-width:150px">${esc(a.note)}</td>
-                        <td>${badge}</td>
-                    </tr>`;
-        }).join('');
+        if (grid) grid.innerHTML = fallbackAppts.map(a => renderReceptionCard(a)).join('');
+    }
+}
+
+// ── Open edit modal for a reception/appointment
+function openEditReception(apptId) {
+    if (!apptId) return;
+    // Fetch appointment data and open the edit modal
+    fetch(`${API}/api/appointments/${apptId}`, { headers: authHeaders() })
+        .then(r => r.json())
+        .then(data => {
+            const appt = data.item || data;
+            if (!appt || !appt.id) {
+                showToast('Không tìm thấy lịch hẹn', 'error');
+                return;
+            }
+            openModal('edit-appointment', { appointment: appt });
+        })
+        .catch(() => showToast('Lỗi tải lịch hẹn', 'error'));
+}
+
+// ── View reception profile: open customer detail drawer via showDetail
+function viewReceptionProfile(apptId, partnerId) {
+    const doShowDetail = (pid) => {
+        fetch(`${API}/api/customers/${pid}`, { headers: authHeaders() })
+            .then(r => r.json())
+            .then(data => {
+                const customer = data.item || data;
+                if (customer && (customer.id || customer.name)) showDetail(customer);
+                else showToast('Không tìm thấy hồ sơ khách hàng', 'error');
+            })
+            .catch(() => showToast('Lỗi tải hồ sơ', 'error'));
+    };
+    if (partnerId && partnerId !== 0) {
+        doShowDetail(partnerId);
+    } else if (apptId) {
+        fetch(`${API}/api/appointments/${apptId}`, { headers: authHeaders() })
+            .then(r => r.json())
+            .then(data => {
+                const appt = data.item || data;
+                if (appt && appt.partner_id) doShowDetail(appt.partner_id);
+                else showToast('Không tìm thấy hồ sơ khách hàng', 'error');
+            })
+            .catch(() => showToast('Lỗi tải hồ sơ', 'error'));
     }
 }
 
@@ -1280,20 +1401,24 @@ function buildCalendarGrid(data) {
             const phone = a.partner_phone || '';
             const note = a.note || a.reason || '';
 
+            const apptIdCal = a.id || 0;
+            const partnerIdCal = a.partner_id || 0;
+            const stateInfoCal = recStateInfo(a.state);
+
             doctorsHTML += `<div class="cal-appt-card ${colorClass}" style="top:${topOffset}px;height:${height}px" data-name="${esc(name)}" data-phone="${esc(phone)}" title="${esc(name)} | ${timeStr} | ${esc(phone)}">
                             <div class="cal-card-actions">
-                                <button title="Chỉnh sửa" onclick="event.stopPropagation()">
+                                <button title="Chỉnh sửa" onclick="event.stopPropagation();openEditReception(${apptIdCal})">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 </button>
-                                <button title="Hồ sơ" onclick="event.stopPropagation()">
+                                <button title="Hồ sơ" onclick="event.stopPropagation();viewReceptionProfile(${apptIdCal},${partnerIdCal})">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
                                 </button>
                             </div>
-                            <span class="cal-status-dot ${a.state || ''}"></span>
                             <div class="cal-name">${esc(name)}</div>
                             <div class="cal-time">${timeStr}</div>
                             ${height > 40 ? `<div class="cal-phone">${esc(phone)}</div>` : ''}
-                            ${height > 55 && note ? `<div class="cal-note">${esc(note)}</div>` : ''}
+                            ${height > 55 ? `<span class="appt-item-badge ${a.state || ''}" style="font-size:10px">${stateInfoCal.label}</span>` : ''}
+                            ${height > 70 && note ? `<div class="cal-note">${esc(note)}</div>` : ''}
                         </div>`;
         });
 
@@ -1358,7 +1483,7 @@ function filterCalendarSearch() {
 }
 
 function exportCalendarExcel() {
-    alert('Chức năng Xuất Excel đang được phát triển.');
+    showToast('Tính năng đang phát triển', 'info');
 }
 
 // ══ APPOINTMENTS ══
@@ -1710,14 +1835,37 @@ async function loadReports() {
     }
 }
 
+// ── TOAST NOTIFICATIONS ──
+function showToast(message, type = 'info', duration = 3000) {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
 // ── HELPERS ──
 function apptBadge(state) {
     const map = {
-        'confirmed': 'badge-blue', 'done': 'badge-green', 'waiting': 'badge-yellow',
-        'cancel': 'badge-red', 'draft': 'badge-gray', 'examination': 'badge-blue',
-        'in_progress': 'badge-blue', 'paid': 'badge-green', 'completed': 'badge-green'
+        'confirmed':   { cls: 'badge-indigo', label: 'Đang hẹn' },
+        'waiting':     { cls: 'badge-yellow',  label: 'Chờ khám' },
+        'examination': { cls: 'badge-blue',    label: 'Đang khám' },
+        'in_progress': { cls: 'badge-blue',    label: 'Đang khám' },
+        'done':        { cls: 'badge-green',   label: 'Hoàn thành' },
+        'paid':        { cls: 'badge-green',   label: 'Đã thanh toán' },
+        'completed':   { cls: 'badge-green',   label: 'Hoàn thành' },
+        'cancel':      { cls: 'badge-red',     label: 'Hủy' },
+        'cancelled':   { cls: 'badge-red',     label: 'Hủy' },
+        'draft':       { cls: 'badge-gray',    label: 'Nháp' },
+        'arrived':     { cls: 'badge-blue',    label: 'Đã đến' },
     };
-    return `<span class="badge ${map[state] || 'badge-gray'}">${esc(state || '---')}</span>`;
+    const info = map[state];
+    if (info) return `<span class="badge ${info.cls}">${info.label}</span>`;
+    return `<span class="badge badge-gray">${esc(state || '---')}</span>`;
 }
 function renderGenericPagination(elId, data, onPage) {
     const pg = document.getElementById(elId);
@@ -1875,8 +2023,8 @@ function renderPagination(data) {
 function deleteCustomer(id, name) {
     if (confirm('Bạn có chắc muốn xóa khách hàng ' + name + '?')) {
         fetch(API + '/api/customers/' + id, { method: 'DELETE' })
-            .then(() => loadCustomers())
-            .catch(e => alert('Lỗi: ' + e.message));
+            .then(() => { showToast('Đã xóa thành công!', 'success'); loadCustomers(); })
+            .catch(e => showToast('Lỗi: ' + e.message, 'error'));
     }
 }
 
@@ -2152,8 +2300,32 @@ async function loadDashboard() {
             // Update tab count for All
             if (document.getElementById('apptTabAll')) document.getElementById('apptTabAll').textContent = fmt(apptData.total || apptData.items.length);
 
-            const badgeLabel = { 'confirmed': 'Đã đến', 'done': 'Hoàn thành', 'cancel': 'Hủy', 'draft': 'Nháp', 'arrived': 'Đã đến' };
-            const badgeClassMap = { 'confirmed': 'green', 'done': 'green', 'cancel': 'red', 'draft': 'gray', 'arrived': 'green' };
+            const badgeLabel = {
+                'confirmed':   'Đang hẹn',
+                'waiting':     'Chờ khám',
+                'examination': 'Đang khám',
+                'in_progress': 'Đang khám',
+                'done':        'Hoàn thành',
+                'paid':        'Đã thanh toán',
+                'completed':   'Hoàn thành',
+                'cancel':      'Hủy',
+                'cancelled':   'Hủy',
+                'draft':       'Nháp',
+                'arrived':     'Đã đến'
+            };
+            const badgeClassMap = {
+                'confirmed':   'indigo',
+                'waiting':     'yellow',
+                'examination': 'blue',
+                'in_progress': 'blue',
+                'done':        'green',
+                'paid':        'green',
+                'completed':   'green',
+                'cancel':      'red',
+                'cancelled':   'red',
+                'draft':       'gray',
+                'arrived':     'blue'
+            };
 
             if (apptData.items && apptData.items.length) {
                 const stripId = (n) => (n || '').replace(/^\[\s*T?\d+\]\s*/i, '').trim();
@@ -2935,16 +3107,16 @@ async function saveRolePermissions() {
         });
         const data = await resp.json();
         if (resp.ok) {
-            alert('✅ ' + data.message);
+            showToast(data.message || 'Lưu thành công!', 'success');
             loadUsersTable();
             // Update local default cache
             const defaults = { admin: PAGE_PERMISSIONS.map(p => p.key), viewer: viewerPerms };
             localStorage.setItem('tdental_role_defaults', JSON.stringify(defaults));
         } else {
-            alert('Lỗi: ' + data.message);
+            showToast('Lỗi: ' + data.message, 'error');
         }
     } catch (e) {
-        alert('Lỗi kết nối server');
+        showToast('Lỗi kết nối server', 'error');
     }
 }
 
@@ -3010,9 +3182,9 @@ async function saveUserFromModal(existingId, originalRole) {
     const email = document.getElementById('userInputEmail').value.trim();
     const password = document.getElementById('userInputPassword').value;
     const role = document.getElementById('userInputRole').value;
-    if (!name) { alert('Vui lòng nhập tên'); return; }
-    if (!email) { alert('Vui lòng nhập email'); return; }
-    if (!existingId && !password) { alert('Vui lòng nhập mật khẩu'); return; }
+    if (!name) { showToast('Vui lòng nhập tên', 'warning'); return; }
+    if (!email) { showToast('Vui lòng nhập email', 'warning'); return; }
+    if (!existingId && !password) { showToast('Vui lòng nhập mật khẩu', 'warning'); return; }
 
     // Get permissions based on role ONLY IF new or role changed
     let permissions = null;
@@ -3046,13 +3218,14 @@ async function saveUserFromModal(existingId, originalRole) {
         }
         const data = await resp.json();
         if (resp.ok) {
+            showToast('Lưu thành công!', 'success');
             closeModal();
             loadUsersTable();
         } else {
-            alert('Lỗi: ' + data.message);
+            showToast('Lỗi: ' + data.message, 'error');
         }
     } catch (e) {
-        alert('Lỗi kết nối server');
+        showToast('Lỗi kết nối server', 'error');
     }
 }
 
@@ -3076,17 +3249,17 @@ async function deleteUser(userId) {
             method: 'DELETE',
             headers: authHeaders()
         });
-        if (resp.ok) loadUsersTable();
+        if (resp.ok) { showToast('Đã xóa thành công!', 'success'); loadUsersTable(); }
         else {
             const data = await resp.json();
-            alert('Lỗi: ' + data.message);
+            showToast('Lỗi: ' + data.message, 'error');
         }
     } catch (e) { }
 }
 
 function switchUser(userId) {
     // Not supported with real auth
-    alert('Chức năng switch user không khả dụng khi dùng database auth. Vui lòng đăng xuất.');
+    showToast('Chức năng switch user không khả dụng khi dùng database auth. Vui lòng đăng xuất.', 'info');
 }
 
 // ── START ──

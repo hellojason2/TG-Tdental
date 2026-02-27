@@ -1,8 +1,8 @@
         :root {
             /* ═══ CORE DESIGN TOKENS (scraped from live TDental) ═══ */
             --sidebar-bg: #0C1014;
-            --sidebar-width: 220px;
-            --sidebar-expanded: 220px;
+            --sidebar-width: 256px;
+            --sidebar-expanded: 256px;
             --topbar-height: 46px;
             --topbar-bg: #ffffff;
             --topbar-border: #e5e7eb;
@@ -1575,34 +1575,51 @@
             white-space: nowrap;
         }
 
+        /* ── "Đang khám" / Xác nhận / in_progress: BLUE ── */
         .badge-blue {
-            background: #dbeafe;
-            color: #1d4ed8;
+            background: #DBEAFE;
+            color: #2563EB;
+            border: 1px solid #3B82F6;
         }
 
+        /* ── "Hoàn thành" / paid / completed: GREEN ── */
         .badge-green {
-            background: #dcfce7;
-            color: #15803d;
+            background: #D1FAE5;
+            color: #059669;
+            border: 1px solid #10B981;
         }
 
         .badge-gray {
             background: #f3f4f6;
             color: #6b7280;
+            border: 1px solid #d1d5db;
         }
 
+        /* ── "Hủy": RED ── */
         .badge-red {
-            background: #fee2e2;
-            color: #dc2626;
+            background: #FEE2E2;
+            color: #DC2626;
+            border: 1px solid #EF4444;
         }
 
+        /* ── "Chờ khám" / waiting: ORANGE/AMBER ── */
         .badge-yellow {
-            background: #fef3c7;
-            color: #b45309;
+            background: #FEF3C7;
+            color: #D97706;
+            border: 1px solid #F59E0B;
+        }
+
+        /* ── "Đang hẹn" / confirmed: INDIGO ── */
+        .badge-indigo {
+            background: #E0E7FF;
+            color: #4F46E5;
+            border: 1px solid #6366F1;
         }
 
         .badge-orange {
-            background: #ffedd5;
-            color: #c2410c;
+            background: #FEF3C7;
+            color: #D97706;
+            border: 1px solid #F59E0B;
         }
 
         .money {
@@ -2518,19 +2535,38 @@
             margin-bottom: 8px;
         }
 
-        .rec-card-status.waiting {
-            background: #f97316;
-            color: #fff;
+        /* "Chờ khám" → ORANGE/AMBER */
+        .rec-card-status.waiting,
+        .rec-card-status.confirmed {
+            background: #FEF3C7;
+            color: #D97706;
+            border: 1px solid #F59E0B;
         }
 
-        .rec-card-status.examining {
-            background: #f59e0b;
-            color: #fff;
+        /* "Đang khám" / examining / in_progress → BLUE */
+        .rec-card-status.examining,
+        .rec-card-status.examination,
+        .rec-card-status.in_progress {
+            background: #DBEAFE;
+            color: #2563EB;
+            border: 1px solid #3B82F6;
         }
 
-        .rec-card-status.completed {
-            background: #3b82f6;
-            color: #fff;
+        /* "Hoàn thành" → GREEN */
+        .rec-card-status.completed,
+        .rec-card-status.done,
+        .rec-card-status.paid {
+            background: #D1FAE5;
+            color: #059669;
+            border: 1px solid #10B981;
+        }
+
+        /* "Hủy" → RED */
+        .rec-card-status.cancel,
+        .rec-card-status.cancelled {
+            background: #FEE2E2;
+            color: #DC2626;
+            border: 1px solid #EF4444;
         }
 
         .rec-card-status svg {
@@ -2753,23 +2789,50 @@
             white-space: nowrap;
         }
 
-        .appt-item-badge.confirmed,
+        /* "Đang hẹn" / Xác nhận → INDIGO */
+        .appt-item-badge.confirmed {
+            background: #E0E7FF;
+            color: #4F46E5;
+            border: 1px solid #6366F1;
+        }
+
+        /* arrived → BLUE */
         .appt-item-badge.arrived {
-            background: #dcfce7;
-            color: #166534;
+            background: #DBEAFE;
+            color: #2563EB;
+            border: 1px solid #3B82F6;
         }
 
-        .appt-item-badge.done {
-            background: #dcfce7;
-            color: #166534;
+        /* waiting → ORANGE/AMBER */
+        .appt-item-badge.waiting {
+            background: #FEF3C7;
+            color: #D97706;
+            border: 1px solid #F59E0B;
         }
 
+        /* "Đang khám" / examination / in_progress → BLUE */
+        .appt-item-badge.examination,
+        .appt-item-badge.in_progress {
+            background: #DBEAFE;
+            color: #2563EB;
+            border: 1px solid #3B82F6;
+        }
+
+        /* "Hoàn thành" / done / paid / completed → GREEN */
+        .appt-item-badge.done,
+        .appt-item-badge.paid,
+        .appt-item-badge.completed {
+            background: #D1FAE5;
+            color: #059669;
+            border: 1px solid #10B981;
+        }
+
+        /* "Hủy" / cancel → RED */
         .appt-item-badge.cancel {
-            background: #fee2e2;
-            color: #991b1b;
+            background: #FEE2E2;
+            color: #DC2626;
+            border: 1px solid #EF4444;
         }
-
-        /* arrived style merged with confirmed above */
 
         /* ═══ SETTINGS PAGE ═══ */
         .settings-subnav {
@@ -3504,4 +3567,172 @@
             font-size: 11px;
             color: var(--text-muted);
         }
+
+        /* ═══ TOAST NOTIFICATIONS ═══ */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            z-index: 10000;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .toast.show { transform: translateX(0); }
+        .toast-success { background: #059669; }
+        .toast-error { background: #DC2626; }
+        .toast-info { background: #2563EB; }
+        .toast-warning { background: #D97706; }
+
+        /* ═══ RECEPTION CARD LAYOUT ═══ */
+        .reception-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 16px;
+            padding: 16px 0;
+        }
+
+        .reception-card {
+            background: white;
+            border-radius: 10px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border: 1px solid var(--border);
+            transition: box-shadow 0.2s;
+        }
+
+        .reception-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+
+        .reception-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .reception-card-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+
+        .reception-card-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .reception-card-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .reception-card-phone {
+            color: #65696C;
+            font-size: 12px;
+        }
+
+        .reception-card-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 13px;
+            color: #65696C;
+        }
+
+        .reception-card-label {
+            color: #94A3B8;
+        }
+
+        .reception-card-note {
+            font-size: 13px;
+            color: #65696C;
+            border-top: 1px solid #E5E7EB;
+            padding-top: 8px;
+        }
+
+        .reception-card-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            border-top: 1px solid #E5E7EB;
+            padding-top: 12px;
+        }
+
+        .btn-sm {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: white;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-sm:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        /* ═══ RECEPTION STAT CARDS ═══ */
+        .rec-stat-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .rec-stat-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 14px 16px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .rec-stat-card-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .rec-stat-card-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .rec-stat-card.waiting .rec-stat-card-value { color: #D97706; }
+        .rec-stat-card.examining .rec-stat-card-value { color: #2563EB; }
+        .rec-stat-card.done .rec-stat-card-value { color: #059669; }
+        .rec-stat-card.paid .rec-stat-card-value { color: #7C3AED; }
+
 #sidebar, .topbar, .main-content { display: none; }
