@@ -1,15 +1,15 @@
 import json
 import uuid
 from datetime import datetime
-from fastapi import APIRouter, Header, Query, Path, HTTPException
+from fastapi import APIRouter, Header, Query, Path, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from app.core.database import get_conn, get_cursor
 from app.core.utils import serialize, paginate_query, gen_ref
 from app.core.security import hash_password
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_auth
 import psycopg2.errors
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_auth)])
 
 # ══════════════════════════════════════════════════
 # USER MANAGEMENT API (admin only)

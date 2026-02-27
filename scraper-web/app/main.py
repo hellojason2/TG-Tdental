@@ -11,7 +11,12 @@ app = FastAPI(title="TDental Viewer")
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:8899",
+        "http://127.0.0.1:8899",
+        "http://localhost:3000",
+        "http://104.251.123.245:25654",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -47,6 +52,11 @@ async def startup_event():
         print("[BOOT] Auth tables ready")
     except Exception as e:
         print(f"[BOOT] WARNING: ensure_auth_tables failed: {e}")
+    try:
+        from app.api.auth import cleanup_expired_sessions
+        cleanup_expired_sessions()
+    except Exception as e:
+        print(f"[BOOT] WARNING: cleanup_expired_sessions failed: {e}")
 
 
 def verify_session_cookie(token: str) -> bool:
