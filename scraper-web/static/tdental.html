@@ -273,7 +273,7 @@
                 <!-- Branches dynamically loaded here -->
             </div>
         </div>
-        <div class="topbar-bell" onclick="alert('Chưa có thông báo mới')" style="cursor:pointer">
+        <div class="topbar-bell" onclick="showToast('Chưa có thông báo mới', 'info')" style="cursor:pointer">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 01-3.46 0" />
@@ -511,66 +511,58 @@
             <div class="page-header">
                 <h2>Công việc</h2>
                 <div class="page-header-actions">
-                    <button class="btn-primary" onclick="openModal('task')">
+                    <button class="btn-primary" onclick="openModal('reception')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10" />
                             <path d="M12 8v8M8 12h8" />
                         </svg>
-                        Thêm công việc
+                        Tiếp nhận mới
                     </button>
                 </div>
             </div>
-            <div class="tabs" id="taskMainTabs" style="margin-bottom:0">
-                <button class="tab active" onclick="switchTaskTab(this,'tasks')">Công việc</button>
-                <button class="tab" onclick="switchTaskTab(this,'task_types')">Loại công việc</button>
+            <!-- Stat cards -->
+            <div class="rec-stat-cards">
+                <div class="rec-stat-card waiting">
+                    <div class="rec-stat-card-label">Chờ khám</div>
+                    <div class="rec-stat-card-value" id="recWaiting">--</div>
+                </div>
+                <div class="rec-stat-card examining">
+                    <div class="rec-stat-card-label">Đang điều trị</div>
+                    <div class="rec-stat-card-value" id="recTreating">--</div>
+                </div>
+                <div class="rec-stat-card done">
+                    <div class="rec-stat-card-label">Hoàn thành</div>
+                    <div class="rec-stat-card-value" id="recDone">--</div>
+                </div>
+                <div class="rec-stat-card paid">
+                    <div class="rec-stat-card-label">Đã thanh toán</div>
+                    <div class="rec-stat-card-value" id="recPaid">--</div>
+                </div>
             </div>
-            <div class="tabs" id="taskStatusTabs">
-                <button class="tab active" data-state="" onclick="filterTaskState(this)">Tất cả</button>
-                <button class="tab" data-state="priority" onclick="filterTaskState(this)">Ưu tiên</button>
-                <button class="tab" data-state="new" onclick="filterTaskState(this)">Mới</button>
-                <button class="tab" data-state="in_progress" onclick="filterTaskState(this)">Đang làm</button>
-                <button class="tab" data-state="need_info" onclick="filterTaskState(this)">Cần thêm thông tin</button>
-                <button class="tab" data-state="done" onclick="filterTaskState(this)">Hoàn thành</button>
-                <button class="tab" data-state="cancelled" onclick="filterTaskState(this)">Hủy</button>
-                <button class="tab" data-state="unassigned" onclick="filterTaskState(this)">Chưa phân công</button>
+            <!-- Tab filters -->
+            <div class="tabs" id="recFilterTabs">
+                <button class="tab active" data-rec-state="" onclick="filterReceptionState(this)">Tất cả</button>
+                <button class="tab" data-rec-state="waiting" onclick="filterReceptionState(this)">Chờ khám</button>
+                <button class="tab" data-rec-state="examination" onclick="filterReceptionState(this)">Đang khám</button>
+                <button class="tab" data-rec-state="done" onclick="filterReceptionState(this)">Hoàn thành</button>
+                <button class="tab" data-rec-state="cancel" onclick="filterReceptionState(this)">Hủy</button>
                 <div class="tabs-right">
                     <div class="filter-search">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="8" />
                             <path d="M21 21l-4.35-4.35" />
                         </svg>
-                        <input type="text" id="taskSearch" placeholder="Tìm công việc..."
-                            oninput="debounceTaskSearch()">
+                        <input type="text" id="recSearch" placeholder="Tìm theo tên, SĐT..." oninput="debounceRecSearch()">
                     </div>
                 </div>
             </div>
-            <div class="card">
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="min-width:200px">Tiêu đề</th>
-                            <th>Loại công việc</th>
-                            <th>Hành động</th>
-                            <th>Người phụ trách</th>
-                            <th>Người theo dõi</th>
-                            <th>Khách hàng</th>
-                            <th>Nội dung CV</th>
-                            <th>Trạng thái CV</th>
-                            <th>Ngày tạo</th>
-                            <th>Thời hạn</th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody id="receptionBody">
-                        <tr>
-                            <td colspan="11" class="loading">
-                                <div class="spinner"></div>Đang tải...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div class="pagination" id="receptionPagination"></div>
+            <!-- Card grid -->
+            <div id="receptionCardGrid" class="reception-cards-grid">
+                <div class="loading" style="grid-column:1/-1;padding:40px;text-align:center">
+                    <div class="spinner"></div>Đang tải...
+                </div>
             </div>
+            <div class="pagination" id="receptionPagination" style="margin-top:8px"></div>
         </div>
 
         <!-- Calendar (Appointments) page -->
