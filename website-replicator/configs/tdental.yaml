@@ -1,0 +1,39 @@
+# ═══════════════════════════════════════════
+# TDental — Crawl Configuration
+# ═══════════════════════════════════════════
+# Usage: POST http://localhost:8001/crawl/start with this as the body
+# Or load via dashboard at http://localhost:3000
+
+site:
+  url: "https://tamdentist.tdental.vn"
+  type: "spa"
+  framework: "angular"
+
+auth:
+  type: "api"
+  api_login_endpoint: "api/Account/Login"
+  username: "dataconnect"
+  password: "dataconnect@"
+  token_type: "jwt"
+  token_storage: "localStorage"
+  # totp_secret: ""  # Add if 2FA is enabled for this account
+
+crawl:
+  max_pages: 300
+  headless: false          # false = visible in noVNC at localhost:6080
+  capture_screenshots: true
+  capture_hover_states: true
+  capture_animations: true
+  record_har: true
+  download_assets: true
+  wait_after_nav_ms: 1500
+  viewport_width: 1920
+  viewport_height: 1080
+  locale: "vi-VN"
+  timezone: "Asia/Ho_Chi_Minh"
+
+output:
+  framework: "nextjs"
+  ui_library: "antd"
+  css_framework: "tailwind"
+  orm: "prisma"

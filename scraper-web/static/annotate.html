@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDental Annotator - Smart Design Review</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #16213e;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #0f3460;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            color: #e94560;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .toolbar-group {
+            display: flex;
+            gap: 4px;
+            padding: 0 8px;
+            border-right: 1px solid #0f3460;
+        }
+
+        .toolbar-group:last-child {
+            border-right: none;
+        }
+
+        .tool-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 6px;
+            background: #0f3460;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover {
+            background: #1a4a7a;
+        }
+
+        .tool-btn.active {
+            background: #e94560;
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 4px;
+        }
+
+        .color-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .color-dot:hover,
+        .color-dot.active {
+            border-color: #fff;
+            transform: scale(1.1);
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #annotationCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: auto;
+            cursor: crosshair;
+        }
+
+        .iframe-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            position: relative;
+        }
+
+        .iframe-label {
+            background: #16213e;
+            padding: 8px 15px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .iframe-label.local {
+            color: #4ade80;
+        }
+
+        .iframe-label.live {
+            color: #fbbf24;
+        }
+
+        iframe {
+            flex: 1;
+            width: 100%;
+            border: none;
+        }
+
+        .resizer {
+            width: 8px;
+            background: #0f3460;
+            cursor: col-resize;
+            z-index: 20;
+        }
+
+        .resizer:hover {
+            background: #e94560;
+        }
+
+        .notes-panel {
+            width: 280px;
+            background: #16213e;
+            border-left: 2px solid #0f3460;
+            display: flex;
+            flex-direction: column;
+            z-index: 30;
+        }
+
+        .notes-header {
+            padding: 12px 15px;
+            border-bottom: 1px solid #0f3460;
+            font-weight: 600;
+        }
+
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .note-item {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            border-left: 3px solid;
+        }
+
+        .note-item:hover {
+            background: #1a4a7a;
+        }
+
+        .note-text {
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .note-meta {
+            font-size: 11px;
+            color: #888;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .note-input {
+            padding: 10px;
+            border-top: 1px solid #0f3460;
+        }
+
+        .note-input textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #0f3460;
+            border-radius: 6px;
+            background: #1a1a2e;
+            color: #fff;
+            font-size: 13px;
+            resize: none;
+            height: 60px;
+        }
+
+        .note-input button {
+            width: 100%;
+            margin-top: 8px;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            background: #e94560;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .status-bar {
+            background: #16213e;
+            padding: 8px 20px;
+            font-size: 12px;
+            color: #888;
+            border-top: 1px solid #0f3460;
+        }
+
+        .instructions {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(22, 33, 62, 0.95);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #aaa;
+            z-index: 50;
+            display: flex;
+            gap: 20px;
+        }
+
+        kbd {
+            background: #0f3460;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🎨 TDental Annotator</h1>
+        <div class="toolbar">
+            <div class="toolbar-group">
+                <button class="tool-btn active" id="penTool" title="Pen (P)">✏️</button>
+                <button class="tool-btn" id="highlighterTool" title="Highlighter (H)">🖍️</button>
+                <button class="tool-btn" id="arrowTool" title="Arrow (A)">➡️</button>
+                <button class="tool-btn" id="rectTool" title="Rectangle (R)">⬜</button>
+                <button class="tool-btn" id="eraserTool" title="Eraser (E)">🧹</button>
+            </div>
+
+            <div class="toolbar-group">
+                <div class="color-picker">
+                    <div class="color-dot active" style="background: #ef4444" data-color="#ef4444"></div>
+                    <div class="color-dot" style="background: #f59e0b" data-color="#f59e0b"></div>
+                    <div class="color-dot" style="background: #22c55e" data-color="#22c55e"></div>
+                    <div class="color-dot" style="background: #3b82f6" data-color="#3b82f6"></div>
+                    <div class="color-dot" style="background: #a855f7" data-color="#a855f7"></div>
+                    <div class="color-dot" style="background: #ec4899" data-color="#ec4899"></div>
+                </div>
+            </div>
+
+            <div class="toolbar-group">
+                <button class="tool-btn" id="undoBtn" title="Undo (Ctrl+Z)">↩️</button>
+                <button class="tool-btn" id="redoBtn" title="Redo">↪️</button>
+                <button class="tool-btn" id="clearBtn" title="Clear All">🗑️</button>
+            </div>
+
+            <div class="toolbar-group">
+                <button class="tool-btn" id="screenshotBtn" title="Screenshot">📷</button>
+                <button class="tool-btn" id="saveBtn" title="Save (Ctrl+S)">💾</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="iframe-wrapper" style="flex:1">
+            <div class="iframe-label local">🏠 Local Replica</div>
+            <iframe id="localFrame" src="http://localhost:8899/"></iframe>
+        </div>
+
+        <div class="resizer" id="resizer"></div>
+
+        <div class="iframe-wrapper" style="flex:1">
+            <div class="iframe-label live">🌐 Live TDental</div>
+            <iframe id="liveFrame" src="https://tamdentist.tdental.vn"></iframe>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="annotationCanvas"></canvas>
+        </div>
+
+        <div class="notes-panel">
+            <div class="notes-header">📝 Annotation Notes</div>
+            <div class="notes-list" id="notesList"></div>
+            <div class="note-input">
+                <textarea id="noteText" placeholder="Add a note about this difference..."></textarea>
+                <button onclick="addNote()">Add Note</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar" id="toolStatus">
+        Tool: Pen | Color: #ef4444 | Draw on the canvas above
+    </div>
+
+    <div class="instructions">
+        <span><kbd>P</kbd> Pen</span>
+        <span><kbd>H</kbd> Highlighter</span>
+        <span><kbd>A</kbd> Arrow</span>
+        <span><kbd>R</kbd> Rectangle</span>
+        <span><kbd>E</kbd> Eraser</span>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('annotationCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let isDrawing = false;
+        let currentTool = 'pen';
+        let currentColor = '#ef4444';
+        let startX, startY;
+        let history = [];
+        let historyIndex = -1;
+        let notes = [];
+
+        function resizeCanvas() {
+            const container = document.querySelector('.main-content');
+            canvas.width = container.offsetWidth;
+            canvas.height = container.offsetHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Tool selection
+        const tools = ['penTool', 'highlighterTool', 'arrowTool', 'rectTool', 'eraserTool'];
+        tools.forEach(id => {
+            document.getElementById(id).addEventListener('click', () => {
+                tools.forEach(t => document.getElementById(t).classList.remove('active'));
+                document.getElementById(id).classList.add('active');
+                currentTool = id.replace('Tool', '');
+                document.getElementById('toolStatus').textContent =
+                    'Tool: ' + currentTool.charAt(0).toUpperCase() + currentTool.slice(1) + ' | Color: ' + currentColor + ' | Draw on canvas';
+            });
+        });
+
+        // Color selection
+        document.querySelectorAll('.color-dot').forEach(dot => {
+            dot.addEventListener('click', () => {
+                document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+                dot.classList.add('active');
+                currentColor = dot.dataset.color;
+            });
+        });
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const pos = getPos(e);
+            startX = pos.x;
+            startY = pos.y;
+
+            if (currentTool === 'highlighter') {
+                ctx.globalAlpha = 0.3;
+            } else {
+                ctx.globalAlpha = 1;
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            ctx.strokeStyle = currentTool === 'eraser' ? '#1a1a2e' : currentColor;
+            ctx.lineWidth = currentTool === 'eraser' ? 20 : 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const pos = getPos(e);
+
+            if (currentTool === 'pen' || currentTool === 'highlighter' || currentTool === 'eraser') {
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+            }
+        }
+
+        function stopDrawing(e) {
+            if (!isDrawing) return;
+            isDrawing = false;
+            ctx.globalAlpha = 1;
+
+            const pos = getPos(e);
+
+            if (currentTool === 'arrow') {
+                drawArrow(startX, startY, pos.x, pos.y);
+            } else if (currentTool === 'rect') {
+                ctx.strokeRect(startX, startY, pos.x - startX, pos.y - startY);
+            }
+
+            saveState();
+        }
+
+        function drawArrow(x1, y1, x2, y2) {
+            const headLength = 15;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        function saveState() {
+            history = history.slice(0, historyIndex + 1);
+            history.push(canvas.toDataURL());
+            historyIndex++;
+        }
+
+        document.getElementById('undoBtn').addEventListener('click', () => {
+            if (historyIndex > 0) {
+                historyIndex--;
+                restoreState();
+            }
+        });
+
+        document.getElementById('redoBtn').addEventListener('click', () => {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                restoreState();
+            }
+        });
+
+        function restoreState() {
+            const img = new Image();
+            img.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+            };
+            img.src = history[historyIndex];
+        }
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            saveState();
+        });
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'p') document.getElementById('penTool').click();
+            if (e.key === 'h') document.getElementById('highlighterTool').click();
+            if (e.key === 'a') document.getElementById('arrowTool').click();
+            if (e.key === 'r') document.getElementById('rectTool').click();
+            if (e.key === 'e') document.getElementById('eraserTool').click();
+            if (e.ctrlKey && e.key === 'z') { e.preventDefault(); document.getElementById('undoBtn').click(); }
+            if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveAnnotation(); }
+        });
+
+        // Notes functionality
+        function addNote() {
+            const text = document.getElementById('noteText').value;
+            if (!text) return;
+
+            const note = {
+                id: Date.now(),
+                text: text,
+                timestamp: new Date().toLocaleString(),
+                color: currentColor
+            };
+
+            notes.push(note);
+            renderNotes();
+            document.getElementById('noteText').value = '';
+        }
+
+        function renderNotes() {
+            const list = document.getElementById('notesList');
+            list.innerHTML = notes.map(note =>
+                '<div class="note-item" style="border-left-color: ' + note.color + '">' +
+                '<div class="note-text">' + note.text + '</div>' +
+                '<div class="note-meta">' +
+                '<span>' + note.timestamp + '</span>' +
+                '<span onclick="deleteNote(' + note.id + ')">🗑️</span>' +
+                '</div>' +
+                '</div>'
+            ).join('');
+        }
+
+        function deleteNote(id) {
+            notes = notes.filter(n => n.id !== id);
+            renderNotes();
+        }
+
+        // Save annotation
+        function saveAnnotation() {
+            const name = 'Annotation ' + new Date().toLocaleString();
+
+            const data = {
+                name: name,
+                image: canvas.toDataURL('image/png'),
+                notes: notes,
+                timestamp: new Date().toISOString()
+            };
+
+            const saved = JSON.parse(localStorage.getItem('tdental_annotations') || '[]');
+            saved.push(data);
+            localStorage.setItem('tdental_annotations', JSON.stringify(saved));
+
+            alert('Saved! Total: ' + saved.length + ' annotations');
+        }
+
+        // Screenshot
+        document.getElementById('screenshotBtn').addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'tdental-annotation-' + Date.now() + '.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+
+        // Resizer
+        const resizer = document.getElementById('resizer');
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', () => { isResizing = true; });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            const containers = document.querySelectorAll('.iframe-wrapper');
+            const container = document.querySelector('.main-content');
+            const percent = (e.clientX - container.getBoundingClientRect().left) / container.offsetWidth * 100;
+            containers[0].style.flex = percent;
+            containers[1].style.flex = 100 - percent - 1;
+        });
+
+        document.addEventListener('mouseup', () => { isResizing = false; });
+
+        saveState();
+    </script>
+</body>
+
+</html>

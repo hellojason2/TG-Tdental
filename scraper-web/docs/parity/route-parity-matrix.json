@@ -1,0 +1,170 @@
+{
+  "description": "Route parity matrix mapping live TDental routes to local replica routes",
+  "version": "1.0.0",
+  "lastUpdated": "2026-02-27",
+  "viewports": {
+    "desktop": {"width": 1440, "height": 900},
+    "tablet": {"width": 768, "height": 1024},
+    "mobile": {"width": 375, "height": 667}
+  },
+  "routes": [
+    {
+      "id": "dashboard",
+      "liveRoute": "#/dashboard",
+      "localRoute": "#dashboard",
+      "localPath": "/",
+      "requiredState": "logged_in",
+      "expectedWidgets": ["tab-bar", "metric-cards", "list-blocks", "chart-visuals"],
+      "priority": "critical"
+    },
+    {
+      "id": "customers",
+      "liveRoute": "#/partners/customers",
+      "localRoute": "#customers",
+      "localPath": "/",
+      "requiredState": "logged_in",
+      "filters": {"state": "all", "source": "all"},
+      "expectedWidgets": ["toolbar", "tabs", "data-table", "pagination", "action-icons"],
+      "priority": "critical"
+    },
+    {
+      "id": "reception",
+      "liveRoute": "#/reception",
+      "localRoute": "#reception",
+      "localPath": "/",
+      "requiredState": "logged_in",
+      "expectedWidgets": ["queue-cards", "status-counters", "refresh-btn", "add-btn"],
+      "priority": "high"
+    },
+    {
+      "id": "calendar",
+      "liveRoute": "#/calendar",
+      "localRoute": "#calendar",
+      "localPath": "/",
+      "requiredState": "logged_in",
+      "filters": {"date": "today", "state": "all"},
+      "expectedWidgets": ["date-nav", "status-filters", "calendar-view", "appointment-actions"],
+      "priority": "critical"
+    },
+    {
+      "id": "treatments",
+      "liveRoute": "#/treatments",
+      "localRoute": "#treatments",
+      "localPath": "/",
+      "requiredState": "logged_in",
+      "filters": {"state": "all"},
+      "expectedWidgets": ["state-tabs", "data-table", "status-badges", "row-actions"],
+      "priority": "high"
+    },
+    {
+      "id": "sale-orders",
+      "liveRoute": "#/sale-management",
+      "localRoute": "#purchase",
+      "localPath": "/",
+      "requiredState": "logged_in",
+      "filters": {"state": "all"},
+      "expectedWidgets": ["toolbar", "tabs", "data-table", "totals-row"],
+      "priority": "high"
+    },
+    {
+      "id": "inventory",
+      "liveRoute": "#/stock",
+      "localRoute": "#inventory",
+      "localPath": "/",
+      "requiredState": "logged_in",
+      "filters": {"type": "all"},
+      "expectedWidgets": ["summary-cards", "tabs", "in-out-history", "totals-row", "filters"],
+      "priority": "medium"
+    },
+    {
+      "id": "hr",
+      "liveRoute": "#/hr/employees",
+      "localRoute": "#salary",
+      "localPath": "/",
+      "requiredState": "logged_in",
+      "filters": {"department": "all"},
+      "expectedWidgets": ["employee-table", "search-box", "pagination"],
+      "priority": "medium"
+    },
+    {
+      "id": "accounting",
+      "liveRoute": "#/accounting",
+      "localRoute": "#cashbook",
+      "localPath": "/",
+      "requiredState": "logged_in",
+      "filters": {"date": "month"},
+      "expectedWidgets": ["payment-table", "amount-formatted", "state-labels"],
+      "priority": "medium"
+    },
+    {
+      "id": "callcenter",
+      "liveRoute": "#/callcenter",
+      "localRoute": "#callcenter",
+      "localPath": "/",
+      "requiredState": "logged_in",
+      "expectedWidgets": ["call-list", "action-buttons"],
+      "priority": "medium"
+    },
+    {
+      "id": "reports",
+      "liveRoute": "#/reports",
+      "localRoute": "#reports",
+      "localPath": "/",
+      "requiredState": "logged_in",
+      "expectedWidgets": ["tab-nav", "date-filters", "charts", "tables"],
+      "priority": "medium"
+    },
+    {
+      "id": "categories",
+      "liveRoute": "#/categories",
+      "localRoute": "#categories",
+      "localPath": "/",
+      "requiredState": "logged_in",
+      "expectedWidgets": ["taxonomy-nav", "detail-panel"],
+      "priority": "medium"
+    },
+    {
+      "id": "locations",
+      "liveRoute": "#/locations",
+      "localRoute": "#locations",
+      "localPath": "/",
+      "requiredState": "logged_in",
+      "expectedWidgets": ["location-cards", "add-edit-form"],
+      "priority": "low"
+    },
+    {
+      "id": "users",
+      "liveRoute": "#/users",
+      "localRoute": "#users",
+      "localPath": "/",
+      "requiredState": "admin",
+      "expectedWidgets": ["user-table", "permission-matrix"],
+      "priority": "medium"
+    },
+    {
+      "id": "settings",
+      "liveRoute": "#/settings",
+      "localRoute": "#settings",
+      "localPath": "/",
+      "requiredState": "admin",
+      "expectedWidgets": ["tab-nav", "forms", "save-btn", "export-controls"],
+      "priority": "medium"
+    },
+    {
+      "id": "login",
+      "liveRoute": "/login",
+      "localRoute": "/login",
+      "localPath": "/login",
+      "requiredState": "logged_out",
+      "expectedWidgets": ["email-input", "password-input", "login-btn", "validation-msg"],
+      "priority": "critical"
+    }
+  ],
+  "routeMappingNotes": {
+    "partners/customers": "Live uses /partners/customers, local uses /customers",
+    "sale-management": "Live uses /sale-management, local uses /purchase (SO table)",
+    "stock": "Live uses /stock, local uses /inventory (stock_pickings table)",
+    "hr/employees": "Live uses /hr/employees, local uses /salary (employees table)",
+    "accounting": "Live uses /accounting, local uses /cashbook (payments table)"
+  }
+}

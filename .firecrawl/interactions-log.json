@@ -1,0 +1,38 @@
+{
+  "scrapeDate": "2026-02-23",
+  "originalSite": "https://tamdentist.tdental.vn",
+  "pages": {
+    "dashboard": {
+      "url": "#/dashboard",
+      "sections": {},
+      "modals": {},
+      "interactions": []
+    },
+    "customers": {
+      "url": "#/partners",
+      "sections": {},
+      "modals": {},
+      "interactions": []
+    },
+    "calendar": {
+      "url": "#/calendar",
+      "sections": {},
+      "modals": {},
+      "interactions": []
+    },
+    "work": {
+      "url": "#/work",
+      "sections": {},
+      "modals": {},
+      "interactions": []
+    },
+    "sidebar": {
+      "menuItems": [],
+      "interactions": []
+    },
+    "topbar": {
+      "elements": [],
+      "interactions": []
+    }
+  }
+}

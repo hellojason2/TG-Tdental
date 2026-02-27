@@ -1,0 +1,151 @@
+{
+  "report_type": "parity_baseline",
+  "version": "1.0.0",
+  "generated_at": "2026-02-27T00:00:00Z",
+  "environment": {
+    "local_url": "http://localhost:8899",
+    "live_url": "https://tamdentist.tdental.vn",
+    "viewport": "desktop",
+    "tester": ""
+  },
+  "routes": [
+    {
+      "id": "dashboard",
+      "status": "pending",
+      "local_screenshot": "",
+      "live_screenshot": "",
+      "issues": [],
+      "notes": ""
+    },
+    {
+      "id": "customers",
+      "status": "pending",
+      "local_screenshot": "",
+      "live_screenshot": "",
+      "issues": [],
+      "notes": ""
+    },
+    {
+      "id": "reception",
+      "status": "pending",
+      "local_screenshot": "",
+      "live_screenshot": "",
+      "issues": [],
+      "notes": ""
+    },
+    {
+      "id": "calendar",
+      "status": "pending",
+      "local_screenshot": "",
+      "live_screenshot": "",
+      "issues": [],
+      "notes": ""
+    },
+    {
+      "id": "treatments",
+      "status": "pending",
+      "local_screenshot": "",
+      "live_screenshot": "",
+      "issues": [],
+      "notes": ""
+    },
+    {
+      "id": "sale-orders",
+      "status": "pending",
+      "local_screenshot": "",
+      "live_screenshot": "",
+      "issues": [],
+      "notes": ""
+    },
+    {
+      "id": "inventory",
+      "status": "pending",
+      "local_screenshot": "",
+      "live_screenshot": "",
+      "issues": [],
+      "notes": ""
+    },
+    {
+      "id": "hr",
+      "status": "pending",
+      "local_screenshot": "",
+      "live_screenshot": "",
+      "issues": [],
+      "notes": ""
+    },
+    {
+      "id": "accounting",
+      "status": "pending",
+      "local_screenshot": "",
+      "live_screenshot": "",
+      "issues": [],
+      "notes": ""
+    },
+    {
+      "id": "callcenter",
+      "status": "pending",
+      "local_screenshot": "",
+      "live_screenshot": "",
+      "issues": [],
+      "notes": ""
+    },
+    {
+      "id": "reports",
+      "status": "pending",
+      "local_screenshot": "",
+      "live_screenshot": "",
+      "issues": [],
+      "notes": ""
+    },
+    {
+      "id": "categories",
+      "status": "pending",
+      "local_screenshot": "",
+      "live_screenshot": "",
+      "issues": [],
+      "notes": ""
+    },
+    {
+      "id": "locations",
+      "status": "pending",
+      "local_screenshot": "",
+      "live_screenshot": "",
+      "issues": [],
+      "notes": ""
+    },
+    {
+      "id": "users",
+      "status": "pending",
+      "local_screenshot": "",
+      "live_screenshot": "",
+      "issues": [],
+      "notes": ""
+    },
+    {
+      "id": "settings",
+      "status": "pending",
+      "local_screenshot": "",
+      "live_screenshot": "",
+      "issues": [],
+      "notes": ""
+    },
+    {
+      "id": "login",
+      "status": "pending",
+      "local_screenshot": "",
+      "live_screenshot": "",
+      "issues": [],
+      "notes": ""
+    }
+  ],
+  "summary": {
+    "total_routes": 16,
+    "passed": 0,
+    "failed": 0,
+    "pending": 16,
+    "critical_issues": 0,
+    "high_issues": 0,
+    "medium_issues": 0,
+    "minor_issues": 0
+  }
+}

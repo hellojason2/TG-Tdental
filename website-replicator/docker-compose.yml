@@ -1,0 +1,87 @@
+version: "3.9"
+
+services:
+  # ═══════════════════════════════════════════
+  # CRAWLER — Playwright + Stealth + HAR Recording
+  # Visible via noVNC at http://localhost:6080
+  # ═══════════════════════════════════════════
+  crawler:
+    build:
+      context: ./crawler
+      dockerfile: Dockerfile
+    container_name: replicator-crawler
+    environment:
+      - DISPLAY=:99
+      - IN_DOCKER=True
+      - PYTHONUNBUFFERED=1
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://replicator:replicator@postgres:5432/replicator
+    volumes:
+      - ./data:/app/data
+      - ./configs:/app/configs
+    ports:
+      - "6080:6080"     # noVNC web viewer — watch the bot crawl live
+      - "5900:5900"     # VNC direct connect
+      - "8001:8001"     # Crawler REST API
+    depends_on:
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    shm_size: "2gb"
+    cap_add:
+      - SYS_ADMIN
+
+  # ═══════════════════════════════════════════
+  # AI ENGINE — Claude/GPT → Code Generation
+  # ═══════════════════════════════════════════
+  ai-engine:
+    build:
+      context: ./ai-engine
+      dockerfile: Dockerfile
+    container_name: replicator-ai
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./data:/app/data
+      - ./templates:/app/templates
+    ports:
+      - "8002:8002"
+    depends_on:
+      - redis
+
+  # ═══════════════════════════════════════════
+  # INFRASTRUCTURE
+  # ═══════════════════════════════════════════
+  redis:
+    image: redis:7-alpine
+    container_name: replicator-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: replicator-postgres
+    environment:
+      POSTGRES_USER: replicator
+      POSTGRES_PASSWORD: replicator
+      POSTGRES_DB: replicator
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U replicator"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  redis_data:
+  postgres_data:

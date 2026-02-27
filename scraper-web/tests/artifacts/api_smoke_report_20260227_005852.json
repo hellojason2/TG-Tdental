@@ -1,0 +1,301 @@
+{
+  "generated_at": "2026-02-27T00:58:52.015318",
+  "base_url": "http://localhost:8899/api",
+  "summary": {
+    "total": 18,
+    "passed": 0,
+    "failed": 18,
+    "skipped": 0,
+    "errors": 0
+  },
+  "results": [
+    {
+      "endpoint": "auth_login",
+      "path": "/api/auth/login",
+      "method": "POST",
+      "description": "Login endpoint",
+      "timestamp": "2026-02-27T00:58:51.972007",
+      "status": "fail",
+      "response_status": 404,
+      "response_time": 4.6,
+      "error": "Expected 200, got 404",
+      "details": {
+        "response_body": {
+          "detail": "Not Found"
+        }
+      }
+    },
+    {
+      "endpoint": "auth_logout",
+      "path": "/api/auth/logout",
+      "method": "POST",
+      "description": "Logout endpoint",
+      "timestamp": "2026-02-27T00:58:51.976643",
+      "status": "fail",
+      "response_status": 404,
+      "response_time": 2.26,
+      "error": "Expected 200, got 404",
+      "details": {
+        "response_body": {
+          "detail": "Not Found"
+        }
+      }
+    },
+    {
+      "endpoint": "auth_me",
+      "path": "/api/auth/me",
+      "method": "GET",
+      "description": "Get current user",
+      "timestamp": "2026-02-27T00:58:51.978929",
+      "status": "fail",
+      "response_status": 404,
+      "response_time": 2.49,
+      "error": "Expected 200, got 404",
+      "details": {
+        "response_body": {
+          "detail": "Not Found"
+        }
+      }
+    },
+    {
+      "endpoint": "customers_list",
+      "path": "/api/customers",
+      "method": "GET",
+      "description": "List customers",
+      "timestamp": "2026-02-27T00:58:51.981466",
+      "status": "fail",
+      "response_status": 404,
+      "response_time": 2.98,
+      "error": "Expected 200, got 404",
+      "details": {
+        "response_body": {
+          "detail": "Not Found"
+        }
+      }
+    },
+    {
+      "endpoint": "customers_search",
+      "path": "/api/customers?search=test",
+      "method": "GET",
+      "description": "Search customers",
+      "timestamp": "2026-02-27T00:58:51.984483",
+      "status": "fail",
+      "response_status": 404,
+      "response_time": 1.67,
+      "error": "Expected 200, got 404",
+      "details": {
+        "response_body": {
+          "detail": "Not Found"
+        }
+      }
+    },
+    {
+      "endpoint": "customers_pagination",
+      "path": "/api/customers?page=1&per_page=10",
+      "method": "GET",
+      "description": "Customer pagination",
+      "timestamp": "2026-02-27T00:58:51.986173",
+      "status": "fail",
+      "response_status": 404,
+      "response_time": 2.06,
+      "error": "Expected 200, got 404",
+      "details": {
+        "response_body": {
+          "detail": "Not Found"
+        }
+      }
+    },
+    {
+      "endpoint": "appointments_list",
+      "path": "/api/appointments",
+      "method": "GET",
+      "description": "List appointments",
+      "timestamp": "2026-02-27T00:58:51.988257",
+      "status": "fail",
+      "response_status": 404,
+      "response_time": 3.56,
+      "error": "Expected 200, got 404",
+      "details": {
+        "response_body": {
+          "detail": "Not Found"
+        }
+      }
+    },
+    {
+      "endpoint": "appointments_today",
+      "path": "/api/appointments?date=today",
+      "method": "GET",
+      "description": "Today's appointments",
+      "timestamp": "2026-02-27T00:58:51.991845",
+      "status": "fail",
+      "response_status": 404,
+      "response_time": 2.18,
+      "error": "Expected 200, got 404",
+      "details": {
+        "response_body": {
+          "detail": "Not Found"
+        }
+      }
+    },
+    {
+      "endpoint": "users_list",
+      "path": "/api/users",
+      "method": "GET",
+      "description": "List users (admin)",
+      "timestamp": "2026-02-27T00:58:51.994049",
+      "status": "fail",
+      "response_status": 404,
+      "response_time": 1.77,
+      "error": "Expected 200, got 404",
+      "details": {
+        "response_body": {
+          "detail": "Not Found"
+        }
+      }
+    },
+    {
+      "endpoint": "dashboard_stats",
+      "path": "/api/dashboard/stats",
+      "method": "GET",
+      "description": "Dashboard statistics",
+      "timestamp": "2026-02-27T00:58:51.995836",
+      "status": "fail",
+      "response_status": 404,
+      "response_time": 2.63,
+      "error": "Expected 200, got 404",
+      "details": {
+        "response_body": {
+          "detail": "Not Found"
+        }
+      }
+    },
+    {
+      "endpoint": "dashboard_summary",
+      "path": "/api/dashboard/summary",
+      "method": "GET",
+      "description": "Dashboard summary",
+      "timestamp": "2026-02-27T00:58:51.998492",
+      "status": "fail",
+      "response_status": 404,
+      "response_time": 2.36,
+      "error": "Expected 200, got 404",
+      "details": {
+        "response_body": {
+          "detail": "Not Found"
+        }
+      }
+    },
+    {
+      "endpoint": "settings_list",
+      "path": "/api/settings",
+      "method": "GET",
+      "description": "List settings",
+      "timestamp": "2026-02-27T00:58:52.000880",
+      "status": "fail",
+      "response_status": 404,
+      "response_time": 1.85,
+      "error": "Expected 200, got 404",
+      "details": {
+        "response_body": {
+          "detail": "Not Found"
+        }
+      }
+    },
+    {
+      "endpoint": "settings_update",
+      "path": "/api/settings",
+      "method": "PUT",
+      "description": "Update settings",
+      "timestamp": "2026-02-27T00:58:52.002771",
+      "status": "fail",
+      "response_status": 404,
+      "response_time": 1.75,
+      "error": "Expected 200, got 404",
+      "details": {
+        "response_body": {
+          "detail": "Not Found"
+        }
+      }
+    },
+    {
+      "endpoint": "companies_list",
+      "path": "/api/companies",
+      "method": "GET",
+      "description": "List companies",
+      "timestamp": "2026-02-27T00:58:52.004543",
+      "status": "fail",
+      "response_status": 404,
+      "response_time": 2.24,
+      "error": "Expected 200, got 404",
+      "details": {
+        "response_body": {
+          "detail": "Not Found"
+        }
+      }
+    },
+    {
+      "endpoint": "branches_list",
+      "path": "/api/branches",
+      "method": "GET",
+      "description": "List branches",
+      "timestamp": "2026-02-27T00:58:52.006835",
+      "status": "fail",
+      "response_status": 404,
+      "response_time": 2.35,
+      "error": "Expected 200, got 404",
+      "details": {
+        "response_body": {
+          "detail": "Not Found"
+        }
+      }
+    },
+    {
+      "endpoint": "treatments_list",
+      "path": "/api/treatments",
+      "method": "GET",
+      "description": "List treatments",
+      "timestamp": "2026-02-27T00:58:52.009219",
+      "status": "fail",
+      "response_status": 404,
+      "response_time": 1.64,
+      "error": "Expected 200, got 404",
+      "details": {
+        "response_body": {
+          "detail": "Not Found"
+        }
+      }
+    },
+    {
+      "endpoint": "reception_queue",
+      "path": "/api/reception/queue",
+      "method": "GET",
+      "description": "Reception queue",
+      "timestamp": "2026-02-27T00:58:52.010879",
+      "status": "fail",
+      "response_status": 404,
+      "response_time": 1.85,
+      "error": "Expected 200, got 404",
+      "details": {
+        "response_body": {
+          "detail": "Not Found"
+        }
+      }
+    },
+    {
+      "endpoint": "reports_revenue",
+      "path": "/api/reports/revenue",
+      "method": "GET",
+      "description": "Revenue report",
+      "timestamp": "2026-02-27T00:58:52.012776",
+      "status": "fail",
+      "response_status": 404,
+      "response_time": 2.48,
+      "error": "Expected 200, got 404",
+      "details": {
+        "response_body": {
+          "detail": "Not Found"
+        }
+      }
+    }
+  ]
+}

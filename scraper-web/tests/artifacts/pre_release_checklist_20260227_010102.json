@@ -1,0 +1,85 @@
+{
+  "timestamp": "20260227_010102",
+  "checks": [
+    {
+      "name": "server_running",
+      "description": "Development server is running on port 8899",
+      "status": "pass",
+      "details": {
+        "response_code": 401
+      }
+    },
+    {
+      "name": "authentication",
+      "description": "Login with default admin credentials works",
+      "status": "pass",
+      "details": {
+        "token_received": true
+      }
+    },
+    {
+      "name": "api_endpoints",
+      "description": "Critical API endpoints return valid responses",
+      "status": "fail",
+      "details": {
+        "endpoints": [
+          {
+            "path": "/api/customers",
+            "status": 200,
+            "expected": 200,
+            "passed": true
+          },
+          {
+            "path": "/api/appointments",
+            "status": 200,
+            "expected": 200,
+            "passed": true
+          },
+          {
+            "path": "/api/dashboard/stats",
+            "status": 404,
+            "expected": 200,
+            "passed": false
+          },
+          {
+            "path": "/api/companies",
+            "status": 200,
+            "expected": 200,
+            "passed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "screenshot_capture",
+      "description": "Playwright screenshot capture works on key routes",
+      "status": "fail",
+      "details": {},
+      "error": "Page.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"input[type=\\\"email\\\"]\")\n"
+    },
+    {
+      "name": "ui_interactions",
+      "description": "Key UI interactions work (navigation, modals, filters)",
+      "status": "fail",
+      "details": {
+        "interactions": []
+      },
+      "error": "Page.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"input[type=\\\"email\\\"]\")\n"
+    },
+    {
+      "name": "no_critical_errors",
+      "description": "No critical JavaScript errors in console",
+      "status": "pass",
+      "details": {
+        "info": "Basic check passed - detailed console analysis requires browser"
+      }
+    }
+  ],
+  "summary": {
+    "total": 6,
+    "passed": 3,
+    "failed": 3,
+    "skipped": 0,
+    "overall_pass": false
+  }
+}

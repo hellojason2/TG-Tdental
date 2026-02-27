@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDental Comparison - Local vs Live</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: #16213e;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #0f3460;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            color: #e94560;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #e94560;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #ff6b6b;
+        }
+
+        .btn-secondary {
+            background: #0f3460;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #1a4a7a;
+        }
+
+        /* URL Inputs */
+        .url-bar {
+            display: flex;
+            gap: 10px;
+            padding: 10px 20px;
+            background: #1a1a2e;
+            border-bottom: 1px solid #0f3460;
+        }
+
+        .url-input-group {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .url-input-group label {
+            font-size: 12px;
+            color: #888;
+            min-width: 60px;
+        }
+
+        .url-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #0f3460;
+            border-radius: 5px;
+            background: #16213e;
+            color: #fff;
+            font-size: 13px;
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+
+        /* Iframe Container */
+        .iframe-container {
+            flex: 1;
+            display: flex;
+            gap: 5px;
+            padding: 10px;
+            background: #0a0a1a;
+            position: relative;
+        }
+
+        .iframe-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .iframe-label {
+            background: #16213e;
+            padding: 8px 15px;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .iframe-label.local {
+            color: #4ade80;
+        }
+
+        .iframe-label.live {
+            color: #fbbf24;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .status-dot.green {
+            background: #4ade80;
+        }
+
+        .status-dot.red {
+            background: #ef4444;
+        }
+
+        .status-dot.yellow {
+            background: #fbbf24;
+        }
+
+        iframe {
+            flex: 1;
+            width: 100%;
+            border: none;
+        }
+
+        /* Resizer */
+        .resizer {
+            width: 10px;
+            background: #0f3460;
+            cursor: col-resize;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .resizer:hover {
+            background: #e94560;
+        }
+
+        .resizer::after {
+            content: "⋮";
+            color: #fff;
+            font-size: 20px;
+        }
+
+        /* Loading Overlay */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading.hidden {
+            display: none;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #0f3460;
+            border-top: 5px solid #e94560;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Error Message */
+        .error-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ef4444;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            display: none;
+            z-index: 1001;
+        }
+
+        .error-toast.show {
+            display: block;
+        }
+
+        /* Quick Links */
+        .quick-links {
+            display: flex;
+            gap: 5px;
+            padding: 10px 20px;
+            background: #16213e;
+            overflow-x: auto;
+        }
+
+        .quick-link {
+            padding: 5px 12px;
+            background: #0f3460;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .quick-link:hover {
+            background: #e94560;
+        }
+
+        .btn-secondary.is-active {
+            background: #e94560;
+        }
+
+        .live-external-panel {
+            flex: 1;
+            display: none;
+            padding: 24px;
+            background: #0f172a;
+            color: #dbeafe;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .live-external-panel-content {
+            max-width: 460px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .live-external-panel h3 {
+            font-size: 20px;
+            color: #fbbf24;
+        }
+
+        .live-external-panel p {
+            font-size: 14px;
+            color: #93c5fd;
+            line-height: 1.5;
+        }
+
+        .iframe-wrapper.external-mode iframe {
+            display: none;
+        }
+
+        .iframe-wrapper.external-mode .live-external-panel {
+            display: flex;
+        }
+
+        .draw-layer {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            width: calc(100% - 20px);
+            height: calc(100% - 20px);
+            z-index: 20;
+            pointer-events: none;
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        .draw-layer.enabled {
+            pointer-events: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="error-toast" id="errorToast"></div>
+
+        <div class="header">
+        <h1>TDental Comparison Tool</h1>
+        <div class="header-controls">
+            <select id="viewportSelect" class="btn btn-secondary" style="padding: 8px 12px;" onchange="changeViewport()">
+                <option value="desktop" selected>Desktop 1440x900</option>
+                <option value="tablet">Tablet 768x1024</option>
+                <option value="mobile">Mobile 375x667</option>
+            </select>
+            <button class="btn btn-secondary" onclick="reloadBoth()">Reload Both</button>
+            <button class="btn btn-secondary" id="syncBtn" onclick="toggleSync()">Sync Scroll</button>
+            <button class="btn btn-secondary" id="liveModeBtn" onclick="toggleLiveMode()">Live External: On</button>
+            <button class="btn btn-secondary" onclick="openLiveWindow()">Open Live</button>
+            <button class="btn btn-secondary" id="drawToggleBtn" onclick="toggleDrawMode()">Draw</button>
+            <button class="btn btn-secondary" onclick="clearDrawing()">Clear Draw</button>
+            <button class="btn btn-secondary" onclick="captureComparison()">Screenshot</button>
+            <button class="btn btn-primary" onclick="autoLogin()">Auto Login</button>
+            <button class="btn btn-primary" onclick="fullscreen()">Fullscreen</button>
+        </div>
+    </div>
+
+    <div class="url-bar">
+        <div class="url-input-group">
+            <label>LOCAL:</label>
+            <input type="text" class="url-input" id="localUrl" value="http://localhost:8899" placeholder="Local URL">
+        </div>
+        <div class="url-input-group">
+            <label>LIVE:</label>
+            <input type="text" class="url-input" id="liveUrl" value="https://tamdentist.tdental.vn"
+                placeholder="Live URL">
+        </div>
+        <button class="btn btn-primary" onclick="loadUrls()">Load</button>
+    </div>
+
+    <div class="quick-links">
+        <button class="quick-link" onclick="navigateBoth('dashboard')">Dashboard</button>
+        <button class="quick-link" onclick="navigateBoth('partners/customers')">Customers</button>
+        <button class="quick-link" onclick="navigateBoth('reception')">Reception</button>
+        <button class="quick-link" onclick="navigateBoth('calendar')">Calendar</button>
+        <button class="quick-link" onclick="navigateBoth('treatments')">Treatments</button>
+        <button class="quick-link" onclick="navigateBoth('sale-management')">Sale Orders</button>
+        <button class="quick-link" onclick="navigateBoth('stock')">Inventory</button>
+        <button class="quick-link" onclick="navigateBoth('hr/employees')">HR</button>
+        <button class="quick-link" onclick="navigateBoth('accounting')">Accounting</button>
+        <button class="quick-link" onclick="navigateBoth('callcenter')">Call Center</button>
+        <button class="quick-link" onclick="navigateBoth('reports')">Reports</button>
+        <button class="quick-link" onclick="navigateBoth('categories')">Categories</button>
+        <button class="quick-link" onclick="navigateBoth('locations')">Locations</button>
+        <button class="quick-link" onclick="navigateBoth('users')">Users</button>
+        <button class="quick-link" onclick="navigateBoth('settings')">Settings</button>
+    </div>
+
+    <div class="iframe-container">
+        <div class="iframe-wrapper">
+            <div class="iframe-label local">
+                <span><span class="status-dot green"></span>Local Replica</span>
+                <span id="localStatus">Loading...</span>
+            </div>
+            <iframe id="localFrame" src="http://localhost:8899"></iframe>
+        </div>
+
+        <div class="resizer" id="resizer"></div>
+
+        <div class="iframe-wrapper external-mode" id="liveWrapper">
+            <div class="iframe-label live">
+                <span><span class="status-dot yellow"></span>Live TDental</span>
+                <span id="liveStatus"><span class="status-dot yellow"></span>External mode</span>
+            </div>
+            <iframe id="liveFrame" src="about:blank"></iframe>
+            <div class="live-external-panel">
+                <div class="live-external-panel-content">
+                    <h3>Live runs in a separate window</h3>
+                    <p>Use external mode to avoid iframe session/cookie restrictions that cause branch switching and data loading issues.</p>
+                    <button class="btn btn-primary" onclick="openLiveWindow()">Open or Focus Live Window</button>
+                </div>
+            </div>
+        </div>
+
+        <canvas id="drawLayer" class="draw-layer" aria-label="Annotation layer"></canvas>
+    </div>
+
+    <script>
+        const localFrame = document.getElementById('localFrame');
+        const liveFrame = document.getElementById('liveFrame');
+        const localUrlInput = document.getElementById('localUrl');
+        const liveUrlInput = document.getElementById('liveUrl');
+        const localStatus = document.getElementById('localStatus');
+        const liveStatus = document.getElementById('liveStatus');
+        const loading = document.getElementById('loading');
+        const errorToast = document.getElementById('errorToast');
+        const drawLayer = document.getElementById('drawLayer');
+        const drawToggleBtn = document.getElementById('drawToggleBtn');
+        const liveWrapper = document.getElementById('liveWrapper');
+        const liveModeBtn = document.getElementById('liveModeBtn');
+
+        let syncScroll = false;
+        let isScrolling = false;
+        let warningShown = false;
+        let drawMode = false;
+        let drawing = false;
+        let activePointerId = null;
+        let drawCtx = null;
+        let drawResizeObserver = null;
+        let liveExternalMode = true;
+        let liveWindowRef = null;
+
+        const LOCAL_ROUTE_MAP = {
+            // Live route -> Local route mapping
+            'partners/customers': 'customers',
+            'sale-management': 'purchase',
+            'stock': 'inventory',
+            'hr/employees': 'salary',
+            'accounting': 'cashbook',
+            'callcenter': 'callcenter',
+            'reports': 'reports',
+            'categories': 'categories',
+            'locations': 'locations',
+            'users': 'users',
+            'settings': 'settings',
+            // Default routes (live == local)
+            'dashboard': 'dashboard',
+            'reception': 'reception',
+            'calendar': 'calendar',
+            'treatments': 'treatments'
+        };
+
+        const VIEWPORTS = {
+            'desktop': { width: 1440, height: 900 },
+            'tablet': { width: 768, height: 1024 },
+            'mobile': { width: 375, height: 667 }
+        };
+
+        let currentViewport = 'desktop';
+
+        const DRAW_STYLE = {
+            color: '#ff3158',
+            width: 3
+        };
+
+        function resizeDrawLayer(preserve = true) {
+            const rect = drawLayer.getBoundingClientRect();
+            if (!rect.width || !rect.height) return;
+
+            const ratio = window.devicePixelRatio || 1;
+            const previous = preserve ? document.createElement('canvas') : null;
+            if (previous) {
+                previous.width = drawLayer.width;
+                previous.height = drawLayer.height;
+                const prevCtx = previous.getContext('2d');
+                prevCtx.drawImage(drawLayer, 0, 0);
+            }
+
+            drawLayer.width = Math.floor(rect.width * ratio);
+            drawLayer.height = Math.floor(rect.height * ratio);
+
+            drawCtx = drawLayer.getContext('2d');
+            drawCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+            drawCtx.lineCap = 'round';
+            drawCtx.lineJoin = 'round';
+            drawCtx.strokeStyle = DRAW_STYLE.color;
+            drawCtx.lineWidth = DRAW_STYLE.width;
+
+            if (previous && previous.width && previous.height) {
+                drawCtx.drawImage(previous, 0, 0, previous.width, previous.height, 0, 0, rect.width, rect.height);
+            }
+        }
+
+        function getDrawPoint(event) {
+            const rect = drawLayer.getBoundingClientRect();
+            return {
+                x: event.clientX - rect.left,
+                y: event.clientY - rect.top
+            };
+        }
+
+        function onDrawStart(event) {
+            if (!drawMode) return;
+            if (event.pointerType === 'mouse' && event.button !== 0) return;
+            if (!drawCtx) resizeDrawLayer(false);
+
+            drawing = true;
+            activePointerId = event.pointerId;
+            drawLayer.setPointerCapture(event.pointerId);
+            const point = getDrawPoint(event);
+            drawCtx.beginPath();
+            drawCtx.moveTo(point.x, point.y);
+            event.preventDefault();
+        }
+
+        function onDrawMove(event) {
+            if (!drawMode || !drawing || event.pointerId !== activePointerId || !drawCtx) return;
+
+            const point = getDrawPoint(event);
+            drawCtx.lineTo(point.x, point.y);
+            drawCtx.stroke();
+            event.preventDefault();
+        }
+
+        function onDrawEnd(event) {
+            if (!drawing || event.pointerId !== activePointerId) return;
+
+            drawing = false;
+            activePointerId = null;
+            if (drawCtx) {
+                drawCtx.beginPath();
+            }
+            if (drawLayer.hasPointerCapture(event.pointerId)) {
+                drawLayer.releasePointerCapture(event.pointerId);
+            }
+        }
+
+        function toggleDrawMode() {
+            drawMode = !drawMode;
+            drawLayer.classList.toggle('enabled', drawMode);
+            drawToggleBtn.classList.toggle('is-active', drawMode);
+            drawToggleBtn.textContent = drawMode ? '✏️ Drawing On' : '✏️ Draw';
+
+            if (!drawMode && drawing) {
+                drawing = false;
+                activePointerId = null;
+                if (drawCtx) {
+                    drawCtx.beginPath();
+                }
+            }
+
+            showToast(drawMode ? 'Draw mode enabled' : 'Draw mode disabled');
+        }
+
+        function clearDrawing() {
+            if (!drawCtx) resizeDrawLayer(false);
+            if (!drawCtx) return;
+            drawCtx.clearRect(0, 0, drawLayer.width, drawLayer.height);
+            showToast('Drawing cleared');
+        }
+
+        async function captureComparison() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                showToast('Screenshot not supported in this browser');
+                return;
+            }
+
+            let stream;
+            try {
+                stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: {
+                        preferCurrentTab: true
+                    },
+                    audio: false
+                });
+
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                await video.play();
+                await new Promise(resolve => setTimeout(resolve, 250));
+
+                const captureCanvas = document.createElement('canvas');
+                captureCanvas.width = video.videoWidth;
+                captureCanvas.height = video.videoHeight;
+                captureCanvas.getContext('2d').drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const link = document.createElement('a');
+                link.href = captureCanvas.toDataURL('image/png');
+                link.download = `tdental-compare-${timestamp}.png`;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+
+                video.pause();
+                video.srcObject = null;
+                showToast('Screenshot saved');
+            } catch (error) {
+                if (error && error.name === 'NotAllowedError') {
+                    showToast('Screenshot canceled');
+                } else if (error) {
+                    showToast('Screenshot failed: ' + error.message);
+                }
+            } finally {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+            }
+        }
+
+        function getBaseUrl(inputValue) {
+            return (inputValue || '').trim().replace(/\/+$/, '');
+        }
+
+        function changeViewport() {
+            const viewport = document.getElementById('viewportSelect').value;
+            currentViewport = viewport;
+            const config = VIEWPORTS[viewport];
+            if (config) {
+                // Resize the iframe container to simulate viewport
+                const container = document.querySelector('.iframe-container');
+                // Note: Actual viewport simulation would require iframe resizing
+                // For now, we update the indicator
+                showToast(`Viewport: ${viewport} (${config.width}x${config.height})`);
+            }
+        }
+
+        function normalizeRoute(route) {
+            return String(route || '').trim()
+                .replace(/^#/g, '')
+                .replace(/^\/+/, '')
+                .replace(/\/+$/, '');
+        }
+
+        function localRoute(route) {
+            const key = normalizeRoute(route);
+            const target = LOCAL_ROUTE_MAP[key] || key || 'dashboard';
+            return `#${target}`;
+        }
+
+        function liveRoute(route) {
+            const key = normalizeRoute(route) || 'dashboard';
+            // Live uses #/ prefix for all routes except dashboard
+            if (key === 'dashboard') {
+                return '#/dashboard';
+            }
+            return '#/' + key;
+        }
+
+        function buildLiveUrl(route) {
+            const liveBase = getBaseUrl(liveUrlInput.value) || 'https://tamdentist.tdental.vn';
+            if (!route) return liveBase;
+            return `${liveBase}/` + liveRoute(route);
+        }
+
+        function isLiveWindowOpen() {
+            return !!(liveWindowRef && !liveWindowRef.closed);
+        }
+
+        function updateLiveModeUI() {
+            liveWrapper.classList.toggle('external-mode', liveExternalMode);
+            liveModeBtn.classList.toggle('is-active', liveExternalMode);
+            liveModeBtn.textContent = liveExternalMode ? 'Live External: On' : 'Live External: Off';
+
+            if (liveExternalMode) {
+                liveStatus.innerHTML = '<span class="status-dot yellow"></span>External mode';
+            } else {
+                liveStatus.innerHTML = '<span class="status-dot yellow"></span>Iframe mode';
+            }
+        }
+
+        function openLiveWindow(route) {
+            const target = route ? buildLiveUrl(route) : buildLiveUrl();
+            const popup = window.open(target, 'tdental_live_window');
+
+            if (!popup) {
+                liveStatus.innerHTML = '<span class="status-dot red"></span>Popup blocked';
+                showToast('Popup blocked. Allow popups for localhost to use external live mode');
+                return false;
+            }
+
+            liveWindowRef = popup;
+            try {
+                liveWindowRef.focus();
+            } catch (e) {
+                // Ignore focus errors from browser restrictions.
+            }
+
+            liveStatus.innerHTML = '<span class="status-dot green"></span>External window open';
+            return true;
+        }
+
+        function toggleLiveMode() {
+            liveExternalMode = !liveExternalMode;
+            syncScroll = false;
+            warningShown = false;
+            updateLiveModeUI();
+
+            if (liveExternalMode) {
+                liveFrame.src = 'about:blank';
+                loading.classList.add('hidden');
+                openLiveWindow();
+                showToast('Live external mode enabled');
+                return;
+            }
+
+            liveFrame.src = buildLiveUrl();
+            loading.classList.remove('hidden');
+            showToast('Live iframe mode enabled');
+        }
+
+        // Load URLs from input
+        function loadUrls() {
+            const localUrl = getBaseUrl(localUrlInput.value);
+            const liveUrl = getBaseUrl(liveUrlInput.value);
+
+            loading.classList.remove('hidden');
+
+            localFrame.src = localUrl;
+            if (liveExternalMode) {
+                openLiveWindow();
+            } else {
+                liveFrame.src = liveUrl;
+            }
+        }
+
+        // Reload both frames
+        function reloadBoth() {
+            loading.classList.remove('hidden');
+            try {
+                localFrame.contentWindow.location.reload();
+            } catch (e) {
+                localFrame.src = localFrame.src;
+            }
+
+            if (liveExternalMode) {
+                if (isLiveWindowOpen()) {
+                    try {
+                        liveWindowRef.location.reload();
+                        liveStatus.innerHTML = '<span class="status-dot green"></span>External window open';
+                    } catch (e) {
+                        openLiveWindow();
+                    }
+                } else {
+                    openLiveWindow();
+                }
+            } else {
+                try {
+                    liveFrame.contentWindow.location.reload();
+                } catch (e) {
+                    liveFrame.src = liveFrame.src;
+                }
+            }
+        }
+
+        // Toggle scroll sync
+        function toggleSync() {
+            if (liveExternalMode) {
+                syncScroll = false;
+                showToast('Scroll sync is unavailable in external live mode');
+                return;
+            }
+            syncScroll = !syncScroll;
+            showToast(syncScroll ? 'Scroll sync enabled' : 'Scroll sync disabled');
+        }
+
+        // Auto login to both sites
+        async function autoLogin() {
+            // Login to local
+            try {
+                const localBase = getBaseUrl(localUrlInput.value) || 'http://localhost:8899';
+                const localRes = await fetch(`${localBase}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'admin@tdental.vn', password: 'admin123' })
+                });
+                const localData = await localRes.json();
+                if (localData.success) {
+                    // Set cookie for local
+                    document.cookie = `tdental_session=${localData.token}; path=/`;
+                    localFrame.src = `${localBase}/`;
+                    if (liveExternalMode && !isLiveWindowOpen()) {
+                        openLiveWindow();
+                    }
+                    showToast('✅ Local logged in');
+                }
+            } catch (e) {
+                showToast('Local login failed: ' + e.message);
+            }
+        }
+
+        // Navigate both frames to same route
+        function navigateBoth(route) {
+            const localBase = getBaseUrl(localUrlInput.value);
+            const liveBase = getBaseUrl(liveUrlInput.value);
+
+            localFrame.src = `${localBase}/` + localRoute(route);
+            if (liveExternalMode) {
+                const popup = isLiveWindowOpen() ? liveWindowRef : null;
+                const targetUrl = `${liveBase}/` + liveRoute(route);
+                if (popup) {
+                    try {
+                        popup.location.href = targetUrl;
+                        popup.focus();
+                        liveStatus.innerHTML = '<span class="status-dot green"></span>External route synced';
+                    } catch (e) {
+                        openLiveWindow(route);
+                    }
+                } else {
+                    openLiveWindow(route);
+                }
+            } else {
+                liveFrame.src = `${liveBase}/` + liveRoute(route);
+            }
+
+            loading.classList.remove('hidden');
+        }
+
+        // Fullscreen mode
+        function fullscreen() {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                document.documentElement.requestFullscreen();
+            }
+        }
+
+        // Show error toast
+        function showToast(message) {
+            errorToast.textContent = message;
+            errorToast.classList.add('show');
+            setTimeout(() => {
+                errorToast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Handle iframe load events
+        localFrame.onload = function () {
+            localStatus.innerHTML = '<span class="status-dot green"></span>Loaded';
+            loading.classList.add('hidden');
+        };
+
+        localFrame.onerror = function () {
+            localStatus.textContent = 'Error';
+            localStatus.innerHTML = '<span class="status-dot red"></span>Error';
+            loading.classList.add('hidden');
+            showToast('Local iframe failed to load. Make sure local server is running on port 8899');
+        };
+
+        liveFrame.onload = function () {
+            if (liveExternalMode) return;
+            liveStatus.innerHTML = '<span class="status-dot green"></span>Loaded';
+            loading.classList.add('hidden');
+        };
+
+        liveFrame.onerror = function () {
+            if (liveExternalMode) return;
+            liveStatus.innerHTML = '<span class="status-dot red"></span>Blocked';
+            loading.classList.add('hidden');
+            showToast('Live TDental may block iframe embedding (X-Frame-Options)');
+        };
+
+        // Scroll sync
+        function getScrollPercent(frameWin, doc) {
+            const bodyScrollHeight = doc.documentElement.scrollHeight || doc.body.scrollHeight || 1;
+            const bodyClientHeight = doc.documentElement.clientHeight || doc.body.clientHeight || 1;
+            const maxScroll = Math.max(1, bodyScrollHeight - bodyClientHeight);
+            const currentScrollTop = doc.documentElement.scrollTop || doc.body.scrollTop || 0;
+            return Math.max(0, Math.min(1, currentScrollTop / maxScroll));
+        }
+
+        function setScroll(frame, percent) {
+            const doc = frame.contentDocument || frame.contentWindow?.document;
+            if (!doc) return;
+            const docEl = doc.documentElement;
+            const body = doc.body;
+            const maxScroll = Math.max(1, (docEl.scrollHeight || body.scrollHeight || 1) - (docEl.clientHeight || body.clientHeight || 1));
+            frame.contentWindow.scrollTo(0, Math.round(maxScroll * percent));
+        }
+
+        function safeBindScrollSync(sourceFrame, targetFrame) {
+            const win = sourceFrame.contentWindow;
+            if (!win || !win.addEventListener) return;
+
+            if (sourceFrame._tdentalSyncWindow && sourceFrame._tdentalSyncHandler) {
+                sourceFrame._tdentalSyncWindow.removeEventListener('scroll', sourceFrame._tdentalSyncHandler);
+            }
+
+            const handler = function () {
+                if (!syncScroll || isScrolling) return;
+
+                try {
+                    isScrolling = true;
+                    const sourceDoc = sourceFrame.contentDocument || win.document;
+                    const percent = getScrollPercent(win, sourceDoc);
+                    setScroll(targetFrame, percent);
+                } catch (e) {
+                    if (!warningShown) {
+                        warningShown = true;
+                        syncScroll = false;
+                        showToast('Scroll sync disabled: one frame blocks cross-frame access');
+                    }
+                } finally {
+                    setTimeout(() => isScrolling = false, 50);
+                }
+            };
+
+            sourceFrame._tdentalSyncWindow = win;
+            sourceFrame._tdentalSyncHandler = handler;
+            win.addEventListener('scroll', handler);
+        }
+
+        function bindScrollSyncs() {
+            if (liveExternalMode) return;
+            try {
+                safeBindScrollSync(localFrame, liveFrame);
+                safeBindScrollSync(liveFrame, localFrame);
+            } catch (e) {
+                if (!warningShown) {
+                    warningShown = true;
+                    showToast('Scroll sync disabled: one frame blocks cross-frame access');
+                }
+            }
+        }
+
+        localFrame.addEventListener('load', bindScrollSyncs);
+        liveFrame.addEventListener('load', bindScrollSyncs);
+        drawLayer.addEventListener('pointerdown', onDrawStart);
+        drawLayer.addEventListener('pointermove', onDrawMove);
+        drawLayer.addEventListener('pointerup', onDrawEnd);
+        drawLayer.addEventListener('pointercancel', onDrawEnd);
+
+        // Resizer functionality
+        const resizer = document.getElementById('resizer');
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', function (e) {
+            isResizing = true;
+            document.body.style.cursor = 'col-resize';
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', function (e) {
+            if (!isResizing) return;
+
+            const container = document.querySelector('.iframe-container');
+            const percent = (e.clientX - container.getBoundingClientRect().left) / container.offsetWidth * 100;
+
+            document.querySelectorAll('.iframe-wrapper')[0].style.flex = percent;
+            document.querySelectorAll('.iframe-wrapper')[1].style.flex = 100 - percent;
+        });
+
+        document.addEventListener('mouseup', function () {
+            isResizing = false;
+            document.body.style.cursor = '';
+        });
+
+        // Initial load
+        window.addEventListener('load', function () {
+            setTimeout(() => {
+                loading.classList.add('hidden');
+            }, 2000);
+
+            updateLiveModeUI();
+            resizeDrawLayer(false);
+            if (window.ResizeObserver) {
+                drawResizeObserver = new ResizeObserver(() => resizeDrawLayer(true));
+                drawResizeObserver.observe(document.querySelector('.iframe-container'));
+            } else {
+                window.addEventListener('resize', () => resizeDrawLayer(true));
+            }
+        });
+    </script>
+</body>
+
+</html>
