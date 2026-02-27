@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from app.api import auth, routes
-from app.core.database import ensure_auth_tables, get_conn, get_cursor
+from app.core.database import ensure_auth_tables, ensure_sale_orders_table, ensure_all_tables, get_conn, get_cursor
 
 app = FastAPI(title="TDental Viewer")
 
@@ -45,8 +45,12 @@ async def startup_event():
     try:
         ensure_auth_tables()
         print("[BOOT] Auth tables ready")
+        ensure_sale_orders_table()
+        print("[BOOT] Sale orders table ready")
+        ensure_all_tables()
+        print("[BOOT] All application tables ready")
     except Exception as e:
-        print(f"[BOOT] WARNING: ensure_auth_tables failed: {e}")
+        print(f"[BOOT] WARNING: table setup failed: {e}")
 
 
 def verify_session_cookie(token: str) -> bool:
