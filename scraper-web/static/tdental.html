@@ -199,6 +199,15 @@
                     <path d="M9 18l6-6-6-6" />
                 </svg>
             </a>
+            <a class="sidebar-item" data-page="partners" onclick="navigate('partners')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 00-3-3.87" />
+                    <path d="M16 3.13a4 4 0 010 7.75" />
+                </svg>
+                <span>Đối tác</span>
+            </a>
             <a class="sidebar-item" data-page="categories" onclick="navigate('categories')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" />
@@ -725,7 +734,7 @@
             <div class="page-header">
                 <h2>Quản lý Labo</h2>
                 <div class="page-header-actions">
-                    <button class="btn-primary">
+                    <button class="btn-primary" onclick="openModal('labo')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10" />
                             <path d="M12 8v8M8 12h8" />
@@ -736,9 +745,10 @@
             </div>
             <div class="tabs" id="treatTabs">
                 <button class="tab active" data-state="" onclick="filterTreatState(this)">Tất cả</button>
-                <button class="tab" data-state="sending" onclick="filterTreatState(this)">Đang gửi</button>
-                <button class="tab" data-state="received" onclick="filterTreatState(this)">Đã nhận</button>
-                <button class="tab" data-state="completed" onclick="filterTreatState(this)">Hoàn thành</button>
+                <button class="tab" data-state="new" onclick="filterTreatState(this)">Mới</button>
+                <button class="tab" data-state="in_progress" onclick="filterTreatState(this)">Đang xử lý</button>
+                <button class="tab" data-state="done" onclick="filterTreatState(this)">Hoàn thành</button>
+                <button class="tab" data-state="delivered" onclick="filterTreatState(this)">Đã giao</button>
                 <div class="tabs-right">
                     <div class="filter-search">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -803,14 +813,15 @@
                     <span style="font-size:12px;color:var(--text-muted)" id="rptDateRange"></span>
                 </div>
             </div>
-            <div class="tabs" style="margin-bottom:12px">
-                <button class="tab active">Thời gian</button>
-                <button class="tab">Dịch vụ</button>
-                <button class="tab">Nhân viên</button>
-                <button class="tab">Khách hàng</button>
-                <button class="tab">Nguồn khách hàng</button>
-                <button class="tab">Chi nhánh</button>
+            <div class="tabs" style="margin-bottom:12px" id="reportTabs">
+                <button class="tab active report-tab" data-tab="time" onclick="switchReportTab(this,'time')">Thời gian</button>
+                <button class="tab report-tab" data-tab="service" onclick="switchReportTab(this,'service')">Dịch vụ</button>
+                <button class="tab report-tab" data-tab="staff" onclick="switchReportTab(this,'staff')">Nhân viên</button>
+                <button class="tab report-tab" data-tab="customer" onclick="switchReportTab(this,'customer')">Khách hàng</button>
+                <button class="tab report-tab" data-tab="source" onclick="switchReportTab(this,'source')">Nguồn khách hàng</button>
+                <button class="tab report-tab" data-tab="branch" onclick="switchReportTab(this,'branch')">Chi nhánh</button>
             </div>
+            <div id="reportTabContent" style="display:none;margin-bottom:12px"></div>
             <div class="dash-grid" id="reportStats">
                 <div class="dash-stat">
                     <div class="dash-stat-icon blue">
@@ -1225,6 +1236,48 @@
                 </table>
                 <div id="commissionPagination" class="pagination"></div>
             </div>
+        </div>
+
+        <!-- ══ PARTNERS PAGE ══ -->
+        <div id="page-partners" class="page-content" style="display:none">
+            <div class="page-header">
+                <h2>Đối tác</h2>
+                <div class="page-header-actions">
+                    <button class="btn-primary" onclick="openModal('partner')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 8v8M8 12h8" />
+                        </svg>
+                        + Thêm đối tác
+                    </button>
+                    <input type="text" id="partnerSearch" placeholder="🔍 Tìm đối tác..."
+                        style="width:250px;padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px"
+                        oninput="partnerSearchKey=this.value;partnerPage=1;loadPartners()">
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tên đối tác</th>
+                            <th>Loại</th>
+                            <th>SĐT</th>
+                            <th>Email</th>
+                            <th>Địa chỉ</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="partners-tbody">
+                        <tr>
+                            <td colspan="7" class="loading">
+                                <div class="spinner"></div>Đang tải...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="partners-pagination" class="pagination"></div>
         </div>
 
         <!-- ══ CATEGORIES PAGE ══ -->
