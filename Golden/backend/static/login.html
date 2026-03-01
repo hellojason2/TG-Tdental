@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TDental - Đăng nhập</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/login.css">
+</head>
+<body class="login-body">
+  <div class="login-split">
+    <!-- Left Panel: Form -->
+    <div class="login-left">
+      <div class="login-left-inner">
+        <div class="login-logo">
+          <h1><span class="logo-t">T</span>Dental</h1>
+        </div>
+
+        <p class="login-subtitle">Đăng nhập bằng tài khoản của bạn</p>
+
+        <form class="login-form" id="login-form" autocomplete="on">
+          <div class="form-group">
+            <label for="email">Tài khoản</label>
+            <input
+              type="text"
+              id="email"
+              name="email"
+              value="admin@tdental.vn"
+              placeholder="Nhập tài khoản"
+              autocomplete="email"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <div class="label-row">
+              <label for="password">Mật khẩu</label>
+              <a href="#" class="forgot-link" onclick="event.preventDefault();">Quên mật khẩu ?</a>
+            </div>
+            <div class="password-wrapper">
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value="admin123"
+                placeholder="Nhập mật khẩu"
+                autocomplete="current-password"
+                required
+              >
+              <button type="button" class="eye-toggle" id="eye-toggle" tabindex="-1" aria-label="Hiện mật khẩu">
+                <svg class="eye-icon" id="eye-icon-open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="eye-icon" id="eye-icon-closed" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                  <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="login-btn" id="login-btn">
+            Đăng nhập
+          </button>
+
+          <div class="login-error" id="login-error"></div>
+        </form>
+
+        <div class="login-footer">
+          TMT &copy; 2022 &mdash; Bảo mật và quyền riêng tư
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Illustration -->
+    <div class="login-right">
+      <div class="login-right-inner">
+        <div class="right-logo">
+          <h2><span class="logo-t">T</span>Dental</h2>
+        </div>
+
+        <div class="illustration">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 320" width="340" height="272">
+            <!-- Tooth body -->
+            <path d="M200 40 C160 40, 120 70, 120 120 C120 160, 140 190, 155 230 C165 260, 170 290, 175 300 C178 308, 185 310, 190 300 C195 285, 198 260, 200 240 C202 260, 205 285, 210 300 C215 310, 222 308, 225 300 C230 290, 235 260, 245 230 C260 190, 280 160, 280 120 C280 70, 240 40, 200 40Z" fill="#FFFFFF" stroke="#69A5F8" stroke-width="3"/>
+            <!-- Medical cross -->
+            <rect x="185" y="95" width="30" height="70" rx="4" fill="#69A5F8" opacity="0.85"/>
+            <rect x="170" y="115" width="60" height="30" rx="4" fill="#69A5F8" opacity="0.85"/>
+            <!-- Sparkles -->
+            <circle cx="100" cy="80" r="4" fill="#69A5F8" opacity="0.4"/>
+            <circle cx="300" cy="90" r="5" fill="#69A5F8" opacity="0.3"/>
+            <circle cx="320" cy="180" r="3" fill="#1A6DE3" opacity="0.35"/>
+            <circle cx="80" cy="200" r="3.5" fill="#1A6DE3" opacity="0.3"/>
+            <!-- Small floating crosses -->
+            <g transform="translate(90,150)" opacity="0.3">
+              <rect x="-2" y="-8" width="4" height="16" rx="1" fill="#69A5F8"/>
+              <rect x="-8" y="-2" width="16" height="4" rx="1" fill="#69A5F8"/>
+            </g>
+            <g transform="translate(310,130)" opacity="0.25">
+              <rect x="-2" y="-6" width="4" height="12" rx="1" fill="#1A6DE3"/>
+              <rect x="-6" y="-2" width="12" height="4" rx="1" fill="#1A6DE3"/>
+            </g>
+            <!-- Doctor figure left -->
+            <g transform="translate(110,220)">
+              <circle cx="0" cy="-15" r="12" fill="#69A5F8" opacity="0.6"/>
+              <rect x="-10" y="-3" width="20" height="30" rx="6" fill="#69A5F8" opacity="0.5"/>
+            </g>
+            <!-- Doctor figure right -->
+            <g transform="translate(290,230)">
+              <circle cx="0" cy="-15" r="11" fill="#1A6DE3" opacity="0.5"/>
+              <rect x="-9" y="-3" width="18" height="28" rx="5" fill="#1A6DE3" opacity="0.4"/>
+            </g>
+          </svg>
+        </div>
+
+        <h3 class="right-heading">Phần mềm quản lý nha khoa</h3>
+        <p class="right-desc">
+          TDental giúp bạn quản lý phòng khám nha khoa hiệu quả, tiết kiệm thời gian và nâng cao chất lượng dịch vụ cho bệnh nhân.
+        </p>
+
+        <div class="right-hotline">
+          Tổng đài hỗ trợ: <span class="hotline-number">0898 017 888</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var form = document.getElementById('login-form');
+      var btn = document.getElementById('login-btn');
+      var errorDiv = document.getElementById('login-error');
+
+      // Password visibility toggle
+      var eyeToggle = document.getElementById('eye-toggle');
+      var passwordInput = document.getElementById('password');
+      var eyeOpen = document.getElementById('eye-icon-open');
+      var eyeClosed = document.getElementById('eye-icon-closed');
+
+      eyeToggle.addEventListener('click', function () {
+        if (passwordInput.type === 'password') {
+          passwordInput.type = 'text';
+          eyeOpen.style.display = 'none';
+          eyeClosed.style.display = 'block';
+        } else {
+          passwordInput.type = 'password';
+          eyeOpen.style.display = 'block';
+          eyeClosed.style.display = 'none';
+        }
+      });
+
+      async function redirectIfAlreadyLoggedIn() {
+        var token = localStorage.getItem('token');
+        var headers = {};
+        if (token) {
+          headers.Authorization = 'Bearer ' + token;
+        }
+
+        try {
+          var res = await fetch('/api/auth/session', { headers: headers });
+          if (!res.ok) {
+            throw new Error('No active session');
+          }
+
+          var data = await res.json();
+          if (data && data.user) {
+            localStorage.setItem('user', JSON.stringify(data.user));
+            window.location.href = '/';
+            return true;
+          }
+        } catch (_err) {
+          // Clear stale client cache when session is no longer valid.
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+
+        return false;
+      }
+
+      function showError(msg) {
+        errorDiv.textContent = msg;
+        errorDiv.classList.add('visible');
+      }
+
+      function hideError() {
+        errorDiv.classList.remove('visible');
+      }
+
+      function setLoading(loading) {
+        if (loading) {
+          btn.disabled = true;
+          btn.innerHTML = '<span class="spinner"></span>Đang đăng nhập...';
+        } else {
+          btn.disabled = false;
+          btn.innerHTML = 'Đăng nhập';
+        }
+      }
+
+      async function init() {
+        var alreadyLoggedIn = await redirectIfAlreadyLoggedIn();
+        if (alreadyLoggedIn) {
+          return;
+        }
+
+        form.addEventListener('submit', async function (e) {
+          e.preventDefault();
+          hideError();
+
+          var email = document.getElementById('email').value.trim();
+          var password = document.getElementById('password').value;
+
+          if (!email || !password) {
+            showError('Vui lòng nhập tài khoản và mật khẩu.');
+            return;
+          }
+
+          setLoading(true);
+
+          try {
+            var res = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: email, password: password }),
+            });
+
+            var data = await res.json();
+
+            if (!res.ok) {
+              throw new Error(data.detail || data.message || 'Đăng nhập thất bại.');
+            }
+
+            if (data.token) {
+              localStorage.setItem('token', data.token);
+            } else if (data.access_token) {
+              localStorage.setItem('token', data.access_token);
+            }
+
+            if (data.user) {
+              localStorage.setItem('user', JSON.stringify(data.user));
+            }
+
+            window.location.href = '/';
+          } catch (err) {
+            showError(err.message || 'Không thể kết nối đến máy chủ.');
+          } finally {
+            setLoading(false);
+          }
+        });
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>

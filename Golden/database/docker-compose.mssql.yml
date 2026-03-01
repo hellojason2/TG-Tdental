@@ -1,0 +1,28 @@
+services:
+  mssql:
+    platform: linux/amd64
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: tdental-mssql-temp
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "TDental2026!Strong"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - ${MSSQL_DATA_DIR:-./mssql-data}:/var/opt/mssql
+      - ./2026-02-23-Full.bak:/var/opt/mssql/backup/2026-02-23-Full.bak:ro
+    mem_limit: 4g
+
+  postgres:
+    image: postgres:15
+    container_name: tdental-postgres
+    environment:
+      POSTGRES_DB: tdental
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "${PG_PORT:-5432}:5432"
+    volumes:
+      - ${PG_DATA_DIR:-./pg-data}:/var/lib/postgresql/data
+      - ./pg_export:/pg_export

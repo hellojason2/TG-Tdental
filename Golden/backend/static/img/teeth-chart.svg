@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 930 320" role="img" aria-label="Teeth chart 1 to 32">
+  <rect x="1" y="1" width="928" height="318" rx="14" fill="#ffffff" stroke="#e5e7eb"/>
+  <path d="M40 130 Q465 20 890 130" fill="none" stroke="#e5e7eb" stroke-width="2"/>
+  <path d="M40 190 Q465 300 890 190" fill="none" stroke="#e5e7eb" stroke-width="2"/>
+  <g class="tooth" data-tooth="1"><circle cx="40" cy="90" r="18"/><text x="40" y="94" text-anchor="middle">1</text></g>
+  <g class="tooth" data-tooth="2"><circle cx="96" cy="90" r="18"/><text x="96" y="94" text-anchor="middle">2</text></g>
+  <g class="tooth" data-tooth="3"><circle cx="152" cy="90" r="18"/><text x="152" y="94" text-anchor="middle">3</text></g>
+  <g class="tooth" data-tooth="4"><circle cx="208" cy="90" r="18"/><text x="208" y="94" text-anchor="middle">4</text></g>
+  <g class="tooth" data-tooth="5"><circle cx="264" cy="90" r="18"/><text x="264" y="94" text-anchor="middle">5</text></g>
+  <g class="tooth" data-tooth="6"><circle cx="320" cy="90" r="18"/><text x="320" y="94" text-anchor="middle">6</text></g>
+  <g class="tooth" data-tooth="7"><circle cx="376" cy="90" r="18"/><text x="376" y="94" text-anchor="middle">7</text></g>
+  <g class="tooth" data-tooth="8"><circle cx="432" cy="90" r="18"/><text x="432" y="94" text-anchor="middle">8</text></g>
+  <g class="tooth" data-tooth="9"><circle cx="488" cy="90" r="18"/><text x="488" y="94" text-anchor="middle">9</text></g>
+  <g class="tooth" data-tooth="10"><circle cx="544" cy="90" r="18"/><text x="544" y="94" text-anchor="middle">10</text></g>
+  <g class="tooth" data-tooth="11"><circle cx="600" cy="90" r="18"/><text x="600" y="94" text-anchor="middle">11</text></g>
+  <g class="tooth" data-tooth="12"><circle cx="656" cy="90" r="18"/><text x="656" y="94" text-anchor="middle">12</text></g>
+  <g class="tooth" data-tooth="13"><circle cx="712" cy="90" r="18"/><text x="712" y="94" text-anchor="middle">13</text></g>
+  <g class="tooth" data-tooth="14"><circle cx="768" cy="90" r="18"/><text x="768" y="94" text-anchor="middle">14</text></g>
+  <g class="tooth" data-tooth="15"><circle cx="824" cy="90" r="18"/><text x="824" y="94" text-anchor="middle">15</text></g>
+  <g class="tooth" data-tooth="16"><circle cx="880" cy="90" r="18"/><text x="880" y="94" text-anchor="middle">16</text></g>
+  <g class="tooth" data-tooth="17"><circle cx="890" cy="230" r="18"/><text x="890" y="234" text-anchor="middle">17</text></g>
+  <g class="tooth" data-tooth="18"><circle cx="834" cy="230" r="18"/><text x="834" y="234" text-anchor="middle">18</text></g>
+  <g class="tooth" data-tooth="19"><circle cx="778" cy="230" r="18"/><text x="778" y="234" text-anchor="middle">19</text></g>
+  <g class="tooth" data-tooth="20"><circle cx="722" cy="230" r="18"/><text x="722" y="234" text-anchor="middle">20</text></g>
+  <g class="tooth" data-tooth="21"><circle cx="666" cy="230" r="18"/><text x="666" y="234" text-anchor="middle">21</text></g>
+  <g class="tooth" data-tooth="22"><circle cx="610" cy="230" r="18"/><text x="610" y="234" text-anchor="middle">22</text></g>
+  <g class="tooth" data-tooth="23"><circle cx="554" cy="230" r="18"/><text x="554" y="234" text-anchor="middle">23</text></g>
+  <g class="tooth" data-tooth="24"><circle cx="498" cy="230" r="18"/><text x="498" y="234" text-anchor="middle">24</text></g>
+  <g class="tooth" data-tooth="25"><circle cx="442" cy="230" r="18"/><text x="442" y="234" text-anchor="middle">25</text></g>
+  <g class="tooth" data-tooth="26"><circle cx="386" cy="230" r="18"/><text x="386" y="234" text-anchor="middle">26</text></g>
+  <g class="tooth" data-tooth="27"><circle cx="330" cy="230" r="18"/><text x="330" y="234" text-anchor="middle">27</text></g>
+  <g class="tooth" data-tooth="28"><circle cx="274" cy="230" r="18"/><text x="274" y="234" text-anchor="middle">28</text></g>
+  <g class="tooth" data-tooth="29"><circle cx="218" cy="230" r="18"/><text x="218" y="234" text-anchor="middle">29</text></g>
+  <g class="tooth" data-tooth="30"><circle cx="162" cy="230" r="18"/><text x="162" y="234" text-anchor="middle">30</text></g>
+  <g class="tooth" data-tooth="31"><circle cx="106" cy="230" r="18"/><text x="106" y="234" text-anchor="middle">31</text></g>
+  <g class="tooth" data-tooth="32"><circle cx="50" cy="230" r="18"/><text x="50" y="234" text-anchor="middle">32</text></g>
+</svg>
