@@ -33,7 +33,7 @@ class CategorySavePayload(BaseModel):
     companyId: str | None = Field(default=None, max_length=64)
 
 
-@dataclass(slots=True)
+@dataclass()
 class ManageSpec:
     key: str
     table_candidates: tuple[str, ...]
@@ -346,6 +346,102 @@ _MANAGE_SPECS: dict[str, ManageSpec] = {
     "card-types": ManageSpec(
         key="card-types",
         table_candidates=("card_types", "cardtypes"),
+        mode="generic",
+    ),
+    # --- Additional category sub-types ---
+    "customer-labels": ManageSpec(
+        key="customer-labels",
+        table_candidates=("partner_categories", "partnercategories", "customer_labels", "customerlabels"),
+        mode="generic",
+    ),
+    "customer-titles": ManageSpec(
+        key="customer-titles",
+        table_candidates=("partner_titles", "partnertitles", "res_partner_titles", "respartnertitles"),
+        mode="generic",
+    ),
+    "medical-history": ManageSpec(
+        key="medical-history",
+        table_candidates=("medical_histories", "medicalhistory", "medical_history", "tiensubenhly"),
+        mode="generic",
+    ),
+    "customer-stages": ManageSpec(
+        key="customer-stages",
+        table_candidates=("customer_stages", "customerstages", "partner_stages", "partnerstages"),
+        mode="generic",
+    ),
+    "suppliers": ManageSpec(
+        key="suppliers",
+        table_candidates=("partners", "res_partners", "respartners"),
+        mode="generic",
+    ),
+    "insurance": ManageSpec(
+        key="insurance",
+        table_candidates=("insurance_companies", "insurancecompanies", "insurance", "bao_hiem"),
+        mode="generic",
+    ),
+    "referrers": ManageSpec(
+        key="referrers",
+        table_candidates=("partner_sources", "partnersources", "sources", "referrers"),
+        mode="generic",
+    ),
+    "prescriptions": ManageSpec(
+        key="prescriptions",
+        table_candidates=("prescription_templates", "prescriptiontemplates", "prescriptions", "toa_thuoc"),
+        mode="generic",
+    ),
+    "price-lists": ManageSpec(
+        key="price-lists",
+        table_candidates=("price_lists", "pricelists", "pricelist", "product_pricelists"),
+        mode="generic",
+    ),
+    "commission-tables": ManageSpec(
+        key="commission-tables",
+        table_candidates=("commission_tables", "commissiontables", "commission_rates", "commissionrates"),
+        mode="generic",
+    ),
+    "employees": ManageSpec(
+        key="employees",
+        table_candidates=("employees", "employee"),
+        mode="generic",
+    ),
+    "departments": ManageSpec(
+        key="departments",
+        table_candidates=("departments", "department", "hr_departments", "hrdepartments"),
+        mode="generic",
+    ),
+    "job-titles": ManageSpec(
+        key="job-titles",
+        table_candidates=("job_titles", "jobtitles", "hr_jobs", "hrjobs", "hr_job"),
+        mode="generic",
+    ),
+    "labo-materials": ManageSpec(
+        key="labo-materials",
+        table_candidates=("labo_materials", "labomaterials", "labo_material_types", "labomaterialtypes"),
+        mode="generic",
+    ),
+    "labo-attachments": ManageSpec(
+        key="labo-attachments",
+        table_candidates=("labo_attachments", "laboattachments", "labo_attachment_types", "laboattachmenttypes"),
+        mode="generic",
+    ),
+    "income-types": ManageSpec(
+        key="income-types",
+        table_candidates=("income_types", "incometypes", "income_categories", "loai_thu"),
+        mode="generic",
+    ),
+    "expense-types": ManageSpec(
+        key="expense-types",
+        table_candidates=("expense_types", "expensetypes", "expense_categories", "loai_chi"),
+        mode="generic",
+    ),
+    "stock-criteria": ManageSpec(
+        key="stock-criteria",
+        table_candidates=("stock_criteria", "stockcriteria", "inventory_criteria", "tieu_chi_kiem_ke"),
+        mode="generic",
+    ),
+    "tooth-diagnosis": ManageSpec(
+        key="tooth-diagnosis",
+        table_candidates=("tooth_diagnosis", "toothdiagnosis", "dental_diagnosis", "icd10_codes", "diagnosis_codes"),
         mode="generic",
     ),
 }

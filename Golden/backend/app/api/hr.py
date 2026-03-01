@@ -393,3 +393,285 @@ def _load_advances(
         cur.execute(query, tuple(params))
         rows = cur.fetchall()
     return [dict(row) for row in rows]
+
+
+# ---------------------------------------------------------------------------
+# GET /api/hr/timekeeping
+# ---------------------------------------------------------------------------
+
+
+@router.get("/timekeeping")
+async def hr_timekeeping(
+    dateFrom: date | None = Query(default=None),
+    dateTo: date | None = Query(default=None),
+    companyId: str | None = Query(default=None),
+    employeeId: str | None = Query(default=None),
+    _user: dict = Depends(require_auth),
+):
+    """Return attendance/timekeeping records by month."""
+    try:
+        with get_conn() as conn:
+            records = _load_timekeeping(
+                conn, date_from=dateFrom, date_to=dateTo, company_id=companyId,
+            )
+            if employeeId:
+                records = [r for r in records if r.get("employeeId") == employeeId]
+            return {
+                "items": records,
+                "totalItems": len(records),
+                "meta": {
+                    "dateFrom": dateFrom.isoformat() if dateFrom else None,
+                    "dateTo": dateTo.isoformat() if dateTo else None,
+                    "companyId": companyId,
+                },
+            }
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+# ---------------------------------------------------------------------------
+# GET /api/hr/salary-advances
+# ---------------------------------------------------------------------------
+
+
+@router.get("/salary-advances")
+async def hr_salary_advances(
+    dateFrom: date | None = Query(default=None),
+    dateTo: date | None = Query(default=None),
+    companyId: str | None = Query(default=None),
+    employeeId: str | None = Query(default=None),
+    _user: dict = Depends(require_auth),
+):
+    """Return salary advance vouchers."""
+    try:
+        with get_conn() as conn:
+            records = _load_advances(
+                conn, date_from=dateFrom, date_to=dateTo, company_id=companyId,
+            )
+            if employeeId:
+                records = [r for r in records if r.get("employeeId") == employeeId]
+            return {
+                "items": records,
+                "totalItems": len(records),
+                "meta": {
+                    "dateFrom": dateFrom.isoformat() if dateFrom else None,
+                    "dateTo": dateTo.isoformat() if dateTo else None,
+                    "companyId": companyId,
+                },
+            }
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+# ---------------------------------------------------------------------------
+# GET /api/hr/salary-payments
+# ---------------------------------------------------------------------------
+
+
+@router.get("/salary-payments")
+async def hr_salary_payments(
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=0, le=500),
+    offset: int | None = Query(default=None, ge=0),
+    limit: int | None = Query(default=None, ge=0, le=5000),
+    dateFrom: date | None = Query(default=None),
+    dateTo: date | None = Query(default=None),
+    companyId: str | None = Query(default=None),
+    employeeId: str | None = Query(default=None),
+    search: str = Query(default=""),
+    _user: dict = Depends(require_auth),
+):
+    """Return salary payment records (actual disbursements)."""
+    from app.core.lookup_sql import empty_page, page_window
+    from app.core.pagination import paginate
+
+    effective_offset, effective_limit = page_window(
+        page=page, per_page=per_page, offset=offset, limit=limit, default_limit=20,
+    )
+
+    try:
+        with get_conn() as conn:
+            table = resolve_table(
+                conn,
+                "salary_payments", "salarypayments",
+                "salary_payment", "salarypayment",
+                "hr_payslips", "hrpayslips",
+                "payslips", "payslip",
+                "luong_thuc_linh",
+            )
+            if not table:
+                return empty_page(effective_offset, effective_limit)
+
+            cols = table_columns(conn, table)
+            id_col = pick_column(cols, "id")
+            if not id_col:
+                return empty_page(effective_offset, effective_limit)
+
+            name_col = pick_column(cols, "name", "display_name", "reference", "ref")
+            date_col = pick_column(cols, "date", "payment_date", "date_from", "created_at")
+            amount_col = pick_column(cols, "amount", "amount_total", "net_salary", "total")
+            employee_id_col = pick_column(cols, "employee_id", "employeeid", "staff_id")
+            employee_name_col = pick_column(cols, "employee_name", "employeename", "staff_name")
+            company_id_col = pick_column(cols, "company_id", "companyid")
+            state_col = pick_column(cols, "state", "status")
+            note_col = pick_column(cols, "note", "memo", "description")
+
+            amount_expr = f"COALESCE(t.{quote_ident(amount_col)}, 0)" if amount_col else "0::numeric"
+
+            joins = ""
+            employee_name_expr = (
+                f't.{quote_ident(employee_name_col)}' if employee_name_col else "NULL::text"
+            )
+            if not employee_name_col and employee_id_col:
+                emp_table = resolve_table(conn, "employees", "employee")
+                if emp_table:
+                    emp_cols = table_columns(conn, emp_table)
+                    e_id_col = pick_column(emp_cols, "id")
+                    e_name_col = pick_column(emp_cols, "name", "display_name")
+                    if e_id_col and e_name_col:
+                        joins = (
+                            f" LEFT JOIN {emp_table.qualified_name} e"
+                            f" ON t.{quote_ident(employee_id_col)} = e.{quote_ident(e_id_col)}"
+                        )
+                        employee_name_expr = f"e.{quote_ident(e_name_col)}"
+
+            select_fields = [
+                f't.{quote_ident(id_col)}::text AS id',
+                (f"COALESCE(t.{quote_ident(name_col)}, t.{quote_ident(id_col)}::text) AS name"
+                 if name_col else f't.{quote_ident(id_col)}::text AS name'),
+                (f't.{quote_ident(date_col)} AS date' if date_col else "NULL::timestamp AS date"),
+                f"{amount_expr} AS amount",
+                (f't.{quote_ident(employee_id_col)}::text AS "employeeId"'
+                 if employee_id_col else 'NULL::text AS "employeeId"'),
+                f'{employee_name_expr} AS "employeeName"',
+                (f't.{quote_ident(state_col)} AS state' if state_col else "NULL::text AS state"),
+                (f't.{quote_ident(note_col)} AS note' if note_col else "NULL::text AS note"),
+                (f't.{quote_ident(company_id_col)}::text AS "companyId"'
+                 if company_id_col else 'NULL::text AS "companyId"'),
+            ]
+
+            where_clauses: list[str] = []
+            params: list = []
+
+            if companyId:
+                if not company_id_col:
+                    return empty_page(effective_offset, effective_limit)
+                where_clauses.append(f"t.{quote_ident(company_id_col)}::text = %s")
+                params.append(companyId)
+
+            if employeeId:
+                if not employee_id_col:
+                    return empty_page(effective_offset, effective_limit)
+                where_clauses.append(f"t.{quote_ident(employee_id_col)}::text = %s")
+                params.append(employeeId)
+
+            if search.strip():
+                pattern = f"%{search.strip()}%"
+                search_parts: list[str] = []
+                if name_col:
+                    search_parts.append(f"t.{quote_ident(name_col)} ILIKE %s")
+                    params.append(pattern)
+                if employee_name_col:
+                    search_parts.append(f"t.{quote_ident(employee_name_col)} ILIKE %s")
+                    params.append(pattern)
+                if search_parts:
+                    where_clauses.append("(" + " OR ".join(search_parts) + ")")
+
+            if dateFrom and date_col:
+                where_clauses.append(f"t.{quote_ident(date_col)}::date >= %s")
+                params.append(dateFrom)
+            if dateTo and date_col:
+                where_clauses.append(f"t.{quote_ident(date_col)}::date <= %s")
+                params.append(dateTo)
+
+            base_query = (
+                f"SELECT {', '.join(select_fields)} FROM {table.qualified_name} t"
+                + joins
+            )
+            if where_clauses:
+                base_query += " WHERE " + " AND ".join(where_clauses)
+            if date_col:
+                base_query += (
+                    f" ORDER BY t.{quote_ident(date_col)} DESC NULLS LAST, "
+                    f"t.{quote_ident(id_col)} DESC"
+                )
+            else:
+                base_query += f" ORDER BY t.{quote_ident(id_col)} DESC"
+
+            return paginate(
+                query=base_query, params=tuple(params), conn=conn,
+                offset=effective_offset, limit=effective_limit,
+            )
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+# ---------------------------------------------------------------------------
+# GET /api/hr/salary-reports
+# ---------------------------------------------------------------------------
+
+
+@router.get("/salary-reports")
+async def hr_salary_reports(
+    dateFrom: date | None = Query(default=None),
+    dateTo: date | None = Query(default=None),
+    companyId: str | None = Query(default=None),
+    _user: dict = Depends(require_auth),
+):
+    """Return salary payment summary per employee."""
+    try:
+        with get_conn() as conn:
+            employees = _load_employees(conn, company_id=companyId)
+            timekeeping = _load_timekeeping(
+                conn, date_from=dateFrom, date_to=dateTo, company_id=companyId,
+            )
+            advances = _load_advances(
+                conn, date_from=dateFrom, date_to=dateTo, company_id=companyId,
+            )
+
+            tk_by_emp: dict[str, float] = {}
+            for tk in timekeeping:
+                eid = tk.get("employeeId") or ""
+                tk_by_emp[eid] = tk_by_emp.get(eid, 0) + float(tk.get("hours") or 0)
+
+            adv_by_emp: dict[str, float] = {}
+            for adv in advances:
+                eid = adv.get("employeeId") or ""
+                adv_by_emp[eid] = adv_by_emp.get(eid, 0) + float(adv.get("amount") or 0)
+
+            items = []
+            for emp in employees:
+                eid = emp.get("id") or ""
+                monthly_salary = float(emp.get("monthlySalary") or 0)
+                allowance = float(emp.get("allowance") or 0)
+                commission = float(emp.get("commission") or 0)
+                total_hours = tk_by_emp.get(eid, 0)
+                total_advances = adv_by_emp.get(eid, 0)
+                gross = monthly_salary + allowance + commission
+                net = gross - total_advances
+                items.append({
+                    "employeeId": eid,
+                    "employeeName": emp.get("name"),
+                    "jobTitle": emp.get("jobTitle"),
+                    "companyId": emp.get("companyId"),
+                    "companyName": emp.get("companyName"),
+                    "monthlySalary": monthly_salary,
+                    "allowance": allowance,
+                    "commission": commission,
+                    "totalHours": total_hours,
+                    "totalAdvances": total_advances,
+                    "grossSalary": gross,
+                    "netSalary": net,
+                })
+
+            return {
+                "items": items,
+                "totalItems": len(items),
+                "meta": {
+                    "dateFrom": dateFrom.isoformat() if dateFrom else None,
+                    "dateTo": dateTo.isoformat() if dateTo else None,
+                    "companyId": companyId,
+                },
+            }
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")

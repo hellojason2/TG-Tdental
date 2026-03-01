@@ -1,5 +1,7 @@
 """Companies lookup endpoint."""
 
+from __future__ import annotations
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.core.database import get_conn

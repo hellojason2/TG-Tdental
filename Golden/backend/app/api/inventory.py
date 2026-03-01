@@ -522,6 +522,189 @@ async def stock_report(
         raise HTTPException(status_code=503, detail="Database is unavailable")
 
 
+# ---------------------------------------------------------------------------
+# GET /api/labo-orders
+# ---------------------------------------------------------------------------
+
+
+@router.get("/labo-orders")
+async def list_labo_orders(
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=0, le=500),
+    offset: int | None = Query(default=None, ge=0),
+    limit: int | None = Query(default=None, ge=0, le=5000),
+    companyId: str | None = Query(default=None),
+    search: str = Query(default=""),
+    state: str | None = Query(default=None),
+    dateFrom: date | None = Query(default=None),
+    dateTo: date | None = Query(default=None),
+    _user: dict = Depends(require_auth),
+):
+    """Return paginated labo orders list."""
+    effective_offset, effective_limit = page_window(
+        page=page,
+        per_page=per_page,
+        offset=offset,
+        limit=limit,
+        default_limit=20,
+    )
+
+    try:
+        with get_conn() as conn:
+            labo_table = resolve_table(
+                conn,
+                "labo_orders", "laboorders", "labo_order", "laboorder",
+                "labo", "labos",
+            )
+            if not labo_table:
+                return empty_page(effective_offset, effective_limit)
+
+            cols = table_columns(conn, labo_table)
+            id_col = pick_column(cols, "id")
+            if not id_col:
+                return empty_page(effective_offset, effective_limit)
+
+            name_col = pick_column(cols, "name", "display_name", "reference", "ref", "order_name")
+            date_col = pick_column(cols, "date", "order_date", "date_order", "created_at", "created_date")
+            date_planned_col = pick_column(cols, "date_planned", "planned_date", "date_expected", "delivery_date")
+            date_received_col = pick_column(cols, "date_received", "received_date", "date_done")
+            state_col = pick_column(cols, "state", "status")
+            partner_id_col = pick_column(cols, "partner_id", "partnerid", "supplier_id", "supplierid", "labo_id", "laboid")
+            partner_name_col = pick_column(cols, "partner_name", "partnername", "supplier_name", "suppliername", "labo_name", "laboname")
+            company_id_col = pick_column(cols, "company_id", "companyid")
+            company_name_col = pick_column(cols, "company_name", "companyname")
+            amount_col = pick_column(cols, "amount", "amount_total", "total", "price_total")
+            warranty_col = pick_column(cols, "warranty", "warranty_name", "warranty_code")
+            note_col = pick_column(cols, "note", "memo", "description")
+            customer_name_col = pick_column(cols, "customer_name", "customername", "patient_name", "patientname")
+            product_name_col = pick_column(cols, "product_name", "productname", "service_name")
+
+            joins: list[str] = []
+            partner_name_expr = (
+                f'l.{quote_ident(partner_name_col)}' if partner_name_col else "NULL::text"
+            )
+            company_name_expr = (
+                f'l.{quote_ident(company_name_col)}' if company_name_col else "NULL::text"
+            )
+
+            if not partner_name_col and partner_id_col:
+                partners_table = resolve_table(conn, "partners", "res_partners", "respartners")
+                if partners_table:
+                    partner_cols = table_columns(conn, partners_table)
+                    p_id_col = pick_column(partner_cols, "id")
+                    p_name_col = pick_column(partner_cols, "name", "display_name")
+                    if p_id_col and p_name_col:
+                        joins.append(
+                            f" LEFT JOIN {partners_table.qualified_name} pt"
+                            f" ON l.{quote_ident(partner_id_col)} = pt.{quote_ident(p_id_col)}"
+                        )
+                        partner_name_expr = f"pt.{quote_ident(p_name_col)}"
+
+            if not company_name_col and company_id_col:
+                companies_table = resolve_table(conn, "companies", "company")
+                if companies_table:
+                    company_cols = table_columns(conn, companies_table)
+                    c_id_col = pick_column(company_cols, "id")
+                    c_name_col = pick_column(company_cols, "name", "display_name")
+                    if c_id_col and c_name_col:
+                        joins.append(
+                            f" LEFT JOIN {companies_table.qualified_name} c"
+                            f" ON l.{quote_ident(company_id_col)} = c.{quote_ident(c_id_col)}"
+                        )
+                        company_name_expr = f"c.{quote_ident(c_name_col)}"
+
+            amount_expr = f"COALESCE(l.{quote_ident(amount_col)}, 0)" if amount_col else "0::numeric"
+
+            select_fields = [
+                f'l.{quote_ident(id_col)}::text AS id',
+                (f"COALESCE(l.{quote_ident(name_col)}, l.{quote_ident(id_col)}::text) AS name"
+                 if name_col else f'l.{quote_ident(id_col)}::text AS name'),
+                (f'l.{quote_ident(date_col)} AS date' if date_col else "NULL::timestamp AS date"),
+                (f'l.{quote_ident(date_planned_col)} AS "datePlanned"'
+                 if date_planned_col else 'NULL::timestamp AS "datePlanned"'),
+                (f'l.{quote_ident(date_received_col)} AS "dateReceived"'
+                 if date_received_col else 'NULL::timestamp AS "dateReceived"'),
+                (f'l.{quote_ident(state_col)} AS state' if state_col else "NULL::text AS state"),
+                f'{partner_name_expr} AS "partnerName"',
+                (f'l.{quote_ident(company_id_col)}::text AS "companyId"'
+                 if company_id_col else 'NULL::text AS "companyId"'),
+                f'{company_name_expr} AS "companyName"',
+                f'{amount_expr} AS amount',
+                (f'l.{quote_ident(warranty_col)} AS warranty'
+                 if warranty_col else "NULL::text AS warranty"),
+                (f'l.{quote_ident(note_col)} AS note' if note_col else "NULL::text AS note"),
+                (f'l.{quote_ident(customer_name_col)} AS "customerName"'
+                 if customer_name_col else 'NULL::text AS "customerName"'),
+                (f'l.{quote_ident(product_name_col)} AS "productName"'
+                 if product_name_col else 'NULL::text AS "productName"'),
+            ]
+
+            where_clauses: list[str] = []
+            params: list = []
+
+            if companyId:
+                if not company_id_col:
+                    return empty_page(effective_offset, effective_limit)
+                where_clauses.append(f"l.{quote_ident(company_id_col)}::text = %s")
+                params.append(companyId)
+
+            if state:
+                if not state_col:
+                    return empty_page(effective_offset, effective_limit)
+                where_clauses.append(f"LOWER(COALESCE(l.{quote_ident(state_col)}::text, '')) = %s")
+                params.append(state.strip().lower())
+
+            if search.strip():
+                pattern = f"%{search.strip()}%"
+                search_parts: list[str] = []
+                if name_col:
+                    search_parts.append(f"l.{quote_ident(name_col)} ILIKE %s")
+                    params.append(pattern)
+                if partner_name_col:
+                    search_parts.append(f"l.{quote_ident(partner_name_col)} ILIKE %s")
+                    params.append(pattern)
+                if customer_name_col:
+                    search_parts.append(f"l.{quote_ident(customer_name_col)} ILIKE %s")
+                    params.append(pattern)
+                if search_parts:
+                    where_clauses.append("(" + " OR ".join(search_parts) + ")")
+
+            if dateFrom:
+                if not date_col:
+                    return empty_page(effective_offset, effective_limit)
+                where_clauses.append(f"l.{quote_ident(date_col)}::date >= %s")
+                params.append(dateFrom)
+            if dateTo:
+                if not date_col:
+                    return empty_page(effective_offset, effective_limit)
+                where_clauses.append(f"l.{quote_ident(date_col)}::date <= %s")
+                params.append(dateTo)
+
+            base_query = (
+                f"SELECT {', '.join(select_fields)} FROM {labo_table.qualified_name} l"
+                + "".join(joins)
+            )
+            if where_clauses:
+                base_query += " WHERE " + " AND ".join(where_clauses)
+            if date_col:
+                base_query += (
+                    f" ORDER BY l.{quote_ident(date_col)} DESC NULLS LAST, "
+                    f"l.{quote_ident(id_col)} DESC"
+                )
+            else:
+                base_query += f" ORDER BY l.{quote_ident(id_col)} DESC"
+
+            return paginate(
+                query=base_query,
+                params=tuple(params),
+                conn=conn,
+                offset=effective_offset,
+                limit=effective_limit,
+            )
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
 def _stock_move_filters(
     *,
     context: dict,

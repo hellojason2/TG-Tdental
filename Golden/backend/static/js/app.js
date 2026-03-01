@@ -7,6 +7,8 @@
 
   var TODAY_ISO = formatDateInput(new Date());
   var MONTH_START_ISO = formatDateInput(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  // Use 30 days ago as default range start (MONTH_START can equal today on 1st of month)
+  var RANGE_START_ISO = formatDateInput(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
   var RECENT_CALLS_STORAGE_KEY = 'tds_recent_calls';
 
   var REPORT_TABS = {
@@ -111,7 +113,7 @@
     },
     reports: {
       tab: 'daily',
-      dateFrom: MONTH_START_ISO,
+      dateFrom: RANGE_START_ISO,
       dateTo: TODAY_ISO,
       rowsByTab: {},
       requestId: 0,
@@ -131,7 +133,7 @@
       id: null,
       data: null,
       loading: false,
-      activeTab: 'overview',
+      activeTab: 'info',
       appointments: [],
       treatments: [],
       exams: [],
@@ -166,7 +168,7 @@
       requestId: 0,
     },
     cashbook: {
-      dateFrom: MONTH_START_ISO,
+      dateFrom: RANGE_START_ISO,
       dateTo: TODAY_ISO,
       paymentType: '',
       items: [],
@@ -187,7 +189,7 @@
       recentCalls: [],
     },
     salary: {
-      dateFrom: MONTH_START_ISO,
+      dateFrom: RANGE_START_ISO,
       dateTo: TODAY_ISO,
       data: null,
       loading: false,
@@ -248,6 +250,41 @@
     '#/reports': { title: 'Báo cáo', page: 'reports', render: renderReports },
     '#/categories': { title: 'Danh mục', page: 'categories', render: renderCategories },
     '#/settings': { title: 'Cài đặt', page: 'settings', render: renderSettings },
+    // --- Submenu routes ---
+    '#/labo-orders': { title: 'Đặt hàng Labo', page: 'labo', render: renderLaboOrders },
+    '#/purchase-refund': { title: 'Trả hàng', page: 'purchase', render: renderPurchaseRefund },
+    '#/timekeeping': { title: 'Chấm công', page: 'salary', render: renderTimekeeping },
+    '#/salary-payment': { title: 'Thanh toán lương', page: 'salary', render: renderSalaryPayment },
+    '#/salary-reports': { title: 'Báo cáo lương', page: 'salary', render: renderSalaryReports },
+    '#/receipts': { title: 'Phiếu thu', page: 'cashbook', render: renderReceipts },
+    '#/payments': { title: 'Phiếu chi', page: 'cashbook', render: renderPaymentsVoucher },
+    '#/account-payment': { title: 'Thanh toán nội bộ', page: 'cashbook', render: renderAccountPayment },
+    '#/call-history': { title: 'Lịch sử cuộc gọi', page: 'callcenter', render: renderCallHistory },
+    '#/commission-employee': { title: 'Hoa hồng nhân viên', page: 'commission', render: renderCommissionEmployee },
+    '#/report-daily': { title: 'Báo cáo ngày', page: 'reports', render: function () { APP.reports.tab = 'daily'; renderReports(); } },
+    '#/report-revenue': { title: 'Báo cáo doanh thu', page: 'reports', render: function () { APP.reports.tab = 'service'; renderReports(); } },
+    '#/report-services': { title: 'Báo cáo dịch vụ', page: 'reports', render: function () { APP.reports.tab = 'service'; renderReports(); } },
+    '#/report-customers': { title: 'Báo cáo khách hàng', page: 'reports', render: function () { APP.reports.tab = 'customer'; renderReports(); } },
+    '#/report-reception': { title: 'Báo cáo tiếp nhận', page: 'reports', render: function () { APP.reports.tab = 'source'; renderReports(); } },
+    '#/report-supplier-debt': { title: 'Công nợ NCC', page: 'reports', render: function () { APP.reports.tab = 'branch'; renderReports(); } },
+    '#/report-appointments': { title: 'Báo cáo lịch hẹn', page: 'reports', render: function () { APP.reports.tab = 'staff'; renderReports(); } },
+    '#/report-tasks': { title: 'Báo cáo công việc', page: 'reports', render: function () { APP.reports.tab = 'staff'; renderReports(); } },
+    '#/report-insurance': { title: 'Công nợ bảo hiểm', page: 'reports', render: function () { APP.reports.tab = 'branch'; renderReports(); } },
+    '#/customer-stage': { title: 'Trạng thái KH', page: 'categories', render: function () { APP.categories.kind = 'partner-categories'; renderCategories(); } },
+    '#/partner-catalog': { title: 'Đối tác', page: 'categories', render: function () { APP.categories.kind = 'partner-sources'; renderCategories(); } },
+    '#/products': { title: 'Dịch vụ/Vật tư/Thuốc', page: 'categories', render: function () { APP.categories.kind = 'products'; renderCategories(); } },
+    '#/prescriptions': { title: 'Đơn thuốc mẫu', page: 'categories', render: function () { APP.categories.kind = 'services'; renderCategories(); } },
+    '#/price-list': { title: 'Bảng giá', page: 'categories', render: function () { APP.categories.kind = 'services'; renderCategories(); } },
+    '#/commission-table': { title: 'Bảng hoa hồng', page: 'categories', render: function () { APP.categories.kind = 'services'; renderCategories(); } },
+    '#/employees': { title: 'Nhân viên', page: 'categories', render: function () { APP.categories.kind = 'doctors'; renderCategories(); } },
+    '#/labo-params': { title: 'Thông số Labo', page: 'categories', render: function () { APP.categories.kind = 'services'; renderCategories(); } },
+    '#/income-expense-types': { title: 'Loại thu chi', page: 'categories', render: function () { APP.categories.kind = 'card-types'; renderCategories(); } },
+    '#/stock-criteria': { title: 'Tiêu chí kiểm kho', page: 'categories', render: function () { APP.categories.kind = 'products'; renderCategories(); } },
+    '#/tooth-diagnosis': { title: 'Chẩn đoán răng', page: 'categories', render: function () { APP.categories.kind = 'services'; renderCategories(); } },
+    '#/settings-config': { title: 'Cấu hình chung', page: 'settings', render: function () { APP.settings.tab = 'config'; renderSettings(); } },
+    '#/settings-team': { title: 'Cấu hình Team', page: 'settings', render: function () { APP.settings.tab = 'team'; renderSettings(); } },
+    '#/settings-other': { title: 'Cấu hình khác', page: 'settings', render: function () { APP.settings.tab = 'other'; renderSettings(); } },
+    '#/settings-logs': { title: 'Lịch sử hoạt động', page: 'settings', render: function () { APP.settings.tab = 'logs'; renderSettings(); } },
   };
 
   // ---------------------------------------------------------------------------
@@ -1956,7 +1993,7 @@
     if (!customerId) { navigateTo('#/partners'); return; }
     APP.customerDetail.id = customerId;
     APP.customerDetail.loading = true;
-    APP.customerDetail.activeTab = 'overview';
+    APP.customerDetail.activeTab = 'info';
     el.innerHTML = '<div class="cdetail-page"><div class="cdetail-loading">' + renderLoadingState('Đang tải thông tin khách hàng...') + '</div></div>';
     try {
       var result = await Promise.all([
@@ -2013,10 +2050,11 @@
     h += '<div class="cdetail-metric-card cdetail-metric-green"><div class="cdetail-metric-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div><div class="cdetail-metric-label">Doanh thu</div><div class="cdetail-metric-value">' + escapeHtml(formatCurrency(totalRevenue)) + '</div></div>';
     h += '<div class="cdetail-metric-card cdetail-metric-red"><div class="cdetail-metric-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="cdetail-metric-label">Công nợ</div><div class="cdetail-metric-value">' + escapeHtml(formatCurrency(totalDebt)) + '</div></div>';
     h += '<div class="cdetail-metric-card cdetail-metric-purple"><div class="cdetail-metric-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="cdetail-metric-label">Tạm ứng</div><div class="cdetail-metric-value">' + escapeHtml(formatCurrency(d.advanceBalance || 0)) + '</div></div>';
+    h += '<div class="cdetail-metric-card cdetail-metric-cyan"><div class="cdetail-metric-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="cdetail-metric-label">Điểm tích lũy</div><div class="cdetail-metric-value">' + (d.loyaltyPoints || 0) + '</div></div>';
     h += '</div>';
     h += '<div class="cdetail-main"><div class="cdetail-content">';
     h += '<div class="cdetail-tabs" id="cdetail-tabs">';
-    var tabList = [['overview','Hồ sơ'],['appointments','Lịch hẹn'],['teeth','Tình trạng răng'],['quotation','Báo giá'],['treatments','Phiếu điều trị'],['exams','Đợt khám'],['labo','Labo'],['images','Hình ảnh'],['advance','Tạm ứng'],['debt','Sổ công nợ']];
+    var tabList = [['info','Thông tin'],['appointments','Cuộc hẹn'],['treatments','Điều trị'],['prescriptions','Đơn thuốc'],['images','Hình ảnh'],['payments','Phiếu thu chi'],['debt','Công nợ'],['notes','Ghi chú'],['teeth','Sơ đồ răng'],['history','Lịch sử']];
     for (var ti = 0; ti < tabList.length; ti++) {
       h += '<button class="cdetail-tab' + (ti === 0 ? ' cdetail-tab-active' : '') + '" data-ctab="' + tabList[ti][0] + '">' + tabList[ti][1] + '</button>';
     }
@@ -2054,49 +2092,339 @@
     var treatments = APP.customerDetail.treatments || [];
     var appointments = APP.customerDetail.appointments || [];
     var payments = APP.customerDetail.payments || [];
-    if (tab === 'overview') {
-      var toolbarHtml = '<div class="cdetail-overview-toolbar">' +
-        '<h3 class="cdetail-section-title">Lịch sử điều trị</h3>' +
-        '<div class="cdetail-toolbar-actions">' +
-        '<button class="cdetail-toolbar-btn cdetail-toolbar-btn-active" title="Danh sách"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>' +
-        '<button class="cdetail-toolbar-btn" title="Lưới"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>' +
-        '<button class="cdetail-toolbar-btn" title="Xuất"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>' +
-        '<span class="cdetail-toolbar-sep"></span>' +
-        '<span class="cdetail-toolbar-link">In hồ sơ điều trị</span>' +
-        '</div></div>';
-      if (treatments.length) {
-        panel.innerHTML = toolbarHtml + '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Ngày</th><th>Dịch vụ</th><th>Số lượng</th><th>Thành tiền</th><th>Thanh toán</th><th>Còn lại</th><th>Răng & chẩn đoán</th><th>Bác sĩ</th><th>Trạng thái</th></tr></thead><tbody>' + treatments.map(function (t) { var lines = safeItems(t.lines || t.lineItems || []); var sn = lines.length ? (lines[0].name || lines[0].productName || '—') : '—'; var qtyDisplay = lines.length ? ((lines[0].quantity || 0) + (lines[0].teethCount ? ' Răng' : '')) : '—'; var teethInfo = (t.teeth || t.toothDiagnosis || '---'); var soRef = t.name || t.ref || ''; return '<tr><td><div>' + escapeHtml(formatDate(t.date || t.orderDate || t.createdAt)) + '</div>' + (soRef ? '<div class="cdetail-so-link">' + escapeHtml(soRef) + '</div>' : '') + '</td><td>' + escapeHtml(sn) + '</td><td>' + escapeHtml(qtyDisplay) + '</td><td class="text-right">' + escapeHtml(formatCurrency(t.totalAmount || t.amountTotal || 0)) + '</td><td class="text-right">' + escapeHtml(formatCurrency(t.paidAmount || t.amountPaid || 0)) + '</td><td class="text-right">' + escapeHtml(formatCurrency((t.totalAmount || t.amountTotal || 0) - (t.paidAmount || t.amountPaid || 0))) + '</td><td>' + escapeHtml(teethInfo) + '</td><td>' + escapeHtml(t.doctorName || '—') + '</td><td><span class="partners-badge partners-badge-blue">' + escapeHtml(t.state || t.status || '—') + '</span></td></tr>'; }).join('') + '</tbody></table></div>';
-      } else { panel.innerHTML = toolbarHtml + renderEmptyState('Chưa có phiếu điều trị'); }
-    } else if (tab === 'treatments') {
-      if (treatments.length) {
-        panel.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Mã phiếu</th><th>Ngày</th><th>Trạng thái</th><th class="text-right">Tổng tiền</th><th class="text-right">Đã TT</th></tr></thead><tbody>' + treatments.map(function (t) { return '<tr><td>' + escapeHtml(t.name || t.ref || '—') + '</td><td>' + escapeHtml(formatDate(t.date || t.orderDate || t.createdAt)) + '</td><td>' + escapeHtml(t.state || '—') + '</td><td class="text-right">' + escapeHtml(formatCurrency(t.totalAmount || t.amountTotal || 0)) + '</td><td class="text-right">' + escapeHtml(formatCurrency(t.paidAmount || t.amountPaid || 0)) + '</td></tr>'; }).join('') + '</tbody></table></div>';
-      } else { panel.innerHTML = renderEmptyState('Chưa có phiếu điều trị'); }
+
+    // ---- Tab 1: Thong tin (Info) ----
+    if (tab === 'info') {
+      var genderDisplay = d.gender === 'female' ? 'N\u1eef' : d.gender === 'male' ? 'Nam' : d.gender || '\u2014';
+      var ih = '<h3 class="cdetail-section-title">Th\u00f4ng tin c\u01a1 b\u1ea3n</h3>';
+      ih += '<div class="cdetail-info-grid">';
+      ih += '<div class="cdetail-info-item"><div class="cdetail-info-label">M\u00e3 kh\u00e1ch h\u00e0ng</div><div class="cdetail-info-value">' + escapeHtml(d.ref || '\u2014') + '</div></div>';
+      ih += '<div class="cdetail-info-item"><div class="cdetail-info-label">H\u1ecd v\u00e0 t\u00ean</div><div class="cdetail-info-value">' + escapeHtml(d.name || d.displayName || '\u2014') + '</div></div>';
+      ih += '<div class="cdetail-info-item"><div class="cdetail-info-label">S\u1ed1 \u0111i\u1ec7n tho\u1ea1i</div><div class="cdetail-info-value">' + escapeHtml(d.phone || '\u2014') + '</div></div>';
+      ih += '<div class="cdetail-info-item"><div class="cdetail-info-label">Email</div><div class="cdetail-info-value">' + escapeHtml(d.email || '\u2014') + '</div></div>';
+      ih += '<div class="cdetail-info-item"><div class="cdetail-info-label">Gi\u1edbi t\u00ednh</div><div class="cdetail-info-value">' + escapeHtml(genderDisplay) + '</div></div>';
+      ih += '<div class="cdetail-info-item"><div class="cdetail-info-label">Ng\u00e0y sinh</div><div class="cdetail-info-value">' + escapeHtml(formatDate(d.dateOfBirth || d.birthDate || d.dob) || '\u2014') + '</div></div>';
+      ih += '<div class="cdetail-info-item"><div class="cdetail-info-label">Nh\u00f3m kh\u00e1ch h\u00e0ng</div><div class="cdetail-info-value">' + escapeHtml(d.categories || d.partnerCategory || '\u2014') + '</div></div>';
+      ih += '<div class="cdetail-info-item"><div class="cdetail-info-label">Ngu\u1ed3n</div><div class="cdetail-info-value">' + escapeHtml(d.source || d.partnerSource || '\u2014') + '</div></div>';
+      ih += '<div class="cdetail-info-item cdetail-info-full"><div class="cdetail-info-label">\u0110\u1ecba ch\u1ec9</div><div class="cdetail-info-value">' + escapeHtml(d.address || d.street || '\u2014') + '</div></div>';
+      ih += '<div class="cdetail-info-item cdetail-info-full"><div class="cdetail-info-label">Ghi ch\u00fa</div><div class="cdetail-info-value">' + escapeHtml(d.comment || d.notes || d.note || '\u2014') + '</div></div>';
+      ih += '</div>';
+      ih += '<h3 class="cdetail-section-title" style="margin-top:20px">T\u1ed5ng quan t\u00e0i ch\u00ednh</h3>';
+      ih += '<div class="cdetail-info-grid">';
+      ih += '<div class="cdetail-info-item"><div class="cdetail-info-label">T\u1ed5ng ti\u1ec1n \u0111i\u1ec1u tr\u1ecb</div><div class="cdetail-info-value">' + escapeHtml(formatCurrency(d.amountTreatmentTotal || 0)) + '</div></div>';
+      ih += '<div class="cdetail-info-item"><div class="cdetail-info-label">Doanh thu</div><div class="cdetail-info-value">' + escapeHtml(formatCurrency(d.amountRevenueTotal || 0)) + '</div></div>';
+      ih += '<div class="cdetail-info-item"><div class="cdetail-info-label">C\u00f4ng n\u1ee3</div><div class="cdetail-info-value" style="color:#EF4444;font-weight:600">' + escapeHtml(formatCurrency(d.totalDebit || 0)) + '</div></div>';
+      ih += '<div class="cdetail-info-item"><div class="cdetail-info-label">\u0110i\u1ec3m t\u00edch l\u0169y</div><div class="cdetail-info-value">' + (d.loyaltyPoints || 0) + '</div></div>';
+      ih += '</div>';
+      panel.innerHTML = ih;
+
+    // ---- Tab 2: Cuoc hen (Appointments) ----
     } else if (tab === 'appointments') {
       if (appointments.length) {
-        panel.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Ngày hẹn</th><th>Bác sĩ</th><th>Trạng thái</th><th>Ghi chú</th></tr></thead><tbody>' + appointments.map(function (a) { return '<tr><td>' + escapeHtml(formatDate(a.appointmentDate || a.date)) + '</td><td>' + escapeHtml(a.doctorName || '—') + '</td><td>' + escapeHtml(a.state || a.status || '—') + '</td><td>' + escapeHtml(a.notes || a.note || '—') + '</td></tr>'; }).join('') + '</tbody></table></div>';
-      } else { panel.innerHTML = renderEmptyState('Chưa có lịch hẹn'); }
+        var stateMap = { draft: 'Nh\u00e1p', confirmed: 'X\u00e1c nh\u1eadn', done: 'Ho\u00e0n th\u00e0nh', cancel: 'H\u1ee7y', arrived: '\u0110\u00e3 \u0111\u1ebfn', waiting: 'Ch\u1edd kh\u00e1m', examining: '\u0110ang kh\u00e1m' };
+        panel.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Ng\u00e0y h\u1eb9n</th><th>Gi\u1edd</th><th>B\u00e1c s\u0129</th><th>Tr\u1ea1ng th\u00e1i</th><th>Ghi ch\u00fa</th></tr></thead><tbody>' +
+          appointments.map(function (a) {
+            var dt = a.appointmentDate || a.date || '';
+            var timeStr = dt.length > 10 ? dt.slice(11, 16) : (a.time || '\u2014');
+            var stateLabel = stateMap[a.state || a.status] || a.state || a.status || '\u2014';
+            var badgeClass = (a.state === 'done' || a.status === 'done') ? 'partners-badge-green' : (a.state === 'cancel') ? 'partners-badge-red' : (a.state === 'confirmed') ? 'partners-badge-blue' : 'partners-badge-orange';
+            return '<tr><td>' + escapeHtml(formatDate(dt)) + '</td><td>' + escapeHtml(timeStr) + '</td><td>' + escapeHtml(a.doctorName || '\u2014') + '</td><td><span class="partners-badge ' + badgeClass + '">' + escapeHtml(stateLabel) + '</span></td><td>' + escapeHtml(a.notes || a.note || '\u2014') + '</td></tr>';
+          }).join('') + '</tbody></table></div>';
+      } else { panel.innerHTML = renderEmptyState('Ch\u01b0a c\u00f3 cu\u1ed9c h\u1eb9n'); }
+
+    // ---- Tab 3: Dieu tri (Treatments) ----
+    } else if (tab === 'treatments') {
+      var toolbarHtml = '<div class="cdetail-overview-toolbar"><h3 class="cdetail-section-title">L\u1ecbch s\u1eed \u0111i\u1ec1u tr\u1ecb</h3><div class="cdetail-toolbar-actions"><button class="cdetail-toolbar-btn cdetail-toolbar-btn-active" title="Danh s\u00e1ch"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button><button class="cdetail-toolbar-btn" title="Xu\u1ea5t"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button><span class="cdetail-toolbar-sep"></span><span class="cdetail-toolbar-link">In h\u1ed3 s\u01a1 \u0111i\u1ec1u tr\u1ecb</span></div></div>';
+      if (treatments.length) {
+        panel.innerHTML = toolbarHtml + '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Ng\u00e0y</th><th>D\u1ecbch v\u1ee5</th><th>S\u1ed1 l\u01b0\u1ee3ng</th><th>Th\u00e0nh ti\u1ec1n</th><th>Thanh to\u00e1n</th><th>C\u00f2n l\u1ea1i</th><th>R\u0103ng & ch\u1ea9n \u0111o\u00e1n</th><th>B\u00e1c s\u0129</th><th>Tr\u1ea1ng th\u00e1i</th></tr></thead><tbody>' +
+          treatments.map(function (t) {
+            var lines = safeItems(t.lines || t.lineItems || []);
+            var sn = lines.length ? (lines[0].name || lines[0].productName || '\u2014') : '\u2014';
+            var qtyDisplay = lines.length ? ((lines[0].quantity || 0) + (lines[0].teethCount ? ' R\u0103ng' : '')) : '\u2014';
+            var teethInfo = (t.teeth || t.toothDiagnosis || '---');
+            var soRef = t.name || t.ref || '';
+            return '<tr><td><div>' + escapeHtml(formatDate(t.date || t.orderDate || t.createdAt)) + '</div>' + (soRef ? '<div class="cdetail-so-link">' + escapeHtml(soRef) + '</div>' : '') + '</td><td>' + escapeHtml(sn) + '</td><td>' + escapeHtml(qtyDisplay) + '</td><td class="text-right">' + escapeHtml(formatCurrency(t.totalAmount || t.amountTotal || 0)) + '</td><td class="text-right">' + escapeHtml(formatCurrency(t.paidAmount || t.amountPaid || 0)) + '</td><td class="text-right">' + escapeHtml(formatCurrency((t.totalAmount || t.amountTotal || 0) - (t.paidAmount || t.amountPaid || 0))) + '</td><td>' + escapeHtml(teethInfo) + '</td><td>' + escapeHtml(t.doctorName || '\u2014') + '</td><td><span class="partners-badge partners-badge-blue">' + escapeHtml(t.state || t.status || '\u2014') + '</span></td></tr>';
+          }).join('') + '</tbody></table></div>';
+      } else { panel.innerHTML = toolbarHtml + renderEmptyState('Ch\u01b0a c\u00f3 phi\u1ebfu \u0111i\u1ec1u tr\u1ecb'); }
+
+    // ---- Tab 4: Don thuoc (Prescriptions) ----
+    } else if (tab === 'prescriptions') {
+      panel.innerHTML = renderEmptyState('Ch\u01b0a c\u00f3 d\u1eef li\u1ec7u \u0111\u01a1n thu\u1ed1c');
+
+    // ---- Tab 5: Hinh anh (Images) ----
+    } else if (tab === 'images') {
+      var images = APP.customerDetail.images || [];
+      if (images.length) {
+        var imgHtml = '<h3 class="cdetail-section-title">H\u00ecnh \u1ea3nh b\u1ec7nh nh\u00e2n</h3><div class="cdetail-images-grid">';
+        images.forEach(function (img) {
+          var src = img.url || img.imageUrl || img.filePath || '';
+          var caption = img.name || img.description || img.caption || '';
+          var dateStr = formatDate(img.date || img.createdAt || '');
+          imgHtml += '<div class="cdetail-image-card">';
+          if (src) {
+            imgHtml += '<img src="' + escapeHtml(src) + '" alt="' + escapeHtml(caption) + '" class="cdetail-image-thumb" onerror="this.style.display=\'none\'">';
+          } else {
+            imgHtml += '<div class="cdetail-image-placeholder"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>';
+          }
+          imgHtml += '<div class="cdetail-image-info"><div class="cdetail-image-caption">' + escapeHtml(caption || 'H\u00ecnh \u1ea3nh') + '</div>';
+          if (dateStr) imgHtml += '<div class="cdetail-image-date">' + escapeHtml(dateStr) + '</div>';
+          imgHtml += '</div></div>';
+        });
+        imgHtml += '</div>';
+        panel.innerHTML = imgHtml;
+      } else {
+        panel.innerHTML = renderEmptyState('Ch\u01b0a c\u00f3 h\u00ecnh \u1ea3nh');
+      }
+
+    // ---- Tab 6: Phieu thu chi (Receipts/Payments) ----
     } else if (tab === 'payments') {
       if (payments.length) {
-        panel.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Ngày</th><th>Loại</th><th class="text-right">Số tiền</th><th>Sổ quỹ</th><th>Trạng thái</th></tr></thead><tbody>' + payments.map(function (p) { return '<tr><td>' + escapeHtml(formatDate(p.date)) + '</td><td>' + escapeHtml(normalizePaymentTypeLabel(p.paymentType)) + '</td><td class="text-right">' + escapeHtml(formatCurrency(p.amount || 0)) + '</td><td>' + escapeHtml(p.journalName || '—') + '</td><td>' + escapeHtml(p.state || '—') + '</td></tr>'; }).join('') + '</tbody></table></div>';
-      } else { panel.innerHTML = renderEmptyState('Chưa có lịch sử thanh toán'); }
-    } else if (tab === 'exams') {
-      var exams = APP.customerDetail.exams || [];
-      if (exams.length) {
-        panel.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Ngày khám</th><th>Bác sĩ</th><th>Chẩn đoán</th><th>Ghi chú</th><th>Trạng thái</th></tr></thead><tbody>' + exams.map(function (e) { return '<tr><td>' + escapeHtml(formatDate(e.date || e.examDate || e.createdAt)) + '</td><td>' + escapeHtml(e.doctorName || '—') + '</td><td>' + escapeHtml(e.diagnosis || e.reason || '—') + '</td><td>' + escapeHtml(e.notes || e.note || '—') + '</td><td>' + escapeHtml(e.state || e.status || '—') + '</td></tr>'; }).join('') + '</tbody></table></div>';
-      } else { panel.innerHTML = renderEmptyState('Chưa có đợt khám'); }
+        var totalIn = 0, totalOut = 0;
+        payments.forEach(function (p) {
+          var amt = Number(p.amount || 0);
+          if (p.paymentType === 'inbound' || p.paymentType === 'thu') totalIn += amt;
+          else totalOut += amt;
+        });
+        var summaryHtml = '<div class="cdetail-info-grid" style="margin-bottom:12px">' +
+          '<div class="cdetail-info-item"><div class="cdetail-info-label">T\u1ed5ng thu</div><div class="cdetail-info-value" style="color:#10B981;font-weight:600">' + escapeHtml(formatCurrency(totalIn)) + '</div></div>' +
+          '<div class="cdetail-info-item"><div class="cdetail-info-label">T\u1ed5ng chi</div><div class="cdetail-info-value" style="color:#EF4444;font-weight:600">' + escapeHtml(formatCurrency(totalOut)) + '</div></div>' +
+          '</div>';
+        panel.innerHTML = summaryHtml + '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Ng\u00e0y</th><th>Lo\u1ea1i</th><th class="text-right">S\u1ed1 ti\u1ec1n</th><th>S\u1ed5 qu\u1ef9</th><th>Ghi ch\u00fa</th><th>Tr\u1ea1ng th\u00e1i</th></tr></thead><tbody>' +
+          payments.map(function (p) {
+            return '<tr><td>' + escapeHtml(formatDate(p.date || p.createdAt)) + '</td><td>' + escapeHtml(normalizePaymentTypeLabel(p.paymentType)) + '</td><td class="text-right">' + escapeHtml(formatCurrency(p.amount || 0)) + '</td><td>' + escapeHtml(p.journalName || '\u2014') + '</td><td>' + escapeHtml(p.memo || p.communication || p.notes || '\u2014') + '</td><td><span class="partners-badge partners-badge-blue">' + escapeHtml(p.state || '\u2014') + '</span></td></tr>';
+          }).join('') + '</tbody></table></div>';
+      } else { panel.innerHTML = renderEmptyState('Ch\u01b0a c\u00f3 phi\u1ebfu thu chi'); }
+
+    // ---- Tab 7: Cong no (Debt) ----
+    } else if (tab === 'debt') {
+      var debts = APP.customerDetail.debts || [];
+      var totalDebtAmt = Number(d.totalDebit || 0);
+      var totalCreditAmt = Number(d.amountRevenueTotal || 0);
+      var balance = totalDebtAmt;
+      var debtHtml = '<div class="cdetail-info-grid" style="margin-bottom:12px">' +
+        '<div class="cdetail-info-item"><div class="cdetail-info-label">T\u1ed5ng c\u00f4ng n\u1ee3 hi\u1ec7n t\u1ea1i</div><div class="cdetail-info-value" style="color:#EF4444;font-weight:700;font-size:18px">' + escapeHtml(formatCurrency(totalDebtAmt)) + '</div></div>' +
+        '<div class="cdetail-info-item"><div class="cdetail-info-label">T\u1ed5ng \u0111\u00e3 thanh to\u00e1n</div><div class="cdetail-info-value" style="color:#10B981;font-weight:600">' + escapeHtml(formatCurrency(totalCreditAmt)) + '</div></div>' +
+        '</div>';
+      // Build debt ledger from treatments and payments
+      var debtRows = [];
+      treatments.forEach(function (t) { debtRows.push({ date: t.date || t.orderDate || t.createdAt || '', desc: 'Phi\u1ebfu \u0111i\u1ec1u tr\u1ecb: ' + (t.name || t.ref || ''), debit: Number(t.totalAmount || t.amountTotal || 0), credit: 0 }); });
+      payments.forEach(function (p) { debtRows.push({ date: p.date || p.createdAt || '', desc: 'Thanh to\u00e1n: ' + (p.name || p.ref || normalizePaymentTypeLabel(p.paymentType)), debit: 0, credit: Number(p.amount || 0) }); });
+      debtRows.sort(function (a, b) { return (a.date || '').localeCompare(b.date || ''); });
+      if (debtRows.length) {
+        var runBal = 0;
+        debtHtml += '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Ng\u00e0y</th><th>Di\u1ec5n gi\u1ea3i</th><th class="text-right">N\u1ee3 (Debit)</th><th class="text-right">C\u00f3 (Credit)</th><th class="text-right">S\u1ed1 d\u01b0</th></tr></thead><tbody>' +
+          debtRows.map(function (r) {
+            runBal += r.debit - r.credit;
+            return '<tr><td>' + escapeHtml(formatDate(r.date)) + '</td><td>' + escapeHtml(r.desc) + '</td><td class="text-right">' + (r.debit ? escapeHtml(formatCurrency(r.debit)) : '---') + '</td><td class="text-right">' + (r.credit ? escapeHtml(formatCurrency(r.credit)) : '---') + '</td><td class="text-right" style="' + (runBal > 0 ? 'color:#EF4444' : 'color:#10B981') + '">' + escapeHtml(formatCurrency(runBal)) + '</td></tr>';
+          }).join('') + '</tbody></table></div>';
+      } else {
+        debtHtml += renderEmptyState('Ch\u01b0a c\u00f3 d\u1eef li\u1ec7u c\u00f4ng n\u1ee3');
+      }
+      panel.innerHTML = debtHtml;
+
+    // ---- Tab 8: Ghi chu (Notes) ----
+    } else if (tab === 'notes') {
+      var noteText = d.comment || d.notes || d.note || '';
+      var nh = '<h3 class="cdetail-section-title">Ghi ch\u00fa kh\u00e1ch h\u00e0ng</h3>';
+      nh += '<div class="cdetail-notes-area">';
+      if (noteText) {
+        nh += '<div class="cdetail-note-content" style="white-space:pre-wrap;padding:12px;background:var(--tds-bg-secondary,#f8fafc);border-radius:8px;font-size:14px;color:var(--tds-text-primary,#1e293b)">' + escapeHtml(noteText) + '</div>';
+      } else {
+        nh += renderEmptyState('Ch\u01b0a c\u00f3 ghi ch\u00fa');
+      }
+      nh += '</div>';
+      panel.innerHTML = nh;
+
+    // ---- Tab 9: So do rang (Dental Chart) ----
+    } else if (tab === 'teeth') {
+      panel.innerHTML = renderDentalChartSVG(treatments);
+      setTimeout(function () { bindDentalChartClicks(); }, 0);
+
+    // ---- Tab 10: Lich su (History) ----
+    } else if (tab === 'history') {
+      var histEvents = [];
+      (APP.customerDetail.treatments || []).forEach(function (t) {
+        histEvents.push({ date: t.date || t.orderDate || t.createdAt || '', type: 'treatment', title: 'Phi\u1ebfu \u0111i\u1ec1u tr\u1ecb', desc: (t.name || t.ref || '') + ' - ' + formatCurrency(t.totalAmount || t.amountTotal || 0), author: t.createdBy || t.doctorName || '' });
+      });
+      (APP.customerDetail.payments || []).forEach(function (p) {
+        histEvents.push({ date: p.date || p.createdAt || '', type: 'payment', title: 'Thanh to\u00e1n', desc: formatCurrency(p.amount || 0), author: p.createdBy || '' });
+      });
+      (APP.customerDetail.appointments || []).forEach(function (a) {
+        histEvents.push({ date: a.appointmentDate || a.date || a.createdAt || '', type: 'appointment', title: 'L\u1ecbch h\u1eb9n', desc: (a.doctorName ? 'BS: ' + a.doctorName : '') + (a.notes || a.note ? ' - ' + (a.notes || a.note) : ''), author: a.createdBy || '' });
+      });
+      (APP.customerDetail.exams || []).forEach(function (e) {
+        histEvents.push({ date: e.date || e.examDate || e.createdAt || '', type: 'exam', title: '\u0110\u1ee3t kh\u00e1m', desc: e.diagnosis || e.reason || '', author: e.doctorName || e.createdBy || '' });
+      });
+      histEvents.sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
+      if (!histEvents.length) {
+        panel.innerHTML = renderEmptyState('Ch\u01b0a c\u00f3 l\u1ecbch s\u1eed ho\u1ea1t \u0111\u1ed9ng');
+      } else {
+        var histGrouped = {};
+        histEvents.forEach(function (ev) { var dk = (ev.date || '').slice(0, 10) || 'unknown'; if (!histGrouped[dk]) histGrouped[dk] = []; histGrouped[dk].push(ev); });
+        var hh = '<h3 class="cdetail-section-title">L\u1ecbch s\u1eed ho\u1ea1t \u0111\u1ed9ng</h3>';
+        Object.keys(histGrouped).sort(function (a, b) { return b.localeCompare(a); }).forEach(function (dk) {
+          var dayLabel = dk === new Date().toISOString().slice(0, 10) ? 'H\u00f4m nay' : formatDate(dk);
+          hh += '<div class="cdetail-timeline-group"><div class="cdetail-timeline-date">' + escapeHtml(dayLabel) + '</div>';
+          histGrouped[dk].forEach(function (ev) {
+            var ic = ev.type === 'payment' ? '#8B5CF6' : ev.type === 'treatment' ? '#1A6DE3' : ev.type === 'exam' ? '#10B981' : '#F59E0B';
+            hh += '<div class="cdetail-timeline-item"><div class="cdetail-timeline-dot" style="background:' + ic + '"></div><div class="cdetail-timeline-content"><div class="cdetail-timeline-time">' + escapeHtml((ev.date || '').slice(11, 16) || '') + '</div><div class="cdetail-timeline-title">' + escapeHtml(ev.title) + '</div><div class="cdetail-timeline-desc">' + escapeHtml(ev.desc) + '</div>' + (ev.author ? '<div class="cdetail-timeline-author">Ng\u01b0\u1eddi th\u1ef1c hi\u1ec7n: ' + escapeHtml(ev.author) + '</div>' : '') + '</div></div>';
+          });
+          hh += '</div>';
+        });
+        panel.innerHTML = hh;
+      }
+
+    // ---- Fallback ----
     } else {
-      var labels = { images: 'Hình ảnh', debt: 'Sổ công nợ', teeth: 'Tình trạng răng', quotation: 'Báo giá', labo: 'Labo', advance: 'Tạm ứng' };
-      panel.innerHTML = renderEmptyState('Chức năng "' + (labels[tab] || tab) + '" đang được phát triển');
+      panel.innerHTML = renderEmptyState('Ch\u01b0a c\u00f3 d\u1eef li\u1ec7u');
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Dental Chart SVG (Tab 9 - So do rang)
+  // ---------------------------------------------------------------------------
+  function renderDentalChartSVG(treatmentRows) {
+    var treatedTeeth = {};
+    for (var ci = 0; ci < treatmentRows.length; ci++) {
+      var clines = safeItems(treatmentRows[ci].lines || treatmentRows[ci].lineItems || []);
+      for (var cj = 0; cj < clines.length; cj++) {
+        var rawTeeth = String(clines[cj].teeth || clines[cj].toothNumber || '').split(/[,;\s]+/).filter(Boolean);
+        for (var ck = 0; ck < rawTeeth.length; ck++) {
+          var tnum = parseInt(rawTeeth[ck], 10);
+          if (tnum >= 11 && tnum <= 48) {
+            if (!treatedTeeth[tnum]) treatedTeeth[tnum] = [];
+            treatedTeeth[tnum].push({ product: clines[cj].productName || clines[cj].name || 'D\u1ecbch v\u1ee5', state: treatmentRows[ci].state || 'done', date: treatmentRows[ci].date || treatmentRows[ci].orderDate || '' });
+          }
+        }
+      }
+    }
+    if (!APP.customerDetail._toothState) APP.customerDetail._toothState = {};
+    var toothState = APP.customerDetail._toothState;
+
+    var CONDITIONS = [
+      { key: 'normal', label: 'B\u00ecnh th\u01b0\u1eddng', color: '#E2E8F0' },
+      { key: 'treated', label: '\u0110\u00e3 \u0111i\u1ec1u tr\u1ecb', color: '#1A6DE3' },
+      { key: 'cavity', label: 'S\u00e2u r\u0103ng', color: '#EF4444' },
+      { key: 'filling', label: 'Tr\u00e1m', color: '#3B82F6' },
+      { key: 'crown', label: 'B\u1ecdc r\u0103ng s\u1ee9', color: '#F59E0B' },
+      { key: 'extraction', label: 'Nh\u1ed5', color: '#6B7280' },
+      { key: 'implant', label: 'Implant', color: '#8B5CF6' },
+      { key: 'rootcanal', label: 'L\u1ea5y t\u1ee7y', color: '#EC4899' },
+      { key: 'missing', label: 'M\u1ea5t r\u0103ng', color: '#1F2937' }
+    ];
+
+    var UPPER = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
+    var LOWER = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
+    var toothW = 34, toothH = 44, gap = 4, padX = 24, padY = 28;
+    var totalW = UPPER.length * (toothW + gap) - gap + padX * 2;
+    var svgH = 2 * toothH + 100 + padY * 2;
+    var midX = totalW / 2;
+
+    function getToothColor(tn) {
+      if (toothState[tn]) {
+        var c = CONDITIONS.find(function (cc) { return cc.key === toothState[tn]; });
+        return c ? c.color : '#E2E8F0';
+      }
+      if (treatedTeeth[tn]) return '#1A6DE3';
+      return '#E2E8F0';
+    }
+
+    var svg = '<svg class="dental-chart-svg" viewBox="0 0 ' + totalW + ' ' + svgH + '" xmlns="http://www.w3.org/2000/svg">';
+    svg += '<rect width="' + totalW + '" height="' + svgH + '" fill="var(--tds-card-bg, #fff)" rx="8"/>';
+    svg += '<text x="' + midX + '" y="' + (padY - 4) + '" text-anchor="middle" font-size="12" font-weight="600" fill="#64748B" font-family="Inter,sans-serif">H\u00c0M TR\u00caN</text>';
+    svg += '<line x1="' + midX + '" y1="' + padY + '" x2="' + midX + '" y2="' + (padY + toothH + 20) + '" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,3"/>';
+
+    function renderRow(teeth, startY, isUpper) {
+      var s = '';
+      for (var i = 0; i < teeth.length; i++) {
+        var tn = teeth[i];
+        var tx = padX + i * (toothW + gap);
+        var fill = getToothColor(tn);
+        var isTr = treatedTeeth[tn] || (toothState[tn] && toothState[tn] !== 'normal');
+        var stroke = isTr ? '#1557b0' : '#94A3B8';
+        var textFill = (fill === '#E2E8F0') ? '#475569' : '#fff';
+        s += '<g class="dental-tooth-g" data-tooth="' + tn + '" style="cursor:pointer">';
+        s += '<rect x="' + tx + '" y="' + startY + '" width="' + toothW + '" height="' + toothH + '" rx="5" fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.5"/>';
+        if (isUpper) {
+          s += '<line x1="' + (tx + toothW / 2) + '" y1="' + (startY + toothH) + '" x2="' + (tx + toothW / 2) + '" y2="' + (startY + toothH + 10) + '" stroke="#94A3B8" stroke-width="1"/>';
+        } else {
+          s += '<line x1="' + (tx + toothW / 2) + '" y1="' + startY + '" x2="' + (tx + toothW / 2) + '" y2="' + (startY - 10) + '" stroke="#94A3B8" stroke-width="1"/>';
+        }
+        s += '<text x="' + (tx + toothW / 2) + '" y="' + (startY + toothH / 2 + 5) + '" text-anchor="middle" font-size="11" font-weight="600" fill="' + textFill + '" font-family="Inter,sans-serif">' + tn + '</text>';
+        var numY = isUpper ? (startY + toothH + 22) : (startY - 14);
+        s += '<text x="' + (tx + toothW / 2) + '" y="' + numY + '" text-anchor="middle" font-size="9" fill="#94A3B8" font-family="Inter,sans-serif">' + tn + '</text>';
+        if (treatedTeeth[tn]) { s += '<title>R\u0103ng ' + tn + ': ' + treatedTeeth[tn].map(function (ti) { return ti.product; }).join(', ') + '</title>'; }
+        s += '</g>';
+      }
+      return s;
+    }
+
+    var upperStartY = padY + 8;
+    svg += renderRow(UPPER, upperStartY, true);
+    var jawSepY = upperStartY + toothH + 34;
+    svg += '<line x1="' + padX + '" y1="' + jawSepY + '" x2="' + (totalW - padX) + '" y2="' + jawSepY + '" stroke="#CBD5E1" stroke-width="1"/>';
+    svg += '<text x="' + midX + '" y="' + (jawSepY + 16) + '" text-anchor="middle" font-size="12" font-weight="600" fill="#64748B" font-family="Inter,sans-serif">H\u00c0M D\u01af\u1edcI</text>';
+    svg += '<line x1="' + midX + '" y1="' + (jawSepY + 20) + '" x2="' + midX + '" y2="' + (jawSepY + 20 + toothH + 10) + '" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,3"/>';
+    var lowerStartY = jawSepY + 30;
+    svg += renderRow(LOWER, lowerStartY, false);
+    svg += '</svg>';
+
+    var html = '<div class="cdetail-overview-toolbar"><h3 class="cdetail-section-title">S\u01a1 \u0111\u1ed3 r\u0103ng</h3></div>';
+    // Legend
+    html += '<div class="cdetail-dental-legend" style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;padding:0 4px">';
+    CONDITIONS.forEach(function (c) {
+      html += '<span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#64748B"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:' + c.color + ';border:1px solid rgba(0,0,0,0.1)"></span>' + c.label + '</span>';
+    });
+    html += '</div>';
+    // Condition selector
+    html += '<div id="dental-selector" style="display:none;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:16px;box-shadow:0 4px 12px rgba(0,0,0,0.1)">';
+    html += '<div id="dental-selector-title" style="font-weight:600;margin-bottom:8px;color:#1e293b">R\u0103ng #</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    CONDITIONS.forEach(function (c) {
+      html += '<button class="dental-cond-btn" data-cond="' + c.key + '" style="padding:4px 10px;border:1px solid #e2e8f0;border-left:3px solid ' + c.color + ';border-radius:4px;background:#fff;cursor:pointer;font-size:12px;transition:background 0.15s">' + c.label + '</button>';
+    });
+    html += '<button id="dental-close-btn" style="padding:4px 10px;border:1px solid #e2e8f0;border-radius:4px;background:#f8fafc;cursor:pointer;font-size:12px">\u0110\u00f3ng</button>';
+    html += '</div></div>';
+    html += '<div class="dental-chart-wrapper" style="overflow-x:auto">' + svg + '</div>';
+
+    // Detail table for treated teeth
+    var treatedKeys = Object.keys(treatedTeeth);
+    if (treatedKeys.length) {
+      html += '<h4 class="cdetail-section-title" style="margin-top:16px">Chi ti\u1ebft \u0111i\u1ec1u tr\u1ecb theo r\u0103ng (' + treatedKeys.length + ' r\u0103ng)</h4>';
+      html += '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>R\u0103ng</th><th>D\u1ecbch v\u1ee5</th><th>Ng\u00e0y</th><th>Tr\u1ea1ng th\u00e1i</th></tr></thead><tbody>';
+      treatedKeys.sort(function (a, b) { return Number(a) - Number(b); }).forEach(function (key) {
+        treatedTeeth[key].forEach(function (info) {
+          var tBadge = info.state === 'done' ? 'partners-badge-green' : info.state === 'sale' ? 'partners-badge-blue' : 'partners-badge-orange';
+          html += '<tr><td><strong>R\u0103ng ' + escapeHtml(key) + '</strong></td><td>' + escapeHtml(info.product) + '</td><td>' + escapeHtml(formatDate(info.date)) + '</td><td><span class="partners-badge ' + tBadge + '">' + escapeHtml(info.state) + '</span></td></tr>';
+        });
+      });
+      html += '</tbody></table></div>';
+    }
+    return html;
+  }
+
 
   function renderCDTimeline() {
     var timeline = document.getElementById('cdetail-timeline');
     if (!timeline) return;
+    var sideTab = APP.customerDetail.sidebarTab || 'history';
+
+    if (sideTab === 'tasks') {
+      timeline.innerHTML = '<div class="cdetail-timeline-empty"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:8px"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><br>Chưa có công việc nào</div>';
+      return;
+    }
+    if (sideTab === 'notes') {
+      timeline.innerHTML = '<div class="cdetail-timeline-notes"><textarea class="cdetail-notes-input" placeholder="Nhập ghi chú cho bệnh nhân..." rows="4"></textarea><button class="tds-btn tds-btn-primary tds-btn-sm cdetail-notes-save">Lưu ghi chú</button><div class="cdetail-timeline-empty" style="margin-top:16px">Chưa có ghi chú</div></div>';
+      var saveBtn = timeline.querySelector('.cdetail-notes-save');
+      if (saveBtn) saveBtn.addEventListener('click', function () { showToast('info', 'Chức năng lưu ghi chú đang được phát triển'); });
+      return;
+    }
+
     var events = [];
     (APP.customerDetail.treatments || []).forEach(function (t) { events.push({ date: t.date || t.orderDate || t.createdAt || '', type: 'treatment', title: 'Phiếu điều trị', desc: (t.name || t.ref || '') + ' - ' + formatCurrency(t.totalAmount || t.amountTotal || 0), author: t.createdBy || t.doctorName || '' }); });
     (APP.customerDetail.payments || []).forEach(function (p) { events.push({ date: p.date || p.createdAt || '', type: 'payment', title: 'Thanh toán', desc: formatCurrency(p.amount || 0), author: p.createdBy || '' }); });
     (APP.customerDetail.appointments || []).forEach(function (a) { events.push({ date: a.appointmentDate || a.date || a.createdAt || '', type: 'appointment', title: 'Lịch hẹn', desc: (a.doctorName ? 'BS: ' + a.doctorName : '') + (a.notes || a.note ? ' - ' + (a.notes || a.note) : ''), author: a.createdBy || '' }); });
+    (APP.customerDetail.exams || []).forEach(function (e) { events.push({ date: e.date || e.examDate || e.createdAt || '', type: 'exam', title: 'Đợt khám', desc: e.diagnosis || e.reason || '', author: e.doctorName || '' }); });
     events.sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
     if (!events.length) { timeline.innerHTML = '<div class="cdetail-timeline-empty">Chưa có hoạt động</div>'; return; }
     var grouped = {};
@@ -2106,7 +2434,7 @@
       var dayLabel = dk === new Date().toISOString().slice(0, 10) ? 'Hôm nay' : formatDate(dk);
       html += '<div class="cdetail-timeline-group"><div class="cdetail-timeline-date">' + escapeHtml(dayLabel) + '</div>';
       grouped[dk].forEach(function (ev) {
-        var ic = ev.type === 'payment' ? '#8B5CF6' : ev.type === 'treatment' ? '#1A6DE3' : '#F59E0B';
+        var ic = ev.type === 'payment' ? '#8B5CF6' : ev.type === 'treatment' ? '#1A6DE3' : ev.type === 'exam' ? '#10B981' : '#F59E0B';
         html += '<div class="cdetail-timeline-item"><div class="cdetail-timeline-dot" style="background:' + ic + '"></div><div class="cdetail-timeline-content"><div class="cdetail-timeline-time">' + escapeHtml((ev.date || '').slice(11, 16) || '') + '</div><div class="cdetail-timeline-title">' + escapeHtml(ev.title) + '</div><div class="cdetail-timeline-desc">' + escapeHtml(ev.desc) + '</div>' + (ev.author ? '<div class="cdetail-timeline-author">Người tạo: ' + escapeHtml(ev.author) + '</div>' : '') + '</div></div>';
       });
       html += '</div>';
@@ -2114,8 +2442,37 @@
     timeline.innerHTML = html;
   }
 
-  // ---------------------------------------------------------------------------
+
   // Customer Create / Edit Modal (T-021)
+
+  // Bind dental chart click events (called after tab content renders)
+  function bindDentalChartClicks() {
+    var selector = document.getElementById('dental-selector');
+    var selectorTitle = document.getElementById('dental-selector-title');
+    var closeBtn = document.getElementById('dental-close-btn');
+    var selectedTooth = null;
+    var toothGroups = document.querySelectorAll('.dental-tooth-g');
+    for (var i = 0; i < toothGroups.length; i++) {
+      toothGroups[i].addEventListener('click', function () {
+        selectedTooth = this.getAttribute('data-tooth');
+        if (selectorTitle) selectorTitle.textContent = 'Răng #' + selectedTooth;
+        if (selector) selector.style.display = 'block';
+      });
+    }
+    var condBtns = document.querySelectorAll('.dental-cond-btn');
+    for (var j = 0; j < condBtns.length; j++) {
+      condBtns[j].addEventListener('click', function () {
+        if (!selectedTooth) return;
+        if (!APP.customerDetail._toothState) APP.customerDetail._toothState = {};
+        APP.customerDetail._toothState[selectedTooth] = this.getAttribute('data-cond');
+        if (selector) selector.style.display = 'none';
+        renderCDTabContent(); // re-render to update colors
+        bindDentalChartClicks();
+      });
+    }
+    if (closeBtn) closeBtn.addEventListener('click', function () { if (selector) selector.style.display = 'none'; selectedTooth = null; });
+  }
+
   // ---------------------------------------------------------------------------
   function openCustomerModal(customer) {
     var editing = !!customer;
@@ -4399,6 +4756,339 @@
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Submenu Route Render Functions
+  // ---------------------------------------------------------------------------
+
+  function renderLaboOrders() {
+    var el = document.getElementById('page-labo'); if (!el) return;
+    el.innerHTML =
+      '<div class="tds-card labo-shell"><div class="tds-card-header">' +
+      '<h2>\u0110\u1eb7t h\u00e0ng Labo</h2>' +
+      '<button class="tds-btn tds-btn-secondary" id="lo-export">Xu\u1ea5t Excel</button></div>' +
+      '<div class="tds-table-toolbar"><div class="toolbar-left">' +
+      '<input class="tds-search-input" id="lo-search" placeholder="T\u00ecm theo m\u00e3 \u0111\u01a1n, kh\u00e1ch h\u00e0ng" value="">' +
+      '</div><div class="toolbar-right">' +
+      '<button class="tds-btn tds-btn-secondary" id="lo-refresh">L\u00e0m m\u1edbi</button>' +
+      '</div></div><div id="lo-table"></div></div>';
+    var si = document.getElementById('lo-search');
+    if (si) si.addEventListener('input', debounce(function () { _loLoad(si.value.trim()); }, 250));
+    var rb = document.getElementById('lo-refresh');
+    if (rb) rb.addEventListener('click', function () { _loLoad(''); });
+    var eb = document.getElementById('lo-export');
+    if (eb) eb.addEventListener('click', function () { downloadExcel('sale-orders', { companyId: getSelectedBranchId(), columns: ['name', 'date', 'state', 'amountTotal', 'partnerName', 'doctorName', 'companyName'] }); });
+    _loLoad('');
+  }
+  async function _loLoad(search) {
+    var tw = document.getElementById('lo-table'); if (!tw) return;
+    tw.innerHTML = renderLoadingState('\u0110ang t\u1ea3i \u0111\u01a1n h\u00e0ng Labo...');
+    try {
+      var rows = safeItems(await api('/api/sale-orders' + toQueryString({ search: search, companyId: getSelectedBranchId(), limit: 50, offset: 0 })));
+      if (!rows.length) { tw.innerHTML = renderEmptyState('Ch\u01b0a c\u00f3 \u0111\u01a1n h\u00e0ng Labo'); return; }
+      tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>M\u00e3 \u0111\u01a1n</th><th>Ng\u00e0y</th><th>Kh\u00e1ch h\u00e0ng</th><th>B\u00e1c s\u0129</th><th>Tr\u1ea1ng th\u00e1i</th><th class="text-right">Gi\u00e1 tr\u1ecb</th></tr></thead><tbody>' + rows.map(function (r) { return '<tr><td>' + escapeHtml(r.name || r.id || '\u2014') + '</td><td>' + escapeHtml(formatDate(r.date)) + '</td><td>' + escapeHtml(r.partnerName || '\u2014') + '</td><td>' + escapeHtml(r.doctorName || '\u2014') + '</td><td>' + escapeHtml(r.state || '\u2014') + '</td><td class="text-right">' + escapeHtml(formatCurrency(r.amountTotal || 0)) + '</td></tr>'; }).join('') + '</tbody></table></div>';
+    } catch (_e) { tw.innerHTML = renderEmptyState('Kh\u00f4ng th\u1ec3 t\u1ea3i'); }
+  }
+
+  function renderPurchaseRefund() {
+    var el = document.getElementById('page-purchase'); if (!el) return;
+    el.innerHTML =
+      '<div class="tds-card purchase-shell"><div class="tds-card-header">' +
+      '<h2>Tr\u1ea3 h\u00e0ng nh\u00e0 cung c\u1ea5p</h2>' +
+      '<button class="tds-btn tds-btn-secondary" id="pr-refresh">L\u00e0m m\u1edbi</button></div>' +
+      '<div id="pr-table"></div></div>';
+    var rb = document.getElementById('pr-refresh');
+    if (rb) rb.addEventListener('click', _prLoad);
+    _prLoad();
+  }
+  async function _prLoad() {
+    var tw = document.getElementById('pr-table'); if (!tw) return;
+    tw.innerHTML = renderLoadingState('\u0110ang t\u1ea3i phi\u1ebfu tr\u1ea3 h\u00e0ng...');
+    try {
+      var rows = safeItems(await api('/api/stock-pickings' + toQueryString({ companyId: getSelectedBranchId(), pickingType: 'outgoing', limit: 50, offset: 0 })));
+      if (!rows.length) { tw.innerHTML = renderEmptyState('Ch\u01b0a c\u00f3 phi\u1ebfu tr\u1ea3 h\u00e0ng'); return; }
+      tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>M\u00e3 ch\u1ee9ng t\u1eeb</th><th>Ng\u00e0y</th><th>\u0110\u1ed1i t\u00e1c</th><th>Chi nh\u00e1nh</th><th>Tr\u1ea1ng th\u00e1i</th></tr></thead><tbody>' + rows.map(function (r) { return '<tr><td>' + escapeHtml(r.name || r.id || '\u2014') + '</td><td>' + escapeHtml(formatDate(r.date)) + '</td><td>' + escapeHtml(r.partnerName || '\u2014') + '</td><td>' + escapeHtml(r.companyName || '\u2014') + '</td><td>' + escapeHtml(r.state || '\u2014') + '</td></tr>'; }).join('') + '</tbody></table></div>';
+    } catch (_e) { tw.innerHTML = renderEmptyState('Kh\u00f4ng th\u1ec3 t\u1ea3i'); }
+  }
+
+  // ===========================================================================
+  // Timekeeping (#/timekeeping) - Calendar-style attendance grid
+  // ===========================================================================
+  function renderTimekeeping() {
+    var el = document.getElementById('page-salary'); if (!el) return;
+    var now = new Date(), yr = now.getFullYear(), mo = now.getMonth(), dim = new Date(yr, mo + 1, 0).getDate();
+    el.innerHTML =
+      '<div class="tds-card"><div class="tds-card-header"><h2>Bảng chấm công - Tháng ' + (mo + 1) + '/' + yr + '</h2>' +
+      '<button class="tds-btn tds-btn-secondary" id="tk-export">Xuất Excel</button></div>' +
+      '<div class="tds-table-toolbar"><div class="toolbar-left">' +
+      '<select class="tds-select" id="tk-month">' + [1,2,3,4,5,6,7,8,9,10,11,12].map(function (m) { return '<option value="' + m + '"' + (m === mo + 1 ? ' selected' : '') + '>Tháng ' + m + '</option>'; }).join('') + '</select>' +
+      '<select class="tds-select" id="tk-year">' + [yr - 1, yr, yr + 1].map(function (y) { return '<option value="' + y + '"' + (y === yr ? ' selected' : '') + '>' + y + '</option>'; }).join('') + '</select>' +
+      '<button class="tds-btn tds-btn-primary" id="tk-apply">Áp dụng</button></div></div>' +
+      '<div id="tk-table"></div></div>';
+    var ab = document.getElementById('tk-apply');
+    if (ab) ab.addEventListener('click', function () {
+      var sm = parseInt(getInputValue('tk-month')) || (mo + 1);
+      var sy = parseInt(getInputValue('tk-year')) || yr;
+      _tkLoad(sy, sm - 1, new Date(sy, sm, 0).getDate());
+    });
+    var eb = document.getElementById('tk-export');
+    if (eb) eb.addEventListener('click', function () { downloadExcel('employees', { companyId: getSelectedBranchId(), columns: ['name', 'hrJob', 'companyName'] }); });
+    _tkLoad(yr, mo, dim);
+  }
+  async function _tkLoad(yr, mo, dim) {
+    var tw = document.getElementById('tk-table'); if (!tw) return;
+    tw.innerHTML = renderLoadingState('Đang tải chấm công...');
+    try {
+      var dateFrom = yr + '-' + String(mo + 1).padStart(2, '0') + '-01';
+      var dateTo = yr + '-' + String(mo + 1).padStart(2, '0') + '-' + String(dim).padStart(2, '0');
+      var data = await api('/api/hr/salary' + toQueryString({ companyId: getSelectedBranchId(), dateFrom: dateFrom, dateTo: dateTo }));
+      var emps = (data && data.employees) ? data.employees : safeItems(data);
+      var timekeeping = safeItems((data && data.timekeeping) || []);
+      if (!emps.length) { tw.innerHTML = renderEmptyState('Chưa có dữ liệu nhân viên'); return; }
+      var dh = ''; for (var d = 1; d <= dim; d++) dh += '<th class="text-center" style="min-width:28px;padding:3px">' + d + '</th>';
+      var tkMap = {};
+      timekeeping.forEach(function (tk) { var k = tk.employeeName || ''; if (!tkMap[k]) tkMap[k] = {}; var dt = new Date(tk.date); if (!isNaN(dt.getTime())) tkMap[k][dt.getDate()] = tk; });
+      tw.innerHTML = '<div class="tds-table-wrapper" style="overflow-x:auto"><table class="tds-table" style="font-size:12px"><thead><tr><th style="min-width:140px;position:sticky;left:0;background:#fff;z-index:1">Nhân viên</th><th>Chức vụ</th>' + dh + '<th class="text-center">Tổng</th></tr></thead><tbody>' +
+        emps.map(function (e) {
+          var empName = e.name || '—'; var empTk = tkMap[empName] || {};
+          var c = '', totalH = 0;
+          for (var dd = 1; dd <= dim; dd++) {
+            var dw = new Date(yr, mo, dd).getDay(), we = dw === 0 || dw === 6;
+            var rec = empTk[dd];
+            if (rec && rec.hours) { totalH += rec.hours; c += '<td class="text-center" style="padding:3px;background:#DCFCE7">' + escapeHtml(formatNumber(rec.hours)) + '</td>'; }
+            else { c += '<td class="text-center" style="padding:3px;' + (we ? 'background:#f3f4f6;color:#9ca3af' : '') + '">' + (we ? '-' : 'x') + '</td>'; if (!we) totalH += 8; }
+          }
+          return '<tr><td style="position:sticky;left:0;background:#fff;z-index:1">' + escapeHtml(empName) + '</td><td>' + escapeHtml(e.hrJob || e.jobTitle || '—') + '</td>' + c + '<td class="text-center font-semibold">' + escapeHtml(formatNumber(totalH)) + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+    } catch (_e) { tw.innerHTML = renderEmptyState('Không thể tải chấm công'); }
+  }
+
+  // ===========================================================================
+  // Shared payment page builder (enhanced with create button support)
+  // ===========================================================================
+  function _paymentPage(elId, title, tableId, paymentType, loadFn, createBtnLabel) {
+    var el = document.getElementById(elId); if (!el) return;
+    var createHtml = createBtnLabel ? '<button class="tds-btn tds-btn-primary" id="' + tableId + '-create">' + createBtnLabel + '</button>' : '';
+    el.innerHTML = '<div class="tds-card cashbook-shell"><div class="tds-card-header"><h2>' + title + '</h2><div>' +
+      '<button class="tds-btn tds-btn-secondary" id="' + tableId + '-export" style="margin-right:8px">Xuất Excel</button>' + createHtml +
+      '</div></div><div class="tds-table-toolbar"><div class="toolbar-left">' +
+      '<input class="tds-input" id="' + tableId + '-df" type="date" value="' + escapeHtml(MONTH_START_ISO) + '">' +
+      '<input class="tds-input" id="' + tableId + '-dt" type="date" value="' + escapeHtml(TODAY_ISO) + '">' +
+      '<button class="tds-btn tds-btn-primary" id="' + tableId + '-apply">Áp dụng</button></div></div>' +
+      '<div id="' + tableId + '"></div></div>';
+    var ab = document.getElementById(tableId + '-apply'); if (ab) ab.addEventListener('click', loadFn);
+    var eb = document.getElementById(tableId + '-export'); if (eb) eb.addEventListener('click', function () { downloadExcel('payments', { companyId: getSelectedBranchId(), dateFrom: getInputValue(tableId + '-df'), dateTo: getInputValue(tableId + '-dt'), paymentType: paymentType, columns: ['date', 'name', 'paymentType', 'partnerName', 'companyName', 'state', 'amount'] }); });
+    loadFn();
+    return el;
+  }
+  async function _paymentLoad(tableId, paymentType, emptyMsg, columns) {
+    var tw = document.getElementById(tableId); if (!tw) return;
+    tw.innerHTML = renderLoadingState('Đang tải...');
+    try {
+      var q = { companyId: getSelectedBranchId(), dateFrom: getInputValue(tableId + '-df') || MONTH_START_ISO, dateTo: getInputValue(tableId + '-dt') || TODAY_ISO, limit: 80, offset: 0 };
+      if (paymentType) q.paymentType = paymentType;
+      var rows = safeItems(await api('/api/payments' + toQueryString(q)));
+      if (!rows.length) { tw.innerHTML = renderEmptyState(emptyMsg); return; }
+      var cols = columns || [
+        { key: 'date', label: 'Ngày', fmt: function (v) { return escapeHtml(formatDate(v)); } },
+        { key: 'name', label: 'Số phiếu', fmt: function (v) { return escapeHtml(v || '—'); } },
+        { key: 'paymentType', label: 'Loại', fmt: function (v) { return escapeHtml(normalizePaymentTypeLabel(v)); } },
+        { key: 'partnerName', label: 'Đối tượng', fmt: function (v) { return escapeHtml(v || '—'); } },
+        { key: 'amount', label: 'Số tiền', fmt: function (v) { return escapeHtml(formatCurrency(v || 0)); }, cls: 'text-right' },
+        { key: 'state', label: 'Trạng thái', fmt: function (v) { return (v === 'posted' || v === 'done') ? '<span class="tds-badge tds-badge-success">Đã xác nhận</span>' : '<span class="tds-badge tds-badge-warning">Nháp</span>'; } },
+      ];
+      tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr>' +
+        cols.map(function (c) { return '<th' + (c.cls ? ' class="' + c.cls + '"' : '') + '>' + c.label + '</th>'; }).join('') +
+        '<th>Thao tác</th></tr></thead><tbody>' +
+        rows.map(function (r) {
+          return '<tr>' + cols.map(function (c) { return '<td' + (c.cls ? ' class="' + c.cls + '"' : '') + '>' + c.fmt(r[c.key]) + '</td>'; }).join('') +
+            '<td><button class="tds-btn tds-btn-sm tds-btn-secondary">Xem</button></td></tr>';
+        }).join('') + '</tbody></table></div>';
+    } catch (_e) { tw.innerHTML = renderEmptyState(emptyMsg); }
+  }
+
+  // Voucher create form helper
+  function _voucherCreateForm(typeLabel) {
+    return '<form><div class="tds-form-group"><label class="tds-label">Ngày</label><input class="tds-input" id="vcf-date" type="date" value="' + TODAY_ISO + '"></div>' +
+      '<div class="tds-form-row"><div class="tds-form-group"><label class="tds-label">Phương thức</label><select class="tds-select" id="vcf-method"><option value="cash">Tiền mặt</option><option value="bank">Chuyển khoản</option></select></div>' +
+      '<div class="tds-form-group"><label class="tds-label">Loại ' + typeLabel + '</label><input class="tds-input" id="vcf-category"></div></div>' +
+      '<div class="tds-form-group"><label class="tds-label">Đối tượng</label><input class="tds-input" id="vcf-partner"></div>' +
+      '<div class="tds-form-group"><label class="tds-label">Số tiền</label><input class="tds-input" id="vcf-amount" type="number" min="0"></div>' +
+      '<div class="tds-form-group"><label class="tds-label">Nội dung</label><input class="tds-input" id="vcf-note"></div></form>';
+  }
+  async function _voucherSave(paymentType, reloadFn) {
+    try {
+      await api('/api/payments', { method: 'POST', body: JSON.stringify({ date: getInputValue('vcf-date'), paymentType: paymentType, method: getInputValue('vcf-method'), category: getInputValue('vcf-category'), partnerName: getInputValue('vcf-partner'), amount: Number(getInputValue('vcf-amount')) || 0, note: getInputValue('vcf-note') }) });
+      showToast('success', 'Đã tạo phiếu thành công'); closeModal(); if (typeof reloadFn === 'function') reloadFn();
+    } catch (err) { showToast('error', (err && err.message) || 'Không thể tạo phiếu'); }
+  }
+
+  // ===========================================================================
+  // Salary Payment (#/salary-payment) - Quản lý tạm ứng
+  // Columns: Mã phiếu, Ngày, Người nhận, Loại phiếu, Phương thức, Số tiền, Trạng thái, Thao tác
+  // ===========================================================================
+  function renderSalaryPayment() {
+    var loadFn = function () { _spLoad(); };
+    _paymentPage('page-salary', 'Quản lý tạm ứng', 'sp-tbl', 'outbound', loadFn, 'Tạo phiếu tạm ứng');
+    var cb = document.getElementById('sp-tbl-create');
+    if (cb) cb.addEventListener('click', function () {
+      showModal('Tạo phiếu tạm ứng',
+        '<form><div class="tds-form-group"><label class="tds-label">Ngày</label><input class="tds-input" id="sp-f-date" type="date" value="' + TODAY_ISO + '"></div>' +
+        '<div class="tds-form-group"><label class="tds-label">Người nhận</label><input class="tds-input" id="sp-f-name" placeholder="Tên nhân viên"></div>' +
+        '<div class="tds-form-row"><div class="tds-form-group"><label class="tds-label">Loại phiếu</label><select class="tds-select" id="sp-f-type"><option value="advance">Tạm ứng</option><option value="salary">Lương</option><option value="bonus">Thưởng</option></select></div>' +
+        '<div class="tds-form-group"><label class="tds-label">Phương thức</label><select class="tds-select" id="sp-f-method"><option value="cash">Tiền mặt</option><option value="bank">Chuyển khoản</option></select></div></div>' +
+        '<div class="tds-form-group"><label class="tds-label">Số tiền</label><input class="tds-input" id="sp-f-amount" type="number" min="0"></div>' +
+        '<div class="tds-form-group"><label class="tds-label">Lý do</label><input class="tds-input" id="sp-f-reason"></div></form>',
+        { footer: '<button class="tds-btn tds-btn-ghost" onclick="TDS.closeModal()">Hủy</button><button class="tds-btn tds-btn-primary" id="sp-save">Lưu</button>',
+          onOpen: function () { var sv = document.getElementById('sp-save'); if (sv) sv.addEventListener('click', async function () {
+            try { await api('/api/hr/advances', { method: 'POST', body: JSON.stringify({ date: getInputValue('sp-f-date'), employeeName: getInputValue('sp-f-name'), type: getInputValue('sp-f-type'), method: getInputValue('sp-f-method'), amount: Number(getInputValue('sp-f-amount')) || 0, reason: getInputValue('sp-f-reason') }) });
+              showToast('success', 'Đã tạo phiếu tạm ứng'); closeModal(); _spLoad();
+            } catch (err) { showToast('error', (err && err.message) || 'Không thể tạo phiếu'); } }); } });
+    });
+  }
+  async function _spLoad() {
+    var tw = document.getElementById('sp-tbl'); if (!tw) return;
+    tw.innerHTML = renderLoadingState('Đang tải phiếu tạm ứng...');
+    try {
+      var q = toQueryString({ companyId: getSelectedBranchId(), dateFrom: getInputValue('sp-tbl-df') || MONTH_START_ISO, dateTo: getInputValue('sp-tbl-dt') || TODAY_ISO });
+      var data = await api('/api/hr/salary' + q);
+      var advances = safeItems((data && data.advances) || []);
+      if (!advances.length) {
+        // Fallback to payments API
+        var rows = safeItems(await api('/api/payments' + toQueryString({ companyId: getSelectedBranchId(), dateFrom: getInputValue('sp-tbl-df') || MONTH_START_ISO, dateTo: getInputValue('sp-tbl-dt') || TODAY_ISO, paymentType: 'outbound', limit: 80, offset: 0 })));
+        if (!rows.length) { tw.innerHTML = renderEmptyState('Chưa có phiếu tạm ứng trong kỳ'); return; }
+        tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Mã phiếu</th><th>Ngày</th><th>Người nhận</th><th>Loại phiếu</th><th>Phương thức</th><th class="text-right">Số tiền</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>' +
+          rows.map(function (r) { return '<tr><td>' + escapeHtml(r.name || '—') + '</td><td>' + escapeHtml(formatDate(r.date)) + '</td><td>' + escapeHtml(r.partnerName || '—') + '</td><td>' + escapeHtml(normalizePaymentTypeLabel(r.paymentType)) + '</td><td>' + escapeHtml(r.journalName || '—') + '</td><td class="text-right">' + escapeHtml(formatCurrency(r.amount || 0)) + '</td><td>' + (r.state === 'posted' || r.state === 'done' ? '<span class="tds-badge tds-badge-success">Đã duyệt</span>' : '<span class="tds-badge tds-badge-warning">Chờ duyệt</span>') + '</td><td><button class="tds-btn tds-btn-sm tds-btn-secondary">Xem</button></td></tr>'; }).join('') + '</tbody></table></div>';
+        return;
+      }
+      tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Mã phiếu</th><th>Ngày</th><th>Người nhận</th><th>Loại phiếu</th><th>Phương thức</th><th class="text-right">Số tiền</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>' +
+        advances.map(function (item, idx) { return '<tr><td>' + escapeHtml(item.id || ('TU-' + String(idx + 1).padStart(4, '0'))) + '</td><td>' + escapeHtml(formatDate(item.date)) + '</td><td>' + escapeHtml(item.employeeName || '—') + '</td><td>' + escapeHtml(item.type || 'Tạm ứng') + '</td><td>' + escapeHtml(item.method || 'Tiền mặt') + '</td><td class="text-right">' + escapeHtml(formatCurrency(item.amount || 0)) + '</td><td>' + (item.state === 'done' ? '<span class="tds-badge tds-badge-success">Đã duyệt</span>' : '<span class="tds-badge tds-badge-warning">Chờ duyệt</span>') + '</td><td><button class="tds-btn tds-btn-sm tds-btn-secondary">Xem</button></td></tr>'; }).join('') + '</tbody></table></div>';
+    } catch (_e) { tw.innerHTML = renderEmptyState('Không thể tải phiếu tạm ứng'); }
+  }
+
+  // ===========================================================================
+  // Salary Reports (#/salary-reports) - Báo cáo thanh toán lương
+  // Columns: Nhân viên, Chức vụ, Đầu kỳ, Lương, Thanh toán, Cuối kỳ
+  // ===========================================================================
+  function renderSalaryReports() {
+    var el = document.getElementById('page-salary'); if (!el) return;
+    el.innerHTML = '<div class="tds-card"><div class="tds-card-header"><h2>Báo cáo thanh toán lương</h2><button class="tds-btn tds-btn-secondary" id="sr-export">Xuất Excel</button></div>' +
+      '<div class="tds-table-toolbar"><div class="toolbar-left"><input class="tds-input" id="sr-df" type="date" value="' + escapeHtml(MONTH_START_ISO) + '"><input class="tds-input" id="sr-dt" type="date" value="' + escapeHtml(TODAY_ISO) + '"><button class="tds-btn tds-btn-primary" id="sr-apply">Áp dụng</button></div></div><div id="sr-table"></div></div>';
+    var ab = document.getElementById('sr-apply'); if (ab) ab.addEventListener('click', _srLoad);
+    var eb = document.getElementById('sr-export'); if (eb) eb.addEventListener('click', function () { downloadExcel('employees', { companyId: getSelectedBranchId(), dateFrom: getInputValue('sr-df'), dateTo: getInputValue('sr-dt'), columns: ['name', 'hrJob', 'companyName', 'monthlySalary', 'allowance', 'commission'] }); });
+    _srLoad();
+  }
+  async function _srLoad() {
+    var tw = document.getElementById('sr-table'); if (!tw) return;
+    tw.innerHTML = renderLoadingState('Đang tải báo cáo lương...');
+    try {
+      var data = await api('/api/hr/salary' + toQueryString({ companyId: getSelectedBranchId(), dateFrom: getInputValue('sr-df') || MONTH_START_ISO, dateTo: getInputValue('sr-dt') || TODAY_ISO }));
+      var emps = (data && data.employees) ? data.employees : safeItems(data);
+      var advances = safeItems((data && data.advances) || []);
+      if (!emps.length) { tw.innerHTML = renderEmptyState('Chưa có dữ liệu lương'); return; }
+      var advMap = {};
+      advances.forEach(function (a) { var k = a.employeeName || ''; advMap[k] = (advMap[k] || 0) + toNumber(a.amount); });
+      tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Nhân viên</th><th>Chức vụ</th><th class="text-right">Đầu kỳ</th><th class="text-right">Lương</th><th class="text-right">Thanh toán</th><th class="text-right">Cuối kỳ</th></tr></thead><tbody>' +
+        emps.map(function (e) {
+          var salary = toNumber(e.monthlySalary) + toNumber(e.allowance) + toNumber(e.commission);
+          var paid = advMap[e.name] || 0;
+          var opening = 0, closing = opening + salary - paid;
+          return '<tr><td>' + escapeHtml(e.name || '—') + '</td><td>' + escapeHtml(e.hrJob || e.jobTitle || '—') + '</td><td class="text-right">' + escapeHtml(formatCurrency(opening)) + '</td><td class="text-right">' + escapeHtml(formatCurrency(salary)) + '</td><td class="text-right">' + escapeHtml(formatCurrency(paid)) + '</td><td class="text-right font-semibold">' + escapeHtml(formatCurrency(closing)) + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+    } catch (_e) { tw.innerHTML = renderEmptyState('Không thể tải báo cáo lương'); }
+  }
+
+  // ===========================================================================
+  // Receipts (#/receipts) - Phiếu thu with "Tạo phiếu thu" button
+  // ===========================================================================
+  function renderReceipts() {
+    var loadFn = function () { _paymentLoad('rc-tbl', 'inbound', 'Chưa có phiếu thu'); };
+    _paymentPage('page-cashbook', 'Phiếu thu', 'rc-tbl', 'inbound', loadFn, 'Tạo phiếu thu');
+    var cb = document.getElementById('rc-tbl-create');
+    if (cb) cb.addEventListener('click', function () {
+      showModal('Tạo phiếu thu', _voucherCreateForm('thu'), {
+        footer: '<button class="tds-btn tds-btn-ghost" onclick="TDS.closeModal()">Hủy</button><button class="tds-btn tds-btn-primary" id="vcf-save">Lưu</button>',
+        onOpen: function () { var sv = document.getElementById('vcf-save'); if (sv) sv.addEventListener('click', function () { _voucherSave('inbound', loadFn); }); }
+      });
+    });
+  }
+
+  // ===========================================================================
+  // Payments Voucher (#/payments) - Phiếu chi with "Tạo phiếu chi" button
+  // ===========================================================================
+  function renderPaymentsVoucher() {
+    var loadFn = function () { _paymentLoad('pv-tbl', 'outbound', 'Chưa có phiếu chi'); };
+    _paymentPage('page-cashbook', 'Phiếu chi', 'pv-tbl', 'outbound', loadFn, 'Tạo phiếu chi');
+    var cb = document.getElementById('pv-tbl-create');
+    if (cb) cb.addEventListener('click', function () {
+      showModal('Tạo phiếu chi', _voucherCreateForm('chi'), {
+        footer: '<button class="tds-btn tds-btn-ghost" onclick="TDS.closeModal()">Hủy</button><button class="tds-btn tds-btn-primary" id="vcf-save">Lưu</button>',
+        onOpen: function () { var sv = document.getElementById('vcf-save'); if (sv) sv.addEventListener('click', function () { _voucherSave('outbound', loadFn); }); }
+      });
+    });
+  }
+
+  // ===========================================================================
+  // Account Payment (#/account-payment) - Phiếu chuyển nội bộ
+  // Columns: Ngày, Số phiếu, Loại, Phương thức, Số tiền, Nội dung, Trạng thái
+  // ===========================================================================
+  function renderAccountPayment() {
+    var loadFn = function () { _apLoad(); };
+    _paymentPage('page-cashbook', 'Phiếu chuyển nội bộ', 'ap-tbl', '', loadFn, 'Tạo phiếu chuyển');
+    var cb = document.getElementById('ap-tbl-create');
+    if (cb) cb.addEventListener('click', function () {
+      showModal('Tạo phiếu chuyển nội bộ',
+        '<form><div class="tds-form-group"><label class="tds-label">Ngày</label><input class="tds-input" id="ap-f-date" type="date" value="' + TODAY_ISO + '"></div>' +
+        '<div class="tds-form-row"><div class="tds-form-group"><label class="tds-label">Loại</label><select class="tds-select" id="ap-f-type"><option value="internal">Nội bộ</option><option value="transfer">Chuyển quỹ</option></select></div>' +
+        '<div class="tds-form-group"><label class="tds-label">Phương thức</label><select class="tds-select" id="ap-f-method"><option value="cash">Tiền mặt</option><option value="bank">Ngân hàng</option></select></div></div>' +
+        '<div class="tds-form-group"><label class="tds-label">Số tiền</label><input class="tds-input" id="ap-f-amount" type="number" min="0"></div>' +
+        '<div class="tds-form-group"><label class="tds-label">Nội dung</label><input class="tds-input" id="ap-f-note"></div></form>',
+        { footer: '<button class="tds-btn tds-btn-ghost" onclick="TDS.closeModal()">Hủy</button><button class="tds-btn tds-btn-primary" id="ap-save">Lưu</button>',
+          onOpen: function () { var sv = document.getElementById('ap-save'); if (sv) sv.addEventListener('click', async function () {
+            try { await api('/api/payments', { method: 'POST', body: JSON.stringify({ date: getInputValue('ap-f-date'), paymentType: 'transfer', method: getInputValue('ap-f-method'), category: getInputValue('ap-f-type'), amount: Number(getInputValue('ap-f-amount')) || 0, note: getInputValue('ap-f-note') }) });
+              showToast('success', 'Đã tạo phiếu chuyển'); closeModal(); _apLoad();
+            } catch (err) { showToast('error', (err && err.message) || 'Không thể tạo phiếu'); } }); } });
+    });
+  }
+  async function _apLoad() {
+    var tw = document.getElementById('ap-tbl'); if (!tw) return;
+    tw.innerHTML = renderLoadingState('Đang tải phiếu chuyển nội bộ...');
+    try {
+      var rows = safeItems(await api('/api/payments' + toQueryString({ companyId: getSelectedBranchId(), dateFrom: getInputValue('ap-tbl-df') || MONTH_START_ISO, dateTo: getInputValue('ap-tbl-dt') || TODAY_ISO, limit: 80, offset: 0 })));
+      if (!rows.length) { tw.innerHTML = renderEmptyState('Chưa có phiếu chuyển nội bộ'); return; }
+      tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Ngày</th><th>Số phiếu</th><th>Loại</th><th>Phương thức</th><th class="text-right">Số tiền</th><th>Nội dung</th><th>Trạng thái</th></tr></thead><tbody>' +
+        rows.map(function (r) { return '<tr><td>' + escapeHtml(formatDate(r.date)) + '</td><td>' + escapeHtml(r.name || '—') + '</td><td>' + escapeHtml(normalizePaymentTypeLabel(r.paymentType)) + '</td><td>' + escapeHtml(r.journalName || r.companyName || '—') + '</td><td class="text-right">' + escapeHtml(formatCurrency(r.amount || 0)) + '</td><td>' + escapeHtml(r.partnerName || r.note || '—') + '</td><td>' + (r.state === 'posted' || r.state === 'done' ? '<span class="tds-badge tds-badge-success">Đã xác nhận</span>' : '<span class="tds-badge tds-badge-warning">Nháp</span>') + '</td></tr>'; }).join('') + '</tbody></table></div>';
+    } catch (_e) { tw.innerHTML = renderEmptyState('Không thể tải phiếu chuyển nội bộ'); }
+  }
+
+  function renderCallHistory() {
+    var el = document.getElementById('page-callcenter'); if (!el) return;
+    var rc = APP.callcenter.recentCalls || [];
+    el.innerHTML = '<div class="tds-card"><div class="tds-card-header"><h2>L\u1ecbch s\u1eed cu\u1ed9c g\u1ecdi</h2></div><div id="ch-table"></div></div>';
+    var tw = document.getElementById('ch-table'); if (!tw) return;
+    if (!rc.length) { tw.innerHTML = renderEmptyState('Ch\u01b0a c\u00f3 l\u1ecbch s\u1eed cu\u1ed9c g\u1ecdi'); return; }
+    tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Th\u1eddi gian</th><th>S\u1ed1 \u0111i\u1ec7n tho\u1ea1i</th><th>Kh\u00e1ch h\u00e0ng</th><th>Lo\u1ea1i</th></tr></thead><tbody>' + rc.map(function (c) { return '<tr><td>' + escapeHtml(formatDateTime(c.time || c.date)) + '</td><td>' + escapeHtml(c.phone || '\u2014') + '</td><td>' + escapeHtml(c.customerName || c.name || '\u2014') + '</td><td>' + escapeHtml(c.type || 'G\u1ecdi \u0111i') + '</td></tr>'; }).join('') + '</tbody></table></div>';
+  }
+
+  function renderCommissionEmployee() {
+    var el = document.getElementById('page-commission'); if (!el) return;
+    el.innerHTML = '<div class="tds-card commission-shell"><div class="tds-card-header"><h2>Hoa h\u1ed3ng nh\u00e2n vi\u00ean</h2><button class="tds-btn tds-btn-secondary" id="ce-export">Xu\u1ea5t Excel</button></div><div class="tds-table-toolbar"><div class="toolbar-left"><input class="tds-search-input" id="ce-search" placeholder="T\u00ecm theo t\u00ean nh\u00e2n vi\u00ean" value=""></div></div><div id="ce-table"></div></div>';
+    var eb = document.getElementById('ce-export'); if (eb) eb.addEventListener('click', function () { downloadExcel('employees', { companyId: getSelectedBranchId(), columns: ['name', 'hrJob', 'companyName', 'commission'] }); });
+    _ceLoad();
+  }
+  async function _ceLoad() {
+    var tw = document.getElementById('ce-table'); if (!tw) return;
+    tw.innerHTML = renderLoadingState('\u0110ang t\u1ea3i hoa h\u1ed3ng nh\u00e2n vi\u00ean...');
+    try {
+      var data = await api('/api/hr/salary' + toQueryString({ companyId: getSelectedBranchId() }));
+      var emps = (data && data.employees) ? data.employees : safeItems(data);
+      var s = (getInputValue('ce-search') || '').toLowerCase();
+      if (s) emps = emps.filter(function (e) { return (e.name || '').toLowerCase().indexOf(s) !== -1; });
+      if (!emps.length) { tw.innerHTML = renderEmptyState('Ch\u01b0a c\u00f3 d\u1eef li\u1ec7u hoa h\u1ed3ng'); return; }
+      tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Nh\u00e2n vi\u00ean</th><th>Ch\u1ee9c v\u1ee5</th><th>Chi nh\u00e1nh</th><th class="text-right">Hoa h\u1ed3ng</th></tr></thead><tbody>' + emps.map(function (e) { return '<tr><td>' + escapeHtml(e.name || '\u2014') + '</td><td>' + escapeHtml(e.hrJob || e.jobTitle || '\u2014') + '</td><td>' + escapeHtml(e.companyName || '\u2014') + '</td><td class="text-right">' + escapeHtml(formatCurrency(e.commission || 0)) + '</td></tr>'; }).join('') + '</tbody></table></div>';
+    } catch (_e) { tw.innerHTML = renderEmptyState('Kh\u00f4ng th\u1ec3 t\u1ea3i hoa h\u1ed3ng nh\u00e2n vi\u00ean'); }
+  }
+
+
   function normalizePickingTypeLabel(value) {
     var text = String(value || '').trim().toLowerCase();
     if (!text) return '—';
@@ -5873,8 +6563,17 @@
     var el = document.getElementById('page-settings');
     if (!el) return;
 
-    var activeTab = APP.settings.tab === 'config' ? 'config' : 'users';
+    var validTabs = ['users', 'config', 'team', 'other', 'logs'];
+    var activeTab = validTabs.indexOf(APP.settings.tab) >= 0 ? APP.settings.tab : 'users';
     APP.settings.tab = activeTab;
+
+    var tabDefs = [
+      { key: 'users', label: 'Chi nhánh / Tài khoản' },
+      { key: 'config', label: 'Cấu hình chung' },
+      { key: 'team', label: 'Cấu hình Team' },
+      { key: 'other', label: 'Cấu hình khác' },
+      { key: 'logs', label: 'Lịch sử hoạt động' },
+    ];
 
     el.innerHTML =
       '<div class="tds-card settings-shell">' +
@@ -5882,8 +6581,9 @@
       '<h2>Cài đặt hệ thống</h2>' +
       '</div>' +
       '<div class="settings-tabs">' +
-      '<button class="settings-tab-btn ' + (activeTab === 'users' ? 'active' : '') + '" data-settings-tab="users">Tài khoản</button>' +
-      '<button class="settings-tab-btn ' + (activeTab === 'config' ? 'active' : '') + '" data-settings-tab="config">Cấu hình</button>' +
+      tabDefs.map(function (t) {
+        return '<button class="settings-tab-btn ' + (activeTab === t.key ? 'active' : '') + '" data-settings-tab="' + t.key + '">' + escapeHtml(t.label) + '</button>';
+      }).join('') +
       '</div>' +
       '<div id="settings-content"></div>' +
       '</div>';
@@ -5898,13 +6598,122 @@
       });
     }
 
-    if (APP.settings.tab === 'users') {
+    if (activeTab === 'users') {
       renderSettingsUsersLayout();
       loadUsersData();
-    } else {
+    } else if (activeTab === 'config') {
       renderSettingsConfigLayout();
       loadSettingsConfigData();
+    } else if (activeTab === 'team') {
+      _renderSettingsTeam();
+    } else if (activeTab === 'other') {
+      _renderSettingsOther();
+    } else if (activeTab === 'logs') {
+      _renderSettingsLogs();
     }
+  }
+
+  // Settings Team tab
+  function _renderSettingsTeam() {
+    var container = document.getElementById('settings-content'); if (!container) return;
+    container.innerHTML =
+      '<div class="tds-table-toolbar"><div class="toolbar-right">' +
+      '<button class="tds-btn tds-btn-primary" id="st-create-btn">Tạo Team</button></div></div>' +
+      '<div style="display:flex;gap:16px"><div style="flex:1" id="st-list"></div><div style="flex:2" id="st-members"><div class="tds-empty"><p>Chọn team để xem thành viên</p></div></div></div>';
+    var cb = document.getElementById('st-create-btn');
+    if (cb) cb.addEventListener('click', function () {
+      showModal('Tạo Team',
+        '<form><div class="tds-form-group"><label class="tds-label">Tên Team</label><input class="tds-input" id="st-f-name"></div><div class="tds-form-group"><label class="tds-label">Mô tả</label><input class="tds-input" id="st-f-desc"></div></form>',
+        { footer: '<button class="tds-btn tds-btn-ghost" onclick="TDS.closeModal()">Hủy</button><button class="tds-btn tds-btn-primary" id="st-save">Lưu</button>',
+          onOpen: function () { var sv = document.getElementById('st-save'); if (sv) sv.addEventListener('click', async function () {
+            try { await api('/api/teams', { method: 'POST', body: JSON.stringify({ name: getInputValue('st-f-name'), description: getInputValue('st-f-desc') }) }); showToast('success', 'Đã tạo team'); closeModal(); _loadTeamList(); }
+            catch (err) { showToast('error', (err && err.message) || 'Lỗi'); } }); } });
+    });
+    _loadTeamList();
+  }
+  async function _loadTeamList() {
+    var c = document.getElementById('st-list'); if (!c) return;
+    c.innerHTML = renderLoadingState('Đang tải...');
+    try {
+      var teams = safeItems(await api('/api/teams'));
+      if (!teams.length) { c.innerHTML = renderEmptyState('Chưa có team nào'); return; }
+      c.innerHTML = teams.map(function (t) {
+        return '<div class="tds-card" style="padding:12px;margin-bottom:8px;cursor:pointer;border:1px solid #E2E8F0;border-radius:8px" data-tid="' + escapeHtml(t.id || '') + '" class="st-team-item"><strong>' + escapeHtml(t.name || 'N/A') + '</strong><p class="text-secondary text-sm" style="margin:4px 0 0">' + escapeHtml(t.description || '') + '</p></div>';
+      }).join('');
+      var items = c.querySelectorAll('[data-tid]');
+      for (var i = 0; i < items.length; i++) items[i].addEventListener('click', function () { _loadTeamMembers(this.getAttribute('data-tid')); });
+    } catch (_e) { c.innerHTML = renderEmptyState('Không thể tải danh sách team'); }
+  }
+  async function _loadTeamMembers(teamId) {
+    var c = document.getElementById('st-members'); if (!c) return;
+    c.innerHTML = renderLoadingState('Đang tải thành viên...');
+    try {
+      var members = safeItems(await api('/api/teams/' + encodeURIComponent(teamId) + '/members'));
+      if (!members.length) { c.innerHTML = renderEmptyState('Chưa có thành viên trong team'); return; }
+      c.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Tên</th><th>Email</th><th>Vai trò</th><th>Thao tác</th></tr></thead><tbody>' +
+        members.map(function (m) { return '<tr><td>' + escapeHtml(m.name || 'N/A') + '</td><td>' + escapeHtml(m.email || '—') + '</td><td>' + escapeHtml(m.role || '—') + '</td><td><button class="tds-btn tds-btn-sm tds-btn-danger">Xóa</button></td></tr>'; }).join('') +
+        '</tbody></table></div>';
+    } catch (_e) { c.innerHTML = renderEmptyState('Không thể tải thành viên'); }
+  }
+
+  // Settings Other tab - Feature toggles
+  function _renderSettingsOther() {
+    var container = document.getElementById('settings-content'); if (!container) return;
+    container.innerHTML = renderLoadingState('Đang tải cấu hình...');
+    _loadSettingsOtherData(container);
+  }
+  async function _loadSettingsOtherData(container) {
+    try {
+      var data = await api('/api/settings');
+      var map = (data && data.map) || {};
+      var toggles = [
+        { key: 'customer_care', label: 'Chăm sóc KH' },
+        { key: 'zalo_zns', label: 'ZALO ZNS' },
+        { key: 'appointment_reminder', label: 'Nhắc lịch hẹn' },
+        { key: 'visit_payment', label: 'Thanh toán đợt khám' },
+      ];
+      container.innerHTML = '<div class="settings-toggles" style="max-width:480px">' +
+        toggles.map(function (t) {
+          var on = String(map[t.key] || 'false') === 'true';
+          return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #E2E8F0"><span style="font-weight:500">' + escapeHtml(t.label) + '</span>' +
+            '<label style="position:relative;display:inline-block;width:44px;height:24px"><input type="checkbox" class="so-toggle" data-key="' + t.key + '"' + (on ? ' checked' : '') + ' style="opacity:0;width:0;height:0"><span style="position:absolute;cursor:pointer;inset:0;background:' + (on ? '#3B82F6' : '#CBD5E1') + ';border-radius:12px;transition:.3s"></span></label></div>';
+        }).join('') +
+        '</div><div style="margin-top:16px"><button class="tds-btn tds-btn-primary" id="so-apply-btn">Áp dụng</button></div>';
+      var ab = document.getElementById('so-apply-btn');
+      if (ab) ab.addEventListener('click', async function () {
+        var items = [];
+        var inputs = container.querySelectorAll('.so-toggle');
+        for (var i = 0; i < inputs.length; i++) items.push({ key: inputs[i].getAttribute('data-key'), value: inputs[i].checked ? 'true' : 'false' });
+        try { await api('/api/settings', { method: 'POST', body: JSON.stringify({ items: items }) }); showToast('success', 'Đã lưu cấu hình'); }
+        catch (err) { showToast('error', (err && err.message) || 'Không thể lưu'); }
+      });
+    } catch (err) { container.innerHTML = renderEmptyState('Không thể tải cấu hình'); }
+  }
+
+  // Settings Logs tab - Activity log
+  function _renderSettingsLogs() {
+    var container = document.getElementById('settings-content'); if (!container) return;
+    container.innerHTML =
+      '<div class="tds-table-toolbar"><div class="toolbar-left">' +
+      '<input class="tds-input" id="sl-from" type="date" value="' + escapeHtml(MONTH_START_ISO) + '">' +
+      '<input class="tds-input" id="sl-to" type="date" value="' + escapeHtml(TODAY_ISO) + '">' +
+      '<input class="tds-search-input" id="sl-search" placeholder="Tìm theo tài khoản">' +
+      '<button class="tds-btn tds-btn-primary" id="sl-apply">Áp dụng</button></div></div>' +
+      '<div id="sl-content"></div>';
+    var ab = document.getElementById('sl-apply'); if (ab) ab.addEventListener('click', _loadSettingsLogsData);
+    _loadSettingsLogsData();
+  }
+  async function _loadSettingsLogsData() {
+    var c = document.getElementById('sl-content'); if (!c) return;
+    c.innerHTML = renderLoadingState('Đang tải lịch sử...');
+    try {
+      var q = toQueryString({ dateFrom: getInputValue('sl-from') || MONTH_START_ISO, dateTo: getInputValue('sl-to') || TODAY_ISO, search: getInputValue('sl-search'), limit: 100, offset: 0 });
+      var rows = safeItems(await api('/api/settings/logs' + q));
+      if (!rows.length) { c.innerHTML = renderEmptyState('Không có lịch sử hoạt động'); return; }
+      c.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Thời gian</th><th>Tài khoản</th><th>Hành động</th><th>Loại đối tượng</th><th>Id</th><th>Tên</th><th>Thao tác</th></tr></thead><tbody>' +
+        rows.map(function (r) { return '<tr><td>' + escapeHtml(formatDateTime(r.createdAt || r.timestamp)) + '</td><td>' + escapeHtml(r.userName || r.userEmail || '—') + '</td><td>' + escapeHtml(r.action || '—') + '</td><td>' + escapeHtml(r.objectType || r.resourceType || '—') + '</td><td>' + escapeHtml(r.objectId || r.resourceId || '—') + '</td><td>' + escapeHtml(r.objectName || r.resourceName || '—') + '</td><td><button class="tds-btn tds-btn-sm tds-btn-secondary">Chi tiết</button></td></tr>'; }).join('') +
+        '</tbody></table></div>';
+    } catch (err) { c.innerHTML = renderEmptyState((err && err.message) || 'Không thể tải lịch sử'); }
   }
 
   function renderSettingsUsersLayout() {

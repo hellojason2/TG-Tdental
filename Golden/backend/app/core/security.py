@@ -1,8 +1,11 @@
 """Password hashing and JWT token utilities for TDental authentication."""
 
+from __future__ import annotations
+
 import hashlib
 import hmac
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -60,7 +63,7 @@ def is_bcrypt_hash(value: str) -> bool:
 
 def create_access_token(
     data: dict,
-    expires_delta: timedelta | None = None,
+    expires_delta: Optional[timedelta] = None,
 ) -> str:
     """Create a signed JWT containing *data*.
 

@@ -239,6 +239,283 @@ async def list_commissions(
         raise HTTPException(status_code=503, detail="Database is unavailable")
 
 
+# ---------------------------------------------------------------------------
+# GET /api/commissions/employees  (per-employee commission breakdown)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/commissions/employees")
+async def commissions_by_employee(
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=0, le=500),
+    offset: int | None = Query(default=None, ge=0),
+    limit: int | None = Query(default=None, ge=0, le=5000),
+    search: str = Query(default=""),
+    companyId: str | None = Query(default=None),
+    dateFrom: str | None = Query(default=None),
+    dateTo: str | None = Query(default=None),
+    _user: dict = Depends(require_auth),
+):
+    """Return per-employee commission breakdown.
+
+    Tries dedicated commission-lines / commission-details tables first,
+    then falls back to computing from sale-order lines joined to employees.
+    """
+    from datetime import date as date_type
+    from psycopg2.extras import RealDictCursor as _RDC
+
+    effective_offset, effective_limit = page_window(
+        page=page,
+        per_page=per_page,
+        offset=offset,
+        limit=limit,
+        default_limit=20,
+    )
+
+    parsed_date_from: date_type | None = None
+    parsed_date_to: date_type | None = None
+    try:
+        if dateFrom:
+            parsed_date_from = date_type.fromisoformat(dateFrom)
+        if dateTo:
+            parsed_date_to = date_type.fromisoformat(dateTo)
+    except ValueError:
+        pass
+
+    try:
+        with get_conn() as conn:
+            # --- Strategy 1: dedicated commission lines table ---
+            lines_table = resolve_table(
+                conn,
+                "commission_lines", "commissionlines",
+                "commission_details", "commissiondetails",
+                "employee_commissions", "employeecommissions",
+                "hoa_hong_nhan_vien",
+            )
+            if lines_table:
+                return _commissions_employees_from_lines(
+                    conn, lines_table,
+                    effective_offset=effective_offset,
+                    effective_limit=effective_limit,
+                    search=search,
+                    company_id=companyId,
+                    date_from=parsed_date_from,
+                    date_to=parsed_date_to,
+                )
+
+            # --- Strategy 2: compute from employees table ---
+            emp_table = resolve_table(conn, "employees", "employee")
+            if emp_table:
+                return _commissions_employees_from_employees(
+                    conn, emp_table,
+                    effective_offset=effective_offset,
+                    effective_limit=effective_limit,
+                    search=search,
+                    company_id=companyId,
+                )
+
+            return empty_page(effective_offset, effective_limit)
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+def _commissions_employees_from_lines(
+    conn,
+    lines_table,
+    *,
+    effective_offset: int,
+    effective_limit: int,
+    search: str,
+    company_id: str | None,
+    date_from=None,
+    date_to=None,
+):
+    """Build employee commission list from a dedicated lines table."""
+    from app.core.pagination import paginate as _paginate
+
+    cols = table_columns(conn, lines_table)
+    id_col = pick_column(cols, "id")
+    if not id_col:
+        return empty_page(effective_offset, effective_limit)
+
+    employee_id_col = pick_column(cols, "employee_id", "employeeid", "staff_id")
+    employee_name_col = pick_column(cols, "employee_name", "employeename", "staff_name")
+    amount_col = pick_column(cols, "amount", "commission_amount", "commission", "total")
+    date_col = pick_column(cols, "date", "commission_date", "created_at", "created_date")
+    company_id_col = pick_column(cols, "company_id", "companyid")
+    service_name_col = pick_column(cols, "service_name", "product_name", "productname")
+    state_col = pick_column(cols, "state", "status")
+
+    amount_expr = f"COALESCE(cl.{quote_ident(amount_col)}, 0)" if amount_col else "0::numeric"
+
+    joins = ""
+    employee_name_expr = (
+        f'cl.{quote_ident(employee_name_col)}' if employee_name_col else "NULL::text"
+    )
+    if not employee_name_col and employee_id_col:
+        emp_table = resolve_table(conn, "employees", "employee")
+        if emp_table:
+            emp_cols = table_columns(conn, emp_table)
+            e_id = pick_column(emp_cols, "id")
+            e_name = pick_column(emp_cols, "name", "display_name")
+            if e_id and e_name:
+                joins = (
+                    f" LEFT JOIN {emp_table.qualified_name} e"
+                    f" ON cl.{quote_ident(employee_id_col)} = e.{quote_ident(e_id)}"
+                )
+                employee_name_expr = f"e.{quote_ident(e_name)}"
+
+    select_fields = [
+        f'cl.{quote_ident(id_col)}::text AS id',
+        (f'cl.{quote_ident(employee_id_col)}::text AS "employeeId"'
+         if employee_id_col else 'NULL::text AS "employeeId"'),
+        f'{employee_name_expr} AS "employeeName"',
+        f'{amount_expr} AS amount',
+        (f'cl.{quote_ident(date_col)} AS date' if date_col else "NULL::timestamp AS date"),
+        (f'cl.{quote_ident(service_name_col)} AS "serviceName"'
+         if service_name_col else 'NULL::text AS "serviceName"'),
+        (f'cl.{quote_ident(state_col)} AS state' if state_col else "NULL::text AS state"),
+        (f'cl.{quote_ident(company_id_col)}::text AS "companyId"'
+         if company_id_col else 'NULL::text AS "companyId"'),
+    ]
+
+    where_clauses: list[str] = []
+    params: list = []
+
+    if company_id:
+        if not company_id_col:
+            return empty_page(effective_offset, effective_limit)
+        where_clauses.append(f"cl.{quote_ident(company_id_col)}::text = %s")
+        params.append(company_id)
+
+    if search.strip():
+        pattern = f"%{search.strip()}%"
+        search_parts: list[str] = []
+        if employee_name_col:
+            search_parts.append(f"cl.{quote_ident(employee_name_col)} ILIKE %s")
+            params.append(pattern)
+        if service_name_col:
+            search_parts.append(f"cl.{quote_ident(service_name_col)} ILIKE %s")
+            params.append(pattern)
+        if search_parts:
+            where_clauses.append("(" + " OR ".join(search_parts) + ")")
+
+    if date_from and date_col:
+        where_clauses.append(f"cl.{quote_ident(date_col)}::date >= %s")
+        params.append(date_from)
+    if date_to and date_col:
+        where_clauses.append(f"cl.{quote_ident(date_col)}::date <= %s")
+        params.append(date_to)
+
+    base_query = (
+        f"SELECT {', '.join(select_fields)} FROM {lines_table.qualified_name} cl"
+        + joins
+    )
+    if where_clauses:
+        base_query += " WHERE " + " AND ".join(where_clauses)
+    if date_col:
+        base_query += (
+            f" ORDER BY cl.{quote_ident(date_col)} DESC NULLS LAST, "
+            f"cl.{quote_ident(id_col)} DESC"
+        )
+    else:
+        base_query += f" ORDER BY cl.{quote_ident(id_col)} DESC"
+
+    return _paginate(
+        query=base_query, params=tuple(params), conn=conn,
+        offset=effective_offset, limit=effective_limit,
+    )
+
+
+def _commissions_employees_from_employees(
+    conn,
+    emp_table,
+    *,
+    effective_offset: int,
+    effective_limit: int,
+    search: str,
+    company_id: str | None,
+):
+    """Fallback: return employees with their commission rate/amount from employee table."""
+    from app.core.pagination import paginate as _paginate
+
+    cols = table_columns(conn, emp_table)
+    id_col = pick_column(cols, "id")
+    name_col = pick_column(cols, "name", "display_name")
+    if not id_col or not name_col:
+        return empty_page(effective_offset, effective_limit)
+
+    commission_col = pick_column(cols, "commission", "commission_rate", "commissionrate", "commission_amount")
+    salary_col = pick_column(cols, "salary", "basic_salary", "wage")
+    company_id_col = pick_column(cols, "company_id", "companyid")
+    company_name_col = pick_column(cols, "company_name", "companyname")
+    job_col = pick_column(cols, "hr_job", "job_name", "job")
+    active_col = pick_column(cols, "active", "is_active")
+
+    joins = ""
+    company_name_expr = f'e.{quote_ident(company_name_col)}' if company_name_col else "NULL::text"
+    if not company_name_col and company_id_col:
+        company_table = resolve_table(conn, "companies", "company")
+        if company_table:
+            c_cols = table_columns(conn, company_table)
+            c_id = pick_column(c_cols, "id")
+            c_name = pick_column(c_cols, "name", "display_name")
+            if c_id and c_name:
+                joins = (
+                    f" LEFT JOIN {company_table.qualified_name} co"
+                    f" ON e.{quote_ident(company_id_col)} = co.{quote_ident(c_id)}"
+                )
+                company_name_expr = f"co.{quote_ident(c_name)}"
+
+    commission_expr = (
+        f"COALESCE(e.{quote_ident(commission_col)}, 0)" if commission_col else "0::numeric"
+    )
+
+    select_fields = [
+        f'e.{quote_ident(id_col)}::text AS id',
+        f'e.{quote_ident(id_col)}::text AS "employeeId"',
+        f'e.{quote_ident(name_col)} AS "employeeName"',
+        f'{commission_expr} AS amount',
+        "NULL::timestamp AS date",
+        'NULL::text AS "serviceName"',
+        'NULL::text AS state',
+        (f'e.{quote_ident(company_id_col)}::text AS "companyId"'
+         if company_id_col else 'NULL::text AS "companyId"'),
+        f'{company_name_expr} AS "companyName"',
+        (f'e.{quote_ident(job_col)} AS "jobTitle"' if job_col else 'NULL::text AS "jobTitle"'),
+    ]
+
+    where_clauses: list[str] = []
+    params: list = []
+
+    if active_col:
+        where_clauses.append(f"COALESCE(e.{quote_ident(active_col)}, TRUE) = TRUE")
+
+    if company_id:
+        if not company_id_col:
+            return empty_page(effective_offset, effective_limit)
+        where_clauses.append(f"e.{quote_ident(company_id_col)}::text = %s")
+        params.append(company_id)
+
+    if search.strip():
+        pattern = f"%{search.strip()}%"
+        where_clauses.append(f"e.{quote_ident(name_col)} ILIKE %s")
+        params.append(pattern)
+
+    base_query = (
+        f"SELECT {', '.join(select_fields)} FROM {emp_table.qualified_name} e"
+        + joins
+    )
+    if where_clauses:
+        base_query += " WHERE " + " AND ".join(where_clauses)
+    base_query += f" ORDER BY e.{quote_ident(name_col)} ASC NULLS LAST"
+
+    return _paginate(
+        query=base_query, params=tuple(params), conn=conn,
+        offset=effective_offset, limit=effective_limit,
+    )
+
+
 @router.get("/commissions/{commission_id}")
 async def get_commission(
     commission_id: str = Path(..., min_length=1),

@@ -22,7 +22,162 @@ from app.core.pagination import paginate
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
 
-@dataclass(slots=True)
+@router.get("/revenue-trend")
+async def report_revenue_trend(
+    dateFrom: date | None = Query(default=None),
+    dateTo: date | None = Query(default=None),
+    companyId: str | None = Query(default=None),
+    _user: dict = Depends(require_auth),
+):
+    """Revenue trend data for charts."""
+    date_from, date_to = _resolve_window(dateFrom, dateTo)
+    try:
+        with get_conn() as conn:
+            ctx = _payment_context(conn)
+            if not ctx:
+                return {"items": []}
+
+            where: list[str] = []
+            params: list = []
+            _append_date_filter(
+                where, params,
+                expr=f"p.{quote_ident(ctx.date_col)}",
+                date_from=date_from, date_to=date_to,
+            )
+            if companyId and ctx.company_id_col:
+                where.append(f"p.{quote_ident(ctx.company_id_col)}::text = %s")
+                params.append(companyId)
+
+            where_sql = " WHERE " + " AND ".join(where) if where else ""
+            amount_expr = f"COALESCE(p.{quote_ident(ctx.amount_col)}, 0)"
+            date_expr = f"p.{quote_ident(ctx.date_col)}::date"
+
+            sql = (
+                f"SELECT {date_expr} AS report_date, "
+                f"COALESCE(SUM(CASE WHEN {amount_expr} > 0 THEN {amount_expr} ELSE 0 END), 0) AS income, "
+                f"COALESCE(SUM(CASE WHEN {amount_expr} < 0 THEN ABS({amount_expr}) ELSE 0 END), 0) AS expense, "
+                f"COALESCE(SUM({amount_expr}), 0) AS revenue "
+                f"FROM {ctx.table.qualified_name} p{where_sql} "
+                f"GROUP BY {date_expr} ORDER BY {date_expr} ASC"
+            )
+            cur = conn.cursor()
+            cur.execute(sql, params)
+            cols = [d[0] for d in cur.description]
+            items = []
+            for row in cur.fetchall():
+                r = dict(zip(cols, row))
+                items.append({
+                    "date": str(r.get("report_date", "")),
+                    "revenue": float(r.get("revenue", 0)),
+                    "income": float(r.get("income", 0)),
+                    "expense": float(r.get("expense", 0)),
+                })
+            cur.close()
+            return {"items": items}
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+@router.get("/appointments")
+async def report_appointments(
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=0, le=500),
+    offset: int | None = Query(default=None, ge=0),
+    limit: int | None = Query(default=None, ge=0, le=5000),
+    dateFrom: date | None = Query(default=None),
+    dateTo: date | None = Query(default=None),
+    companyId: str | None = Query(default=None),
+    _user: dict = Depends(require_auth),
+):
+    """Appointment report grouped by status."""
+    resolved_offset, resolved_limit = page_window(
+        page=page, per_page=per_page, offset=offset, limit=limit, default_limit=20,
+    )
+    date_from, date_to = _resolve_window(dateFrom, dateTo)
+    try:
+        with get_conn() as conn:
+            from app.core.lookup_sql import resolve_table, table_columns, pick_column
+            apt_table = resolve_table(conn, "appointments", "appointment")
+            if not apt_table:
+                return empty_page(resolved_offset, resolved_limit)
+
+            cols = table_columns(conn, apt_table)
+            state_col = pick_column(cols, "state", "status", "stage")
+            date_col = pick_column(cols, "date", "appointment_date", "date_start", "created_at")
+            company_col = pick_column(cols, "company_id", "companyid")
+
+            if not state_col or not date_col:
+                return empty_page(resolved_offset, resolved_limit)
+
+            where: list[str] = []
+            params: list = []
+            _append_date_filter(where, params, expr=f"a.{quote_ident(date_col)}", date_from=date_from, date_to=date_to)
+            if companyId and company_col:
+                where.append(f"a.{quote_ident(company_col)}::text = %s")
+                params.append(companyId)
+
+            where_sql = " WHERE " + " AND ".join(where) if where else ""
+            query = (
+                f"SELECT COALESCE(a.{quote_ident(state_col)}::text, 'unknown') AS state, "
+                f"COUNT(*)::bigint AS count "
+                f"FROM {apt_table.qualified_name} a{where_sql} "
+                f"GROUP BY a.{quote_ident(state_col)} "
+                f"ORDER BY count DESC"
+            )
+            return paginate(query=query, params=tuple(params), conn=conn, offset=resolved_offset, limit=resolved_limit)
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+@router.get("/reception")
+async def report_reception(
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=0, le=500),
+    offset: int | None = Query(default=None, ge=0),
+    limit: int | None = Query(default=None, ge=0, le=5000),
+    dateFrom: date | None = Query(default=None),
+    dateTo: date | None = Query(default=None),
+    companyId: str | None = Query(default=None),
+    _user: dict = Depends(require_auth),
+):
+    """Reception report grouped by hour."""
+    resolved_offset, resolved_limit = page_window(
+        page=page, per_page=per_page, offset=offset, limit=limit, default_limit=24,
+    )
+    date_from, date_to = _resolve_window(dateFrom, dateTo)
+    try:
+        with get_conn() as conn:
+            apt_table = resolve_table(conn, "appointments", "appointment")
+            if not apt_table:
+                return empty_page(resolved_offset, resolved_limit)
+
+            cols = table_columns(conn, apt_table)
+            date_col = pick_column(cols, "date", "appointment_date", "date_start", "created_at")
+            company_col = pick_column(cols, "company_id", "companyid")
+
+            if not date_col:
+                return empty_page(resolved_offset, resolved_limit)
+
+            where: list[str] = []
+            params: list = []
+            _append_date_filter(where, params, expr=f"a.{quote_ident(date_col)}", date_from=date_from, date_to=date_to)
+            if companyId and company_col:
+                where.append(f"a.{quote_ident(company_col)}::text = %s")
+                params.append(companyId)
+
+            where_sql = " WHERE " + " AND ".join(where) if where else ""
+            query = (
+                f"SELECT EXTRACT(HOUR FROM a.{quote_ident(date_col)})::int AS hour, "
+                f"COUNT(*)::bigint AS count "
+                f"FROM {apt_table.qualified_name} a{where_sql} "
+                f"GROUP BY 1 ORDER BY 1 ASC"
+            )
+            return paginate(query=query, params=tuple(params), conn=conn, offset=resolved_offset, limit=resolved_limit)
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+@dataclass()
 class PaymentContext:
     table: object
     amount_col: str
@@ -33,7 +188,7 @@ class PaymentContext:
     company_name_col: str | None
 
 
-@dataclass(slots=True)
+@dataclass()
 class SaleOrderContext:
     table: object
     id_col: str
@@ -890,5 +1045,157 @@ async def report_branches(
                 offset=resolved_offset,
                 limit=resolved_limit,
             )
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+# ---------------------------------------------------------------------------
+# GET /api/reports/summary  (fund overview for report tab)
+# ---------------------------------------------------------------------------
+
+from decimal import Decimal
+from psycopg2.extras import RealDictCursor
+
+
+def _to_float(value) -> float:
+    if value is None:
+        return 0.0
+    if isinstance(value, Decimal):
+        return float(value)
+    return float(value)
+
+
+@router.get("/summary")
+async def reports_fund_summary(
+    companyId: str | None = Query(default=None),
+    dateFrom: date | None = Query(default=None),
+    dateTo: date | None = Query(default=None),
+    _user: dict = Depends(require_auth),
+):
+    """Return fund overview: cash_fund, bank_fund, supplier_debt,
+    customer_debt, insurance_debt, expected_revenue."""
+    date_from, date_to = _resolve_window(dateFrom, dateTo)
+
+    try:
+        with get_conn() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                payment_ctx = _payment_context(conn)
+
+                cash_fund = 0.0
+                bank_fund = 0.0
+                if payment_ctx:
+                    amount_expr = f"COALESCE(p.{quote_ident(payment_ctx.amount_col)}, 0)"
+                    where: list[str] = []
+                    params: list = []
+                    _append_date_filter(
+                        where, params,
+                        expr=f"p.{quote_ident(payment_ctx.date_col)}",
+                        date_from=date_from, date_to=date_to,
+                    )
+                    if companyId and payment_ctx.company_id_col:
+                        where.append(f"p.{quote_ident(payment_ctx.company_id_col)}::text = %s")
+                        params.append(companyId)
+
+                    journal_table = resolve_table(conn, "account_journals", "accountjournals", "journals")
+                    join_sql = ""
+                    channel_expr = "''"
+                    pay_cols = table_columns(conn, payment_ctx.table)
+                    journal_col = pick_column(pay_cols, "journal_id", "journalid")
+                    if journal_col and journal_table:
+                        j_cols = table_columns(conn, journal_table)
+                        j_id = pick_column(j_cols, "id")
+                        j_type = pick_column(j_cols, "type", "journal_type")
+                        j_name = pick_column(j_cols, "name", "display_name")
+                        if j_id:
+                            join_sql = (
+                                f" LEFT JOIN {journal_table.qualified_name} j"
+                                f" ON p.{quote_ident(journal_col)} = j.{quote_ident(j_id)}"
+                            )
+                            parts = []
+                            if j_type:
+                                parts.append(f"j.{quote_ident(j_type)}::text")
+                            if j_name:
+                                parts.append(f"j.{quote_ident(j_name)}::text")
+                            if parts:
+                                channel_expr = "LOWER(COALESCE(" + ", ".join(parts) + ", ''))"
+
+                    where_sql = (" WHERE " + " AND ".join(where)) if where else ""
+                    cash_pred = f"({channel_expr} LIKE '%%cash%%' OR {channel_expr} LIKE '%%tien mat%%')"
+                    bank_pred = f"({channel_expr} LIKE '%%bank%%' OR {channel_expr} LIKE '%%ngan hang%%')"
+
+                    sql = (
+                        "SELECT "
+                        f"COALESCE(SUM(CASE WHEN {cash_pred} THEN {amount_expr} ELSE 0 END), 0) AS cash_fund, "
+                        f"COALESCE(SUM(CASE WHEN {bank_pred} THEN {amount_expr} ELSE 0 END), 0) AS bank_fund "
+                        f"FROM {payment_ctx.table.qualified_name} p{join_sql}{where_sql}"
+                    )
+                    cur.execute(sql, tuple(params))
+                    row = dict(cur.fetchone() or {})
+                    cash_fund = _to_float(row.get("cash_fund"))
+                    bank_fund = _to_float(row.get("bank_fund"))
+
+                supplier_debt = 0.0
+                customer_debt = 0.0
+                insurance_debt = 0.0
+                expected_revenue = 0.0
+
+                order_ctx = _sale_order_context(conn)
+                if order_ctx and order_ctx.amount_col:
+                    so_amount_expr = f"COALESCE(o.{quote_ident(order_ctx.amount_col)}, 0)"
+                    so_where: list[str] = []
+                    so_params: list = []
+                    if order_ctx.date_col:
+                        _append_date_filter(
+                            so_where, so_params,
+                            expr=f"o.{quote_ident(order_ctx.date_col)}",
+                            date_from=date_from, date_to=date_to,
+                        )
+                    if companyId and order_ctx.company_id_col:
+                        so_where.append(f"o.{quote_ident(order_ctx.company_id_col)}::text = %s")
+                        so_params.append(companyId)
+
+                    so_cols = table_columns(conn, order_ctx.table)
+                    residual_col = pick_column(so_cols, "residual", "amount_residual", "residual_amount", "debt")
+                    state_col = pick_column(so_cols, "state", "status")
+
+                    if residual_col:
+                        residual_expr = f"COALESCE(o.{quote_ident(residual_col)}, 0)"
+                        debt_where = list(so_where)
+                        if state_col:
+                            debt_where.append(
+                                f"LOWER(COALESCE(o.{quote_ident(state_col)}::text, '')) NOT IN ('cancel', 'cancelled', 'draft')"
+                            )
+                        debt_where_sql = (" WHERE " + " AND ".join(debt_where)) if debt_where else ""
+                        cur.execute(
+                            f"SELECT COALESCE(SUM({residual_expr}), 0) AS total_debt "
+                            f"FROM {order_ctx.table.qualified_name} o{debt_where_sql}",
+                            tuple(so_params),
+                        )
+                        customer_debt = _to_float((cur.fetchone() or {}).get("total_debt"))
+
+                    rev_where = list(so_where)
+                    if state_col:
+                        rev_where.append(
+                            f"LOWER(COALESCE(o.{quote_ident(state_col)}::text, '')) IN ('sale', 'done', 'confirmed')"
+                        )
+                    rev_where_sql = (" WHERE " + " AND ".join(rev_where)) if rev_where else ""
+                    cur.execute(
+                        f"SELECT COALESCE(SUM({so_amount_expr}), 0) AS expected "
+                        f"FROM {order_ctx.table.qualified_name} o{rev_where_sql}",
+                        tuple(so_params),
+                    )
+                    expected_revenue = _to_float((cur.fetchone() or {}).get("expected"))
+
+            return {
+                "cashFund": cash_fund,
+                "bankFund": bank_fund,
+                "supplierDebt": supplier_debt,
+                "customerDebt": customer_debt,
+                "insuranceDebt": insurance_debt,
+                "expectedRevenue": expected_revenue,
+                "dateFrom": date_from.isoformat(),
+                "dateTo": date_to.isoformat(),
+                "companyId": companyId,
+            }
     except RuntimeError:
         raise HTTPException(status_code=503, detail="Database is unavailable")

@@ -1,5 +1,7 @@
 """Reusable pagination helper for SQL queries."""
 
+from __future__ import annotations
+
 from psycopg2.extras import RealDictCursor
 
 

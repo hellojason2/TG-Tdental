@@ -1,5 +1,7 @@
 """Authentication dependency helpers for FastAPI route protection."""
 
+from __future__ import annotations
+
 import logging
 from collections import defaultdict, deque
 from threading import Lock

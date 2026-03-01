@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TDental - Đăng nhập</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/login.css">
+  <link rel="stylesheet" href="/css/login.css">
 </head>
 <body class="login-body">
   <div class="login-split">
@@ -170,7 +170,7 @@
           var data = await res.json();
           if (data && data.user) {
             localStorage.setItem('user', JSON.stringify(data.user));
-            window.location.href = '/';
+            window.location.href = '/static/tdental.html';
             return true;
           }
         } catch (_err) {
@@ -244,7 +244,7 @@
               localStorage.setItem('user', JSON.stringify(data.user));
             }
 
-            window.location.href = '/';
+            window.location.href = '/static/tdental.html';
           } catch (err) {
             showError(err.message || 'Không thể kết nối đến máy chủ.');
           } finally {

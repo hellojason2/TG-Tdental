@@ -14,6 +14,7 @@ from app.core.config import settings
 from app.core.database import close_pool, init_pool
 
 from app.api.auth import bootstrap_auth_tables, router as auth_router
+from app.api.callcenter import router as callcenter_router
 from app.api.appointments import router as appointments_router
 from app.api.categories import router as categories_router
 from app.api.commission import router as commission_router
@@ -139,6 +140,7 @@ app.include_router(settings_router)
 app.include_router(notifications_router)
 app.include_router(public_site_router)
 app.include_router(exports_router)
+app.include_router(callcenter_router)
 
 
 # ---------------------------------------------------------------------------

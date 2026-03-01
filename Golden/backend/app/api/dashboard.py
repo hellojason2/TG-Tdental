@@ -458,3 +458,117 @@ async def reports_overview(
             }
     except RuntimeError:
         raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+# ---------------------------------------------------------------------------
+# POST /api/reports/dashboard/summary  (dedicated dashboard KPI card)
+# ---------------------------------------------------------------------------
+
+
+class DashboardSummaryRequest(BaseModel):
+    companyId: str | None = None
+    date: date | None = None
+
+
+@router.post("/dashboard/summary", tags=["dashboard"])
+async def dashboard_summary(body: DashboardSummaryRequest, _user: dict = Depends(require_auth)):
+    """Aggregate stats for the dashboard KPI cards: total customers,
+    appointments today, revenue today, and pending payments."""
+    target_date = body.date or date.today()
+    company_id = body.companyId.strip() if body.companyId else None
+
+    try:
+        with get_conn() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # --- total customers ---
+                total_customers = 0
+                partner_table = resolve_table(conn, "partners", "res_partners", "respartners")
+                if partner_table:
+                    p_cols = table_columns(conn, partner_table)
+                    p_active_col = pick_column(p_cols, "active", "is_active")
+                    p_customer_col = pick_column(p_cols, "customer", "is_customer", "iscustomer")
+                    p_company_col = pick_column(p_cols, "company_id", "companyid")
+                    cond: list[str] = []
+                    params: list = []
+                    if p_active_col:
+                        cond.append(f"COALESCE({quote_ident(p_active_col)}, TRUE) = TRUE")
+                    if p_customer_col:
+                        cond.append(f"COALESCE({quote_ident(p_customer_col)}, FALSE) = TRUE")
+                    if company_id and p_company_col:
+                        cond.append(f"{quote_ident(p_company_col)}::text = %s")
+                        params.append(company_id)
+                    where_sql = (" WHERE " + " AND ".join(cond)) if cond else ""
+                    cur.execute(
+                        f"SELECT COUNT(*)::bigint AS cnt FROM {partner_table.qualified_name}{where_sql}",
+                        tuple(params),
+                    )
+                    total_customers = int((cur.fetchone() or {}).get("cnt", 0))
+
+                # --- appointments today ---
+                appointments_today = 0
+                appointment_table = resolve_table(conn, "appointments", "appointment")
+                if appointment_table:
+                    a_cols = table_columns(conn, appointment_table)
+                    a_date_col = pick_column(a_cols, "date", "appointment_date", "date_start")
+                    a_company_col = pick_column(a_cols, "company_id", "companyid")
+                    if a_date_col:
+                        day_start, day_end = _date_window(target_date, target_date)
+                        cond = [
+                            f"{quote_ident(a_date_col)} >= %s",
+                            f"{quote_ident(a_date_col)} < %s",
+                        ]
+                        params = [day_start, day_end]
+                        if company_id and a_company_col:
+                            cond.append(f"{quote_ident(a_company_col)}::text = %s")
+                            params.append(company_id)
+                        where_sql = " WHERE " + " AND ".join(cond)
+                        cur.execute(
+                            f"SELECT COUNT(*)::bigint AS cnt FROM {appointment_table.qualified_name}{where_sql}",
+                            tuple(params),
+                        )
+                        appointments_today = int((cur.fetchone() or {}).get("cnt", 0))
+
+                # --- revenue today ---
+                revenue_today = 0.0
+                ctx = _resolve_payment_context(conn)
+                if ctx:
+                    day_start, day_end = _date_window(target_date, target_date)
+                    pay_where, pay_params = _build_payment_where(
+                        ctx, start_dt=day_start, end_dt=day_end, company_id=company_id,
+                    )
+                    amount_expr = f"COALESCE(p.{quote_ident(ctx['amount_col'])}, 0)"
+                    cur.execute(
+                        f"SELECT COALESCE(SUM({amount_expr}), 0) AS total "
+                        f"FROM {ctx['payment_table'].qualified_name} p"
+                        f"{ctx['join_sql']}{pay_where}",
+                        pay_params,
+                    )
+                    revenue_today = _to_float((cur.fetchone() or {}).get("total"))
+
+                # --- pending payments ---
+                pending_payments = 0
+                if ctx and ctx.get("state_col"):
+                    cond = [
+                        f"LOWER(COALESCE(p.{quote_ident(ctx['state_col'])}::text, '')) IN ('draft', 'pending', 'posted')"
+                    ]
+                    params = []
+                    if company_id and ctx.get("company_col"):
+                        cond.append(f"p.{quote_ident(ctx['company_col'])}::text = %s")
+                        params.append(company_id)
+                    where_sql = " WHERE " + " AND ".join(cond)
+                    cur.execute(
+                        f"SELECT COUNT(*)::bigint AS cnt FROM {ctx['payment_table'].qualified_name} p{where_sql}",
+                        tuple(params),
+                    )
+                    pending_payments = int((cur.fetchone() or {}).get("cnt", 0))
+
+            return {
+                "totalCustomers": total_customers,
+                "appointmentsToday": appointments_today,
+                "revenueToday": revenue_today,
+                "pendingPayments": pending_payments,
+                "date": target_date.isoformat(),
+                "companyId": company_id,
+            }
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")

@@ -4490,6 +4490,81 @@ ol {
 }
 
 /* ==========================================================================
+   Report Sub-Pages Styles
+   ========================================================================== */
+
+/* Action buttons (Print / Export) */
+.rpt-action-btns {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.rpt-action-btns .tds-btn svg {
+  vertical-align: -3px;
+  margin-right: 4px;
+}
+.rpt-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Stats row */
+.rpt-stats-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.rpt-stat-card {
+  flex: 1 1 160px;
+  background: #fff;
+  border: 1px solid var(--tds-border-color);
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+}
+.rpt-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.rpt-stat-label {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Sub-content container */
+.rpt-sub-content {
+  margin-top: 16px;
+}
+
+/* Charts section for sub-pages */
+.rpt-charts-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 860px) {
+  .rpt-charts-section {
+    grid-template-columns: 1fr;
+  }
+  .rpt-stats-row {
+    gap: 10px;
+  }
+  .rpt-stat-card {
+    flex: 1 1 100%;
+  }
+}
+
+/* ==========================================================================
    Phase 4: Partners (Customer List) Page
    ========================================================================== */
 .partners-page {
@@ -5136,6 +5211,296 @@ ol {
   font-size: 11px;
   color: var(--tds-text-muted);
   margin-top: 2px;
+}
+
+/* Sidebar Filter */
+.cdetail-sidebar-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: var(--tds-font-size-sm);
+  color: var(--tds-text-secondary);
+  cursor: pointer;
+  border-bottom: 1px solid var(--tds-border-color);
+}
+.cdetail-sidebar-filter:hover { color: var(--tds-color-primary); }
+
+/* Count Badge */
+.cdetail-count-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tds-text-secondary);
+  background: var(--tds-bg-secondary, #f3f4f6);
+  border-radius: 12px;
+}
+
+/* Loyalty inline */
+.cdetail-loyalty {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+.cdetail-loyalty-label {
+  font-size: 12px;
+  color: var(--tds-text-muted);
+}
+.cdetail-loyalty-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #F59E0B;
+}
+
+/* Metric cyan card */
+.cdetail-metric-cyan .cdetail-metric-icon { background: rgba(6, 182, 212, 0.1); color: #06B6D4; }
+.cdetail-metric-cyan .cdetail-metric-icon svg { stroke: #06B6D4; }
+
+/* Overview toolbar */
+.cdetail-overview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cdetail-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cdetail-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--tds-border-color);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  color: var(--tds-text-secondary);
+}
+.cdetail-toolbar-btn:hover { border-color: var(--tds-color-primary); color: var(--tds-color-primary); }
+.cdetail-toolbar-btn-active { background: var(--tds-color-primary-light); border-color: var(--tds-color-primary); color: var(--tds-color-primary); }
+.cdetail-toolbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--tds-border-color);
+  margin: 0 4px;
+}
+.cdetail-toolbar-link {
+  font-size: var(--tds-font-size-sm);
+  color: var(--tds-color-primary);
+  cursor: pointer;
+  font-weight: 500;
+}
+.cdetail-toolbar-link:hover { text-decoration: underline; }
+.cdetail-so-link {
+  font-size: 12px;
+  color: var(--tds-color-primary);
+  font-weight: 500;
+  cursor: pointer;
+}
+.cdetail-so-link:hover { text-decoration: underline; }
+
+/* Page title */
+.cdetail-page-title {
+  font-size: var(--tds-font-size-lg);
+  font-weight: 700;
+  color: var(--tds-text-primary);
+  margin: 0 0 12px 0;
+}
+
+/* SVG Dental Chart */
+.dental-chart-wrapper {
+  overflow-x: auto;
+  padding: 8px 0;
+  margin-bottom: 12px;
+}
+.dental-chart-svg {
+  width: 100%;
+  max-width: 820px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+.dental-chart-svg .dental-tooth path {
+  transition: all 0.15s ease;
+}
+.dental-chart-svg .dental-tooth:hover path {
+  filter: brightness(0.9);
+  stroke-width: 2.5;
+}
+.dental-chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 8px 0;
+  flex-wrap: wrap;
+}
+.dental-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--tds-font-size-sm);
+  color: var(--tds-text-secondary);
+}
+.dental-legend-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+/* Debt Summary */
+.cdetail-debt-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.cdetail-debt-item {
+  padding: 14px 16px;
+  border-radius: var(--tds-card-radius);
+  border: 1px solid var(--tds-border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cdetail-debt-label {
+  font-size: var(--tds-font-size-sm);
+  color: var(--tds-text-secondary);
+  font-weight: 500;
+}
+.cdetail-debt-value {
+  font-size: var(--tds-font-size-lg);
+  font-weight: 700;
+}
+.cdetail-debt-debit { background: rgba(239, 68, 68, 0.04); }
+.cdetail-debt-debit .cdetail-debt-value { color: #EF4444; }
+.cdetail-debt-credit { background: rgba(16, 185, 129, 0.04); }
+.cdetail-debt-credit .cdetail-debt-value { color: #10B981; }
+.cdetail-debt-balance { background: rgba(59, 130, 246, 0.04); }
+.cdetail-debt-balance .cdetail-debt-value { color: var(--tds-color-primary); }
+.text-danger { color: #EF4444 !important; }
+.text-success { color: #10B981 !important; }
+
+/* Images Grid */
+.cdetail-images-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+.cdetail-image-card {
+  border: 1px solid var(--tds-border-color);
+  border-radius: var(--tds-card-radius);
+  overflow: hidden;
+  transition: all var(--tds-transition);
+}
+.cdetail-image-card:hover { border-color: var(--tds-color-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.cdetail-image-thumb {
+  width: 100%;
+  height: 120px;
+  background: var(--tds-bg-secondary, #f3f4f6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.cdetail-image-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.cdetail-image-info { padding: 8px 10px; }
+.cdetail-image-name {
+  font-size: var(--tds-font-size-sm);
+  font-weight: 500;
+  color: var(--tds-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cdetail-image-date {
+  font-size: 11px;
+  color: var(--tds-text-muted);
+  margin-top: 2px;
+}
+.cdetail-images-empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--tds-text-muted);
+}
+.cdetail-images-empty-icon { margin-bottom: 12px; color: var(--tds-text-muted); }
+.cdetail-images-empty p { margin: 4px 0; }
+.cdetail-images-hint { font-size: var(--tds-font-size-sm); }
+
+/* Notes in sidebar */
+.cdetail-timeline-notes { padding: 12px; }
+.cdetail-notes-input {
+  width: 100%;
+  border: 1px solid var(--tds-border-color);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: var(--tds-font-size-sm);
+  resize: vertical;
+  margin-bottom: 8px;
+  font-family: inherit;
+}
+.cdetail-notes-input:focus {
+  outline: none;
+  border-color: var(--tds-color-primary);
+  box-shadow: 0 0 0 2px rgba(26, 109, 227, 0.1);
+}
+.cdetail-notes-save { width: 100%; }
+
+/* Image placeholder & caption (for images tab) */
+.cdetail-image-placeholder {
+  width: 100%;
+  height: 120px;
+  background: var(--tds-bg-secondary, #f3f4f6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cdetail-image-caption {
+  font-size: var(--tds-font-size-sm);
+  font-weight: 500;
+  color: var(--tds-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Notes area (for notes tab) */
+.cdetail-notes-area {
+  min-height: 120px;
+}
+.cdetail-note-content {
+  white-space: pre-wrap;
+  padding: 12px;
+  background: var(--tds-bg-secondary, #f8fafc);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--tds-text-primary, #1e293b);
+  line-height: 1.6;
+}
+
+/* Dental chart hover on tooth */
+.dental-tooth-g:hover rect {
+  filter: brightness(0.9);
+}
+
+/* Text danger/success utility */
+.text-danger { color: #EF4444; }
+.text-success { color: #10B981; }
+
+/* 6-column metrics */
+@media (min-width: 1025px) {
+  .cdetail-metrics {
+    grid-template-columns: repeat(6, 1fr);
+  }
 }
 
 /* Responsive */

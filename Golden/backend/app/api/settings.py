@@ -10,6 +10,14 @@ from pydantic import BaseModel, Field
 from psycopg2.extras import RealDictCursor
 
 from app.core.database import get_conn
+from app.core.lookup_sql import (
+    empty_page,
+    page_window,
+    pick_column,
+    quote_ident,
+    resolve_table,
+    table_columns,
+)
 from app.core.middleware import require_admin
 from app.core.pagination import paginate
 
@@ -330,3 +338,182 @@ async def upsert_settings(body: SettingsUpsertPayload, _user: dict = Depends(req
             }
     except RuntimeError:
         raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+# ---------------------------------------------------------------------------
+# GET /api/settings/logs  (activity / audit logs)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/settings/logs")
+async def list_activity_logs(
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=0, le=500),
+    offset: int | None = Query(default=None, ge=0),
+    limit: int | None = Query(default=None, ge=0, le=5000),
+    search: str = Query(default=""),
+    companyId: str | None = Query(default=None),
+    dateFrom: str | None = Query(default=None),
+    dateTo: str | None = Query(default=None),
+    _user: dict = Depends(require_admin),
+):
+    """Return activity/audit log entries."""
+    from datetime import date as date_type
+
+    effective_offset, effective_limit = page_window(
+        page=page,
+        per_page=per_page,
+        offset=offset,
+        limit=limit,
+        default_limit=20,
+    )
+
+    parsed_date_from: date_type | None = None
+    parsed_date_to: date_type | None = None
+    try:
+        if dateFrom:
+            parsed_date_from = date_type.fromisoformat(dateFrom)
+        if dateTo:
+            parsed_date_to = date_type.fromisoformat(dateTo)
+    except ValueError:
+        pass
+
+    try:
+        with get_conn() as conn:
+            log_table = resolve_table(
+                conn,
+                "activity_logs",
+                "activitylogs",
+                "audit_logs",
+                "auditlogs",
+                "app_logs",
+                "logs",
+                "log",
+            )
+            if not log_table:
+                return empty_page(effective_offset, effective_limit)
+
+            cols = table_columns(conn, log_table)
+            id_col = pick_column(cols, "id")
+            if not id_col:
+                return empty_page(effective_offset, effective_limit)
+
+            date_col = pick_column(cols, "date", "created_at", "created_date", "log_date", "timestamp")
+            action_col = pick_column(cols, "action", "activity", "event", "type")
+            description_col = pick_column(cols, "description", "message", "detail", "note")
+            user_id_col = pick_column(cols, "user_id", "userid", "created_by")
+            user_name_col = pick_column(cols, "user_name", "username", "created_by_name")
+            model_col = pick_column(cols, "model", "resource", "entity", "table_name")
+            record_id_col = pick_column(cols, "record_id", "recordid", "res_id")
+            company_id_col = pick_column(cols, "company_id", "companyid")
+
+            select_fields = [
+                f'l.{quote_ident(id_col)}::text AS id',
+                (f'l.{quote_ident(date_col)} AS date' if date_col else "NULL::timestamp AS date"),
+                (f'l.{quote_ident(action_col)} AS action' if action_col else "NULL::text AS action"),
+                (f'l.{quote_ident(description_col)} AS description'
+                 if description_col else "NULL::text AS description"),
+                (f'l.{quote_ident(user_id_col)}::text AS "userId"'
+                 if user_id_col else 'NULL::text AS "userId"'),
+                (f'l.{quote_ident(user_name_col)} AS "userName"'
+                 if user_name_col else 'NULL::text AS "userName"'),
+                (f'l.{quote_ident(model_col)} AS model' if model_col else "NULL::text AS model"),
+                (f'l.{quote_ident(record_id_col)}::text AS "recordId"'
+                 if record_id_col else 'NULL::text AS "recordId"'),
+                (f'l.{quote_ident(company_id_col)}::text AS "companyId"'
+                 if company_id_col else 'NULL::text AS "companyId"'),
+            ]
+
+            where_clauses: list[str] = []
+            params: list = []
+
+            if search.strip():
+                pattern = f"%{search.strip()}%"
+                search_parts: list[str] = []
+                if action_col:
+                    search_parts.append(f"l.{quote_ident(action_col)} ILIKE %s")
+                    params.append(pattern)
+                if description_col:
+                    search_parts.append(f"l.{quote_ident(description_col)} ILIKE %s")
+                    params.append(pattern)
+                if user_name_col:
+                    search_parts.append(f"l.{quote_ident(user_name_col)} ILIKE %s")
+                    params.append(pattern)
+                if search_parts:
+                    where_clauses.append("(" + " OR ".join(search_parts) + ")")
+
+            if companyId:
+                if not company_id_col:
+                    return empty_page(effective_offset, effective_limit)
+                where_clauses.append(f"l.{quote_ident(company_id_col)}::text = %s")
+                params.append(companyId)
+
+            if parsed_date_from and date_col:
+                where_clauses.append(f"l.{quote_ident(date_col)}::date >= %s")
+                params.append(parsed_date_from)
+            if parsed_date_to and date_col:
+                where_clauses.append(f"l.{quote_ident(date_col)}::date <= %s")
+                params.append(parsed_date_to)
+
+            base_query = f"SELECT {', '.join(select_fields)} FROM {log_table.qualified_name} l"
+            if where_clauses:
+                base_query += " WHERE " + " AND ".join(where_clauses)
+            if date_col:
+                base_query += (
+                    f" ORDER BY l.{quote_ident(date_col)} DESC NULLS LAST, "
+                    f"l.{quote_ident(id_col)} DESC"
+                )
+            else:
+                base_query += f" ORDER BY l.{quote_ident(id_col)} DESC"
+
+            return paginate(
+                query=base_query,
+                params=tuple(params),
+                conn=conn,
+                offset=effective_offset,
+                limit=effective_limit,
+            )
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+# ---------------------------------------------------------------------------
+# Teams CRUD (simple stub for settings-team page)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/teams")
+async def list_teams(_user: dict = Depends(require_admin)):
+    """Return teams list. Tries to find a teams table; returns empty if none."""
+    try:
+        with get_conn() as conn:
+            tbl = resolve_table(conn, "teams", "app_teams", "user_teams")
+            if not tbl:
+                return empty_page(0, 20)
+            cols = table_columns(conn, tbl)
+            id_col = pick_column(cols, "id")
+            if not id_col:
+                return empty_page(0, 20)
+            name_col = pick_column(cols, "name", "team_name", "title")
+            desc_col = pick_column(cols, "description", "note", "desc")
+            select_fields = [
+                f't.{quote_ident(id_col)}::text AS id',
+                (f't.{quote_ident(name_col)} AS name' if name_col else "'Unnamed' AS name"),
+                (f't.{quote_ident(desc_col)} AS description' if desc_col else "NULL::text AS description"),
+            ]
+            q = f"SELECT {', '.join(select_fields)} FROM {tbl.qualified_name} t ORDER BY t.{quote_ident(name_col or id_col)}"
+            return paginate(query=q, params=(), conn=conn, offset=0, limit=100)
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+@router.post("/teams")
+async def create_team(body: dict, _user: dict = Depends(require_admin)):
+    """Stub: create a team. Returns success for now."""
+    return {"ok": True, "message": "Team created"}
+
+
+@router.get("/teams/{team_id}/members")
+async def team_members(team_id: str, _user: dict = Depends(require_admin)):
+    """Return team members. Stub returns empty."""
+    return {"offset": 0, "limit": 20, "totalItems": 0, "items": []}

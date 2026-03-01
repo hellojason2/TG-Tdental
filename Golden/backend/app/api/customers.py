@@ -59,7 +59,7 @@ VIET_LOWER_TARGET = "aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuu
 # Lightweight schema cache
 # ---------------------------------------------------------------------------
 
-@dataclass(slots=True)
+@dataclass()
 class TableMeta:
     schema: str
     table: str
@@ -1051,6 +1051,228 @@ def get_customer_treatments(
             code="TREATMENT_QUERY_FAILED",
             detail=message,
         )
+
+
+# ---------------------------------------------------------------------------
+# Customer detail sub-resources
+# ---------------------------------------------------------------------------
+
+LABO_TABLE_CANDIDATES = ("labo_orders", "laboorders", "labo_order", "laboorder")
+QUOTATION_TABLE_CANDIDATES = ("quotations", "quotation", "sale_quotations", "salequotations")
+TEETH_TABLE_CANDIDATES = ("teeth_status", "toothchart", "tooth_chart", "dental_chart", "teeth")
+IMAGE_TABLE_CANDIDATES = ("partner_images", "partnerimages", "customer_images", "customerimages", "images")
+ADVANCE_TABLE_CANDIDATES = (
+    "customer_advances", "customeradvances", "advance_payments",
+    "advancepayments", "tam_ung_khach", "partner_advances",
+)
+DEBT_TABLE_CANDIDATES = (
+    "customer_debts", "customerdebts", "partner_debts", "partnerdebts",
+    "account_move_lines", "accountmovelines", "debt_ledger",
+)
+DOT_KHAM_TABLE_CANDIDATES = (
+    "dot_khams", "dotkham", "dotkhams", "exam_sessions", "exam_session",
+)
+
+
+def _customer_sub_resource(
+    customer_id: str,
+    table_candidates: tuple[str, ...],
+    page: int,
+    per_page: int,
+    offset: int | None,
+    limit: int | None,
+    error_code: str,
+    *,
+    partner_col_candidates: tuple[str, ...] = (
+        "partner_id", "partnerid", "customer_id", "customerid", "patient_id", "patientid",
+    ),
+):
+    """Generic paginated sub-resource loader for a customer."""
+    customer_uuid = _parse_uuid(customer_id)
+    if customer_uuid is None:
+        return _customer_error_invalid_uuid()
+
+    resolved_offset, resolved_limit = _resolve_paging(page, per_page, offset, limit)
+
+    try:
+        with get_conn() as conn:
+            snapshot = _load_schema_snapshot(conn)
+            meta = _resolve_table(snapshot, table_candidates)
+            if meta is None:
+                return {
+                    "offset": resolved_offset,
+                    "limit": resolved_limit,
+                    "totalItems": 0,
+                    "items": [],
+                }
+
+            id_col = _find_column(meta, "id")
+            partner_col = None
+            for cand in partner_col_candidates:
+                partner_col = _find_column(meta, cand)
+                if partner_col:
+                    break
+
+            if not id_col or not partner_col:
+                return {
+                    "offset": resolved_offset,
+                    "limit": resolved_limit,
+                    "totalItems": 0,
+                    "items": [],
+                }
+
+            date_col = _find_column(meta, "date", "created_at", "create_date") or id_col
+            active_col = _find_column(meta, "active", "is_active")
+
+            where = [f"t.{_q(partner_col)} = %s"]
+            params: list[Any] = [str(customer_uuid)]
+            if active_col:
+                where.append(f"COALESCE(t.{_q(active_col)}, TRUE) = TRUE")
+            where_sql = " WHERE " + " AND ".join(where)
+
+            count_sql = f"SELECT COUNT(*) AS total FROM {_qt(meta)} t{where_sql}"
+            list_sql = (
+                f"SELECT t.* FROM {_qt(meta)} t{where_sql} "
+                f"ORDER BY t.{_q(date_col)} DESC "
+                f"LIMIT %s OFFSET %s"
+            )
+
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(count_sql, tuple(params))
+                total = int(cur.fetchone()["total"])
+                if total == 0:
+                    return {
+                        "offset": resolved_offset,
+                        "limit": resolved_limit,
+                        "totalItems": 0,
+                        "items": [],
+                    }
+                cur.execute(list_sql, (*params, resolved_limit, resolved_offset))
+                rows = [dict(r) for r in cur.fetchall()]
+
+            return {
+                "offset": resolved_offset,
+                "limit": resolved_limit,
+                "totalItems": total,
+                "items": rows,
+            }
+    except RuntimeError:
+        return _error(status_code=503, code="DATABASE_UNAVAILABLE", detail="Database is unavailable.")
+    except psycopg2.Error as exc:
+        msg = str(getattr(exc, "pgerror", None) or str(exc)).strip().splitlines()[0]
+        return _error(status_code=500, code=error_code, detail=msg)
+
+
+@router.get("/{customer_id}/teeth-status")
+def get_customer_teeth_status(
+    customer_id: str,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=50, ge=1, le=200),
+    offset: int | None = Query(default=None, ge=0),
+    limit: int | None = Query(default=None, ge=1, le=200),
+    _user: dict = Depends(require_auth),
+):
+    """Return dental chart data for a customer."""
+    return _customer_sub_resource(
+        customer_id, TEETH_TABLE_CANDIDATES, page, per_page, offset, limit,
+        "TEETH_QUERY_FAILED",
+    )
+
+
+@router.get("/{customer_id}/quotations")
+def get_customer_quotations(
+    customer_id: str,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=1, le=200),
+    offset: int | None = Query(default=None, ge=0),
+    limit: int | None = Query(default=None, ge=1, le=200),
+    _user: dict = Depends(require_auth),
+):
+    """Return customer quotations."""
+    return _customer_sub_resource(
+        customer_id, QUOTATION_TABLE_CANDIDATES, page, per_page, offset, limit,
+        "QUOTATION_QUERY_FAILED",
+    )
+
+
+@router.get("/{customer_id}/exam-sessions")
+def get_customer_exam_sessions(
+    customer_id: str,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=1, le=200),
+    offset: int | None = Query(default=None, ge=0),
+    limit: int | None = Query(default=None, ge=1, le=200),
+    _user: dict = Depends(require_auth),
+):
+    """Return examination sessions (dot khams) for a customer."""
+    return _customer_sub_resource(
+        customer_id, DOT_KHAM_TABLE_CANDIDATES, page, per_page, offset, limit,
+        "EXAM_SESSION_QUERY_FAILED",
+    )
+
+
+@router.get("/{customer_id}/labo-orders")
+def get_customer_labo_orders(
+    customer_id: str,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=1, le=200),
+    offset: int | None = Query(default=None, ge=0),
+    limit: int | None = Query(default=None, ge=1, le=200),
+    _user: dict = Depends(require_auth),
+):
+    """Return customer labo orders."""
+    return _customer_sub_resource(
+        customer_id, LABO_TABLE_CANDIDATES, page, per_page, offset, limit,
+        "LABO_QUERY_FAILED",
+    )
+
+
+@router.get("/{customer_id}/images")
+def get_customer_images(
+    customer_id: str,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=50, ge=1, le=200),
+    offset: int | None = Query(default=None, ge=0),
+    limit: int | None = Query(default=None, ge=1, le=200),
+    _user: dict = Depends(require_auth),
+):
+    """Return patient images for a customer."""
+    return _customer_sub_resource(
+        customer_id, IMAGE_TABLE_CANDIDATES, page, per_page, offset, limit,
+        "IMAGE_QUERY_FAILED",
+    )
+
+
+@router.get("/{customer_id}/advances")
+def get_customer_advances(
+    customer_id: str,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=1, le=200),
+    offset: int | None = Query(default=None, ge=0),
+    limit: int | None = Query(default=None, ge=1, le=200),
+    _user: dict = Depends(require_auth),
+):
+    """Return advance payments for a customer."""
+    return _customer_sub_resource(
+        customer_id, ADVANCE_TABLE_CANDIDATES, page, per_page, offset, limit,
+        "ADVANCE_QUERY_FAILED",
+    )
+
+
+@router.get("/{customer_id}/debt")
+def get_customer_debt(
+    customer_id: str,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=1, le=200),
+    offset: int | None = Query(default=None, ge=0),
+    limit: int | None = Query(default=None, ge=1, le=200),
+    _user: dict = Depends(require_auth),
+):
+    """Return debt ledger for a customer."""
+    return _customer_sub_resource(
+        customer_id, DEBT_TABLE_CANDIDATES, page, per_page, offset, limit,
+        "DEBT_QUERY_FAILED",
+    )
 
 
 @router.post("", status_code=201)
