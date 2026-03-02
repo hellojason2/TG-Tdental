@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import psycopg2
 from fastapi import APIRouter, Depends, HTTPException, Query
 from psycopg2.extras import RealDictCursor
 
@@ -196,9 +197,21 @@ async def mark_notification_read(
                 return {"success": False, "message": "No way to mark as read"}
 
             with conn.cursor() as cur:
-                cur.execute(update_sql, (notification_id,))
-                conn.commit()
+                try:
+                    cur.execute(update_sql, (notification_id,))
+                except psycopg2.Error:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Invalid notification ID",
+                    )
+                if cur.rowcount == 0:
+                    raise HTTPException(
+                        status_code=404,
+                        detail="Notification not found",
+                    )
 
             return {"success": True, "message": "Notification marked as read"}
+    except HTTPException:
+        raise
     except RuntimeError:
         raise HTTPException(status_code=503, detail="Database is unavailable")

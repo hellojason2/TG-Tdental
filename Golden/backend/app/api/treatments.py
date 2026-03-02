@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import json
+import uuid
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
+from pydantic import BaseModel, Field
 from psycopg2.extras import RealDictCursor
 
 from app.core.database import get_conn
@@ -20,6 +23,39 @@ from app.core.middleware import require_auth
 from app.core.pagination import paginate
 
 router = APIRouter(prefix="/api", tags=["sale-orders"])
+
+
+class SaleOrderLineCreate(BaseModel):
+    productId: str | None = None
+    productName: str | None = None
+    qty: float = 1
+    unitPrice: float = 0
+    state: str | None = "draft"
+    teeth: list[str] | None = None
+
+
+class SaleOrderCreate(BaseModel):
+    name: str | None = None
+    partnerId: str | None = None
+    partnerName: str | None = None
+    doctorId: str | None = None
+    doctorName: str | None = None
+    companyId: str | None = None
+    state: str = "draft"
+    notes: str | None = None
+    lines: list[SaleOrderLineCreate] | None = None
+
+
+class SaleOrderUpdatePayload(BaseModel):
+    name: str | None = None
+    state: str | None = None
+    partnerId: str | None = None
+    partnerName: str | None = None
+    doctorId: str | None = None
+    doctorName: str | None = None
+    companyId: str | None = None
+    notes: str | None = None
+    lines: str | None = None
 
 _STATE_BUCKETS = ("draft", "sale", "done", "cancel")
 
@@ -649,21 +685,10 @@ def _resolve_sale_order_meta(conn) -> dict | None:
 
 @router.post("/sale-orders")
 async def create_sale_order(
-    name: str | None = None,
-    partnerId: str | None = None,
-    partnerName: str | None = None,
-    doctorId: str | None = None,
-    doctorName: str | None = None,
-    companyId: str | None = None,
-    state: str = "draft",
-    notes: str | None = None,
-    lines: str | None = None,
+    body: SaleOrderCreate,
     _user: dict = Depends(require_auth),
 ):
     """Create a new sale order/treatment."""
-    import uuid
-    from psycopg2.extras import RealDictCursor
-
     try:
         with get_conn() as conn:
             order_meta = _resolve_sale_order_meta(conn)
@@ -686,42 +711,42 @@ async def create_sale_order(
             # Build insert query
             insert_fields = [id_col]
             insert_values = ["%s"]
-            params = [new_id]
+            params: list = [new_id]
 
-            if name_col and name:
+            if name_col and body.name:
                 insert_fields.append(name_col)
                 insert_values.append("%s")
-                params.append(name)
+                params.append(body.name)
 
-            if partner_id_col and partnerId:
+            if partner_id_col and body.partnerId:
                 insert_fields.append(partner_id_col)
                 insert_values.append("%s")
-                params.append(partnerId)
+                params.append(body.partnerId)
 
-            if partner_name_col and partnerName:
+            if partner_name_col and body.partnerName:
                 insert_fields.append(partner_name_col)
                 insert_values.append("%s")
-                params.append(partnerName)
+                params.append(body.partnerName)
 
-            if doctor_id_col and doctorId:
+            if doctor_id_col and body.doctorId:
                 insert_fields.append(doctor_id_col)
                 insert_values.append("%s")
-                params.append(doctorId)
+                params.append(body.doctorId)
 
-            if doctor_name_col and doctorName:
+            if doctor_name_col and body.doctorName:
                 insert_fields.append(doctor_name_col)
                 insert_values.append("%s")
-                params.append(doctorName)
+                params.append(body.doctorName)
 
-            if company_id_col and companyId:
+            if company_id_col and body.companyId:
                 insert_fields.append(company_id_col)
                 insert_values.append("%s")
-                params.append(companyId)
+                params.append(body.companyId)
 
             if state_col:
                 insert_fields.append(state_col)
                 insert_values.append("%s")
-                params.append(state)
+                params.append(body.state)
 
             # Add created_at if exists
             created_at_col = pick_column(table_columns(conn, table), "created_at", "create_date", "date_created")
@@ -733,15 +758,142 @@ async def create_sale_order(
 
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(insert_query, tuple(params))
-                result = cur.fetchone()
+                cur.fetchone()
 
-            # Parse and insert lines if provided
-            if lines:
-                import json
+                # Insert lines if provided
+                if body.lines:
+                    lines_table = resolve_table(
+                        conn,
+                        "sale_order_lines",
+                        "saleorderlines",
+                        "sale_order_line",
+                    )
+                    if lines_table:
+                        line_cols = table_columns(conn, lines_table)
+                        line_id_col = pick_column(line_cols, "id")
+                        line_so_col = pick_column(line_cols, "sale_order_id", "saleorder_id", "order_id", "so_id")
+                        line_product_col = pick_column(line_cols, "product_id", "productid", "product_id")
+                        line_product_name_col = pick_column(line_cols, "product_name", "productname", "product_name")
+                        line_qty_col = pick_column(line_cols, "qty", "quantity", "product_uom_qty")
+                        line_price_col = pick_column(line_cols, "price_unit", "unit_price", "price")
+                        line_state_col = pick_column(line_cols, "state", "status")
+                        line_teeth_col = pick_column(line_cols, "teeth", "tooth_number", "teeth")
+
+                        if line_id_col and line_so_col:
+                            for line in body.lines:
+                                line_fields = [line_id_col, line_so_col]
+                                line_params: list = [f"sol-{uuid.uuid4().hex[:8]}", new_id]
+
+                                if line_product_col and line.productId:
+                                    line_fields.append(line_product_col)
+                                    line_params.append(line.productId)
+                                if line_product_name_col and line.productName:
+                                    line_fields.append(line_product_name_col)
+                                    line_params.append(line.productName)
+
+                                if line_qty_col:
+                                    line_fields.append(line_qty_col)
+                                    line_params.append(line.qty)
+
+                                if line_price_col:
+                                    line_fields.append(line_price_col)
+                                    line_params.append(line.unitPrice)
+
+                                if line_state_col:
+                                    line_fields.append(line_state_col)
+                                    line_params.append(line.state or "draft")
+
+                                if line_teeth_col and line.teeth:
+                                    line_fields.append(line_teeth_col)
+                                    line_params.append(",".join(line.teeth))
+
+                                line_query = f'INSERT INTO {lines_table.qualified_name} ({", ".join(line_fields)}) VALUES ({", ".join(["%s"] * len(line_params))})'
+                                cur.execute(line_query, tuple(line_params))
+
+            return {"id": new_id, "name": body.name, "state": body.state}
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+@router.put("/sale-orders/{order_id}")
+async def update_sale_order(
+    order_id: str = Path(..., min_length=1),
+    body: SaleOrderUpdatePayload = Body(...),
+    _user: dict = Depends(require_auth),
+):
+    """Update an existing sale order/treatment."""
+    try:
+        with get_conn() as conn:
+            order_meta = _resolve_sale_order_meta(conn)
+            if not order_meta:
+                raise HTTPException(status_code=400, detail="Sale order table not found")
+
+            table = order_meta["table"]
+            id_col = order_meta["id_col"]
+            cols = table_columns(conn, table)
+
+            updates: list[str] = []
+            params: list = []
+
+            if body.name is not None and order_meta["name_col"]:
+                updates.append(f"{quote_ident(order_meta['name_col'])} = %s")
+                params.append(body.name)
+
+            if body.state is not None and order_meta["state_col"]:
+                updates.append(f"{quote_ident(order_meta['state_col'])} = %s")
+                params.append(body.state)
+
+            if body.partnerId is not None and order_meta["partner_id_col"]:
+                updates.append(f"{quote_ident(order_meta['partner_id_col'])} = %s")
+                params.append(body.partnerId)
+
+            if body.partnerName is not None and order_meta["partner_name_col"]:
+                updates.append(f"{quote_ident(order_meta['partner_name_col'])} = %s")
+                params.append(body.partnerName)
+
+            if body.doctorId is not None and order_meta["doctor_id_col"]:
+                updates.append(f"{quote_ident(order_meta['doctor_id_col'])} = %s")
+                params.append(body.doctorId)
+
+            if body.doctorName is not None and order_meta["doctor_name_col"]:
+                updates.append(f"{quote_ident(order_meta['doctor_name_col'])} = %s")
+                params.append(body.doctorName)
+
+            if body.companyId is not None and order_meta["company_id_col"]:
+                updates.append(f"{quote_ident(order_meta['company_id_col'])} = %s")
+                params.append(body.companyId)
+
+            if body.notes is not None:
+                note_col = pick_column(cols, "note", "notes", "description", "memo")
+                if note_col:
+                    updates.append(f"{quote_ident(note_col)} = %s")
+                    params.append(body.notes)
+
+            # Update timestamp if available
+            updated_col = pick_column(cols, "write_date", "updated_at", "last_updated")
+            if updated_col:
+                updates.append(f"{quote_ident(updated_col)} = NOW()")
+
+            if not updates:
+                raise HTTPException(status_code=422, detail="No fields to update")
+
+            params.append(order_id)
+            sql = (
+                f"UPDATE {table.qualified_name} "
+                f"SET {', '.join(updates)} "
+                f"WHERE {quote_ident(id_col)}::text = %s"
+            )
+
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(sql, tuple(params))
+                if cur.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="Sale order not found")
+
+            # Handle lines replacement if provided
+            if body.lines is not None:
                 try:
-                    lines_data = json.loads(lines) if isinstance(lines, str) else lines
-                    if lines_data and len(lines_data) > 0:
-                        # Resolve lines table
+                    lines_data = json.loads(body.lines) if isinstance(body.lines, str) else body.lines
+                    if isinstance(lines_data, list):
                         lines_table = resolve_table(
                             conn,
                             "sale_order_lines",
@@ -751,47 +903,105 @@ async def create_sale_order(
                         if lines_table:
                             line_cols = table_columns(conn, lines_table)
                             line_id_col = pick_column(line_cols, "id")
-                            line_so_col = pick_column(line_cols, "sale_order_id", "saleorder_id", "order_id", "so_id")
-                            line_product_col = pick_column(line_cols, "product_id", "productid", "product_id")
-                            line_product_name_col = pick_column(line_cols, "product_name", "productname", "product_name")
-                            line_qty_col = pick_column(line_cols, "qty", "quantity", "product_uom_qty")
-                            line_price_col = pick_column(line_cols, "price_unit", "unit_price", "price")
-                            line_state_col = pick_column(line_cols, "state", "status")
-                            line_teeth_col = pick_column(line_cols, "teeth", "tooth_number", "teeth")
-
+                            line_so_col = pick_column(
+                                line_cols, "sale_order_id", "saleorder_id", "order_id", "so_id"
+                            )
                             if line_id_col and line_so_col:
-                                for line in lines_data:
-                                    line_fields = [line_id_col, line_so_col]
-                                    line_params = [f"sol-{uuid.uuid4().hex[:8]}", new_id]
+                                with conn.cursor() as cur:
+                                    # Delete existing lines
+                                    cur.execute(
+                                        f"DELETE FROM {lines_table.qualified_name} "
+                                        f"WHERE {quote_ident(line_so_col)}::text = %s",
+                                        (order_id,),
+                                    )
+                                    # Insert new lines
+                                    line_product_col = pick_column(line_cols, "product_id", "productid")
+                                    line_product_name_col = pick_column(line_cols, "product_name", "productname")
+                                    line_qty_col = pick_column(line_cols, "qty", "quantity", "product_uom_qty")
+                                    line_price_col = pick_column(line_cols, "price_unit", "unit_price", "price")
+                                    line_state_col = pick_column(line_cols, "state", "status")
 
-                                    if line_product_col and line.get("productId"):
-                                        line_fields.append(line_product_col)
-                                        line_params.append(line["productId"])
-                                        line_fields.append(line_product_col.replace("_id", "_name"))
-                                        line_params.append(line.get("productName", ""))
+                                    for line in lines_data:
+                                        line_fields = [line_id_col, line_so_col]
+                                        line_params: list = [f"sol-{uuid.uuid4().hex[:8]}", order_id]
 
-                                    if line_qty_col:
-                                        line_fields.append(line_qty_col)
-                                        line_params.append(line.get("qty", 1))
+                                        if line_product_col and line.get("productId"):
+                                            line_fields.append(line_product_col)
+                                            line_params.append(line["productId"])
+                                        if line_product_name_col and line.get("productName"):
+                                            line_fields.append(line_product_name_col)
+                                            line_params.append(line["productName"])
+                                        if line_qty_col:
+                                            line_fields.append(line_qty_col)
+                                            line_params.append(line.get("qty", 1))
+                                        if line_price_col:
+                                            line_fields.append(line_price_col)
+                                            line_params.append(line.get("unitPrice", 0))
+                                        if line_state_col:
+                                            line_fields.append(line_state_col)
+                                            line_params.append(line.get("state", "draft"))
 
-                                    if line_price_col:
-                                        line_fields.append(line_price_col)
-                                        line_params.append(line.get("unitPrice", 0))
+                                        cur.execute(
+                                            f"INSERT INTO {lines_table.qualified_name} "
+                                            f"({', '.join(quote_ident(c) for c in line_fields)}) "
+                                            f"VALUES ({', '.join(['%s'] * len(line_params))})",
+                                            tuple(line_params),
+                                        )
+                except (json.JSONDecodeError, TypeError):
+                    pass  # Skip lines if invalid
 
-                                    if line_state_col:
-                                        line_fields.append(line_state_col)
-                                        line_params.append(line.get("state", "draft"))
+            return {"id": order_id, "updated": True}
+    except HTTPException:
+        raise
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
 
-                                    if line_teeth_col and line.get("teeth"):
-                                        line_fields.append(line_teeth_col)
-                                        line_params.append(",".join(line["teeth"]) if isinstance(line["teeth"], list) else str(line["teeth"]))
 
-                                    line_query = f'INSERT INTO {lines_table.qualified_name} ({", ".join(line_fields)}) VALUES ({", ".join(["%s"] * len(line_params))})'
-                                    cur.execute(line_query, tuple(line_params))
-                except json.JSONDecodeError:
-                    pass  # Skip lines if invalid JSON
+@router.delete("/sale-orders/{order_id}")
+async def delete_sale_order(
+    order_id: str = Path(..., min_length=1),
+    _user: dict = Depends(require_auth),
+):
+    """Soft-delete a sale order by setting state to 'cancel'."""
+    try:
+        with get_conn() as conn:
+            order_meta = _resolve_sale_order_meta(conn)
+            if not order_meta:
+                raise HTTPException(status_code=400, detail="Sale order table not found")
 
-            conn.commit()
-            return {"id": new_id, "name": name, "state": state}
+            table = order_meta["table"]
+            id_col = order_meta["id_col"]
+            state_col = order_meta["state_col"]
+            cols = table_columns(conn, table)
+
+            with conn.cursor() as cur:
+                if state_col:
+                    # Soft-delete: set state to 'cancel'
+                    set_clauses = [f"{quote_ident(state_col)} = %s"]
+                    params: list = ["cancel"]
+                    updated_col = pick_column(cols, "write_date", "updated_at", "last_updated")
+                    if updated_col:
+                        set_clauses.append(f"{quote_ident(updated_col)} = NOW()")
+                    params.append(order_id)
+                    sql = (
+                        f"UPDATE {table.qualified_name} "
+                        f"SET {', '.join(set_clauses)} "
+                        f"WHERE {quote_ident(id_col)}::text = %s"
+                    )
+                    cur.execute(sql, tuple(params))
+                else:
+                    # Hard delete if no state column
+                    sql = (
+                        f"DELETE FROM {table.qualified_name} "
+                        f"WHERE {quote_ident(id_col)}::text = %s"
+                    )
+                    cur.execute(sql, (order_id,))
+
+                if cur.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="Sale order not found")
+
+            return {"id": order_id, "deleted": True}
+    except HTTPException:
+        raise
     except RuntimeError:
         raise HTTPException(status_code=503, detail="Database is unavailable")

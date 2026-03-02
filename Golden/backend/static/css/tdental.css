@@ -1818,7 +1818,7 @@ ol {
 .tds-select:focus,
 .tds-textarea:focus {
   border-color: var(--tds-input-focus);
-  box-shadow: 0 0 0 3px rgba(26, 109, 227, 0.1);
+  box-shadow: 0 0 0 3px rgba(26, 109, 227, 0.3);
 }
 
 .tds-input::placeholder {
@@ -1852,7 +1852,7 @@ ol {
 }
 
 .tds-input-error:focus {
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
 }
 
 .tds-form-error {
@@ -8726,3 +8726,587 @@ ol {
 .tooth-history-amount { font-size: 13px; font-weight: 600; color: #1e6de3; min-width: 80px; text-align: right; }
 .tooth-history-empty { padding: 24px; text-align: center; color: #64748b; }
 .tooth-history-actions { padding: 16px; border-top: 1px solid #e2e8f0; text-align: center; }
+
+/* =====================================================================
+   WAVE 2: Comprehensive Hover Effects, Animations & Visual Polish
+   ===================================================================== */
+
+/* --- 1. Table Row Hover Enhancement --- */
+/* Cursor pointer for all data table rows (clickable) */
+.tds-table tbody tr {
+  cursor: pointer;
+}
+/* Override: non-clickable tables can opt out with .tds-table--no-click */
+.tds-table--no-click tbody tr {
+  cursor: default;
+}
+
+/* --- 2. Dashboard Card & Panel Hover Lift --- */
+/* Extend lift to .tds-card and .db-panel on hover */
+.tds-card {
+  transition: transform var(--dur-normal, 0.25s) var(--ease-standard, cubic-bezier(0.4, 0, 0.2, 1)),
+              box-shadow var(--dur-normal, 0.25s) var(--ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
+}
+.tds-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.db-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* --- 3. Modal Open/Close Animation Keyframes --- */
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+/* Apply to modal overlay becoming visible */
+#modal-overlay.visible {
+  animation: modalFadeIn 0.2s ease forwards;
+}
+#modal-overlay.visible #modal-container {
+  animation: modalSlideUp 0.25s var(--ease-out-back, cubic-bezier(0.34, 1.56, 0.64, 1)) forwards;
+}
+
+/* --- 4. Drawer Slide Enhancement --- */
+/* Ensure smooth closing as well */
+#drawer-overlay:not(.visible) #drawer-container {
+  transform: translateX(100%);
+}
+#drawer-overlay:not(.visible) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* --- 5. Dropdown Scale+Fade Enhancement --- */
+/* Add transform-origin variants for dropdowns that open from right */
+.tds-dropdown.origin-right,
+.branch-dropdown.origin-right {
+  transform-origin: top right;
+}
+
+/* --- 6. Button Active State Enhancement --- */
+/* Ensure disabled buttons don't animate */
+.tds-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+.tds-btn:disabled:active {
+  transform: none;
+}
+/* Primary darken on hover (reinforce) */
+.tds-btn-primary:hover:not(:disabled) {
+  background: var(--tds-color-primary-hover);
+  box-shadow: 0 2px 8px rgba(26, 109, 227, 0.3);
+}
+/* Secondary/ghost light bg on hover */
+.tds-btn-secondary:hover:not(:disabled) {
+  background: var(--tds-table-row-hover);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+.tds-btn-ghost:hover:not(:disabled) {
+  background: var(--tds-content-bg);
+  color: var(--tds-text-primary);
+  box-shadow: none;
+}
+/* Danger darken */
+.tds-btn-danger:hover:not(:disabled) {
+  background: #DC2626;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+/* Active press-down for all */
+.tds-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+  box-shadow: none;
+  transition-duration: 0.05s;
+}
+
+/* --- 7. Sidebar Item Hover Enhancement --- */
+/* Smooth submenu icon rotation */
+.sidebar-nav-item.has-submenu > a .submenu-arrow {
+  transition: transform var(--dur-normal, 0.25s) ease;
+}
+.sidebar-nav-item.has-submenu.submenu-expanded > a .submenu-arrow,
+.sidebar-nav-item.has-submenu.submenu-open > a .submenu-arrow {
+  transform: rotate(180deg);
+}
+/* Active item text color transition */
+.sidebar-nav-item > a {
+  position: relative;
+}
+/* Submenu item hover */
+.sidebar-submenu a {
+  transition: color var(--dur-fast, 0.15s) ease, background-color var(--dur-fast, 0.15s) ease, padding-left var(--dur-fast, 0.15s) ease;
+}
+.sidebar-submenu a:hover {
+  padding-left: 4px;
+  color: #fff;
+}
+
+/* --- 8. Toast Enhancement --- */
+/* Toast entrance with slight bounce */
+.tds-toast.visible {
+  transform: translateX(0);
+  animation: tds-toastBounceIn 0.4s var(--ease-out-back, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+@keyframes tds-toastBounceIn {
+  0% { transform: translateX(120%); opacity: 0; }
+  60% { transform: translateX(-4px); opacity: 1; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+/* --- 9. Skeleton Enhancements --- */
+/* Additional skeleton shapes */
+.tds-skeleton-card {
+  height: 120px;
+  border-radius: var(--tds-card-radius, 6px);
+}
+.tds-skeleton-btn {
+  height: 34px;
+  width: 80px;
+  border-radius: var(--tds-btn-radius, 6px);
+}
+.tds-skeleton-circle {
+  border-radius: 50%;
+}
+.tds-skeleton-badge {
+  height: 22px;
+  width: 60px;
+  border-radius: 999px;
+}
+
+/* --- 10. Tab Indicator & Tab Button Transitions --- */
+/* Generic tab button transitions for all tab patterns */
+.customer-tab-btn,
+.report-tab-btn,
+.category-tab-btn,
+.settings-tab-btn {
+  transition: all 0.2s ease;
+}
+.customer-tab-btn:hover,
+.report-tab-btn:hover,
+.category-tab-btn:hover,
+.settings-tab-btn:hover {
+  border-color: var(--tds-color-primary);
+  color: var(--tds-color-primary);
+}
+/* Active tab scale bump */
+.customer-tab-btn.active,
+.report-tab-btn.active,
+.category-tab-btn.active,
+.settings-tab-btn.active {
+  transform: scale(1.02);
+}
+
+/* Partners tabs underline transition */
+.partners-tab-active,
+.commission-tab-active,
+.cdetail-tab-active {
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+/* --- 11. Card Entrance Animation (generic) --- */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* Utility class for animated-in cards/sections */
+.tds-animate-in {
+  animation: fadeInUp 0.35s ease forwards;
+}
+/* Staggered entrance helpers */
+.tds-animate-in:nth-child(1) { animation-delay: 0.02s; }
+.tds-animate-in:nth-child(2) { animation-delay: 0.06s; }
+.tds-animate-in:nth-child(3) { animation-delay: 0.10s; }
+.tds-animate-in:nth-child(4) { animation-delay: 0.14s; }
+.tds-animate-in:nth-child(5) { animation-delay: 0.18s; }
+.tds-animate-in:nth-child(6) { animation-delay: 0.22s; }
+.tds-animate-in:nth-child(7) { animation-delay: 0.26s; }
+.tds-animate-in:nth-child(8) { animation-delay: 0.30s; }
+
+/* Dashboard panels staggered entrance */
+.db-panel {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.4s ease forwards;
+}
+.db-panel:nth-child(1) { animation-delay: 0.05s; }
+.db-panel:nth-child(2) { animation-delay: 0.10s; }
+.db-panel:nth-child(3) { animation-delay: 0.15s; }
+.db-panel:nth-child(4) { animation-delay: 0.20s; }
+.db-panel:nth-child(5) { animation-delay: 0.25s; }
+.db-panel:nth-child(6) { animation-delay: 0.30s; }
+
+/* --- 12. Tooltip Fade Enhancement --- */
+/* Tooltip bottom variant */
+[data-tooltip-bottom] {
+  position: relative;
+}
+[data-tooltip-bottom]::after {
+  content: attr(data-tooltip-bottom);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #1f2937;
+  color: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 800;
+  transition: opacity var(--dur-normal, 0.25s) ease, transform var(--dur-normal, 0.25s) ease;
+}
+[data-tooltip-bottom]::before {
+  content: '';
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  border: 5px solid transparent;
+  border-bottom-color: #1f2937;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 800;
+  transition: opacity var(--dur-normal, 0.25s) ease, transform var(--dur-normal, 0.25s) ease;
+}
+[data-tooltip-bottom]:hover::before,
+[data-tooltip-bottom]:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Icon button tooltip enhancement - delay before showing */
+.tds-btn-icon[data-tooltip]::after,
+.tds-btn-icon[data-tooltip]::before {
+  transition-delay: 0.3s;
+}
+
+/* --- 13. Focus-Visible Styles (Keyboard Accessibility) --- */
+/* Better focus ring for keyboard navigation */
+.tds-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--tds-color-primary);
+}
+.tds-input:focus-visible,
+.tds-select:focus-visible,
+.tds-textarea:focus-visible {
+  border-color: var(--tds-input-focus);
+  box-shadow: 0 0 0 3px rgba(26, 109, 227, 0.3);
+}
+/* Sidebar focus-visible */
+.sidebar-nav-item > a:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5);
+  border-radius: 4px;
+}
+/* Tab button focus-visible */
+.customer-tab-btn:focus-visible,
+.report-tab-btn:focus-visible,
+.category-tab-btn:focus-visible,
+.settings-tab-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(26, 109, 227, 0.3);
+}
+
+/* --- 14. Miscellaneous Polish --- */
+
+/* Smooth page content transitions */
+.page-content {
+  animation: fadeInUp 0.3s ease;
+}
+
+/* Status badge subtle pulse on new items */
+@keyframes tds-subtlePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.tds-badge-pulse {
+  animation: tds-subtlePulse 2s ease infinite;
+}
+
+/* Smooth scrollbar styling */
+.tds-table-wrapper::-webkit-scrollbar,
+.page-content::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.tds-table-wrapper::-webkit-scrollbar-track,
+.page-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.tds-table-wrapper::-webkit-scrollbar-thumb,
+.page-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+.tds-table-wrapper::-webkit-scrollbar-thumb:hover,
+.page-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Image hover zoom for thumbnails */
+.tds-thumbnail {
+  overflow: hidden;
+  border-radius: var(--tds-card-radius, 6px);
+}
+.tds-thumbnail img {
+  transition: transform 0.3s ease;
+}
+.tds-thumbnail:hover img {
+  transform: scale(1.05);
+}
+
+/* Link hover effect */
+a.tds-link {
+  position: relative;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+a.tds-link::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.2s ease;
+}
+a.tds-link:hover::after {
+  width: 100%;
+}
+
+/* Checkbox/radio transition */
+.tds-checkbox-label input[type="checkbox"],
+.tds-radio-label input[type="radio"] {
+  transition: box-shadow 0.15s ease;
+}
+.tds-checkbox-label input[type="checkbox"]:focus-visible,
+.tds-radio-label input[type="radio"]:focus-visible {
+  box-shadow: 0 0 0 3px rgba(26, 109, 227, 0.3);
+}
+
+/* Drawer backdrop click feedback */
+#drawer-overlay.visible::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+}
+
+/* Confirm dialog button hover states */
+.tds-confirm-actions .tds-btn-danger:hover {
+  background: #b91c1c;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+.tds-confirm-actions .tds-btn-secondary:hover {
+  background: #f1f5f9;
+}
+
+/* Calendar event card hover */
+.calendar-event,
+.cal-event {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.calendar-event:hover,
+.cal-event:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Search input clear button fade */
+.search-clear-btn {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.tds-input:not(:placeholder-shown) + .search-clear-btn,
+.search-clear-btn.visible {
+  opacity: 1;
+}
+
+/* Notification dot pulse */
+@keyframes tds-notifPulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+.tds-notif-dot {
+  animation: tds-notifPulse 2s ease infinite;
+}
+
+/* Spinner animation */
+@keyframes tds-spin {
+  to { transform: rotate(360deg); }
+}
+.tds-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-top-color: var(--tds-color-primary);
+  border-radius: 50%;
+  animation: tds-spin 0.6s linear infinite;
+}
+.tds-spinner-light {
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+}
+
+/* Page transition fade */
+@keyframes tds-pageFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.tds-page-enter {
+  animation: tds-pageFadeIn 0.2s ease;
+}
+
+/* --- Reduced Motion Override (reinforced) --- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* =============================================
+   WAVE 2 — Hover Effects, Animations & Polish
+   ============================================= */
+
+/* 1. Table Row Hover */
+.tds-table tbody tr { transition: background-color 0.15s ease; cursor: pointer; }
+.tds-table tbody tr:hover { background-color: rgba(0,0,0,0.02); }
+.tds-table--no-click tbody tr { cursor: default; }
+
+/* 2. Dashboard Card Hover */
+.tds-card, .stat-card, .kpi-card, .db-panel {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.tds-card:hover, .stat-card:hover, .kpi-card:hover, .db-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* 3. Modal Animation */
+@keyframes modalFadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes modalSlideUp { from { opacity: 0; transform: translateY(20px) } to { opacity: 1; transform: translateY(0) } }
+#modal-overlay.visible, .tds-modal-overlay.visible { animation: modalFadeIn 0.2s ease; }
+#modal-overlay.visible .tds-modal, .tds-modal-overlay.visible .tds-modal { animation: modalSlideUp 0.2s ease; }
+
+/* 4. Drawer Slide */
+#drawer-overlay .drawer-content, .tds-drawer-content {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#drawer-overlay:not(.visible) .drawer-content { transform: translateX(100%); pointer-events: none; }
+
+/* 5. Dropdown Animation */
+.tds-dropdown, .dropdown-menu, .action-dropdown {
+  transform-origin: top left;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.tds-dropdown.origin-right { transform-origin: top right; }
+
+/* 6. Button Hover */
+.tds-btn { transition: all 0.15s ease; }
+.tds-btn:active:not(:disabled) { transform: scale(0.97); }
+.tds-btn-primary:hover:not(:disabled) { filter: brightness(1.1); box-shadow: 0 2px 8px rgba(26, 109, 227, 0.3); }
+.tds-btn-danger:hover:not(:disabled) { box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3); }
+.tds-btn-secondary:hover:not(:disabled), .tds-btn-ghost:hover:not(:disabled) { background-color: rgba(0,0,0,0.04); }
+
+/* 7. Sidebar Item Hover */
+.sidebar-nav-item { transition: background-color 0.15s ease, color 0.15s ease; }
+.sidebar-nav-item .nav-icon { transition: color 0.15s ease; }
+.sidebar-submenu a { transition: padding-left 0.15s ease, background-color 0.15s ease; }
+.sidebar-submenu a:hover { padding-left: 20px; }
+
+/* 8. Toast Slide-in */
+@keyframes toastSlideIn { from { transform: translateX(100%); opacity: 0 } to { transform: translateX(0); opacity: 1 } }
+.tds-toast { animation: toastSlideIn 0.3s ease; }
+
+/* 9. Loading Skeleton */
+@keyframes shimmer { 0% { background-position: -200px 0 } 100% { background-position: calc(200px + 100%) 0 } }
+.tds-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+.tds-skeleton-text { height: 14px; margin-bottom: 8px; }
+.tds-skeleton-card { height: 120px; border-radius: 8px; }
+.tds-skeleton-circle { width: 40px; height: 40px; border-radius: 50%; }
+.tds-skeleton-btn { width: 80px; height: 32px; border-radius: 4px; }
+
+/* 10. Tab Indicator */
+.customer-tab-btn, .report-tab-btn, .category-tab-btn, .settings-tab-btn {
+  transition: all 0.2s ease;
+}
+
+/* 11. Card Entrance */
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: translateY(0) } }
+.tds-animate-in { animation: fadeInUp 0.3s ease both; }
+.tds-animate-in:nth-child(1) { animation-delay: 0s; }
+.tds-animate-in:nth-child(2) { animation-delay: 0.05s; }
+.tds-animate-in:nth-child(3) { animation-delay: 0.1s; }
+.tds-animate-in:nth-child(4) { animation-delay: 0.15s; }
+.tds-animate-in:nth-child(5) { animation-delay: 0.2s; }
+.tds-animate-in:nth-child(6) { animation-delay: 0.25s; }
+.db-panel { animation: fadeInUp 0.3s ease both; }
+.db-panel:nth-child(2) { animation-delay: 0.05s; }
+.db-panel:nth-child(3) { animation-delay: 0.1s; }
+.page-content { animation: fadeInUp 0.2s ease; }
+
+/* 12. Tooltip Fade */
+[data-tooltip]::after { transition: opacity 0.15s ease, transform 0.15s ease; }
+
+/* 13. Focus Styles */
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(26, 109, 227, 0.3);
+}
+.tds-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(26, 109, 227, 0.3);
+}
+
+/* Notification Pulse */
+@keyframes notifPulse { 0%, 100% { transform: scale(1) } 50% { transform: scale(1.2) } }
+.notif-dot { animation: notifPulse 2s ease infinite; }
+
+/* Spinner */
+@keyframes spin { to { transform: rotate(360deg) } }
+.tds-spinner { width: 20px; height: 20px; border: 2px solid #e0e0e0; border-top-color: #1a6de3; border-radius: 50%; animation: spin 0.6s linear infinite; }
+
+/* Custom scrollbar */
+.tds-table-wrapper::-webkit-scrollbar, .page-content::-webkit-scrollbar { width: 6px; height: 6px; }
+.tds-table-wrapper::-webkit-scrollbar-thumb, .page-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+.tds-table-wrapper::-webkit-scrollbar-thumb:hover, .page-content::-webkit-scrollbar-thumb:hover { background: #aaa; }
+
+/* Kanban card enhancements */
+.work-kanban-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.work-kanban-priority { font-size: 11px; padding: 1px 6px; border-radius: 3px; font-weight: 600; }
+.work-kanban-priority-high { background: #fde8e8; color: #dc3545; }
+.work-kanban-priority-medium { background: #fff3cd; color: #856404; }
+.work-kanban-priority-low { background: #dbeafe; color: #1a6de3; }
+.work-kanban-card-assignee { font-size: 11px; color: #666; margin-top: 4px; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

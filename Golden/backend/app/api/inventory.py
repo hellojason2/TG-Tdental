@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import uuid
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
+from pydantic import BaseModel, Field
 from psycopg2.extras import RealDictCursor
 
 from app.core.database import get_conn
@@ -32,6 +33,35 @@ class StockReportRequest(BaseModel):
     dateTo: date | None = None
     productId: str | None = None
     pickingType: str | None = None
+
+
+class LaboOrderCreatePayload(BaseModel):
+    name: str | None = None
+    partnerId: str | None = None
+    partnerName: str | None = None
+    companyId: str | None = None
+    state: str = "draft"
+    amount: float | None = None
+    warranty: str | None = None
+    note: str | None = None
+    customerName: str | None = None
+    productName: str | None = None
+    datePlanned: str | None = None
+
+
+class LaboOrderUpdatePayload(BaseModel):
+    name: str | None = None
+    partnerId: str | None = None
+    partnerName: str | None = None
+    companyId: str | None = None
+    state: str | None = None
+    amount: float | None = None
+    warranty: str | None = None
+    note: str | None = None
+    customerName: str | None = None
+    productName: str | None = None
+    datePlanned: str | None = None
+    dateReceived: str | None = None
 
 
 @router.get("/stock-pickings")
@@ -701,6 +731,254 @@ async def list_labo_orders(
                 offset=effective_offset,
                 limit=effective_limit,
             )
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+def _resolve_labo_table(conn):
+    """Resolve labo orders table and return (table_ref, cols) or (None, None)."""
+    labo_table = resolve_table(
+        conn,
+        "labo_orders", "laboorders", "labo_order", "laboorder",
+        "labo", "labos",
+    )
+    if not labo_table:
+        return None, None
+    cols = table_columns(conn, labo_table)
+    id_col = pick_column(cols, "id")
+    if not id_col:
+        return None, None
+    return labo_table, cols
+
+
+@router.post("/labo-orders", status_code=201)
+async def create_labo_order(
+    body: LaboOrderCreatePayload = Body(...),
+    _user: dict = Depends(require_auth),
+):
+    """Create a new labo order."""
+    try:
+        with get_conn() as conn:
+            labo_table, cols = _resolve_labo_table(conn)
+            if not labo_table:
+                raise HTTPException(status_code=503, detail="Labo order table not found")
+
+            id_col = pick_column(cols, "id")
+            name_col = pick_column(cols, "name", "display_name", "reference", "ref", "order_name")
+            date_col = pick_column(cols, "date", "order_date", "date_order", "created_at", "created_date")
+            state_col = pick_column(cols, "state", "status")
+            partner_id_col = pick_column(cols, "partner_id", "partnerid", "supplier_id", "supplierid", "labo_id", "laboid")
+            partner_name_col = pick_column(cols, "partner_name", "partnername", "supplier_name", "suppliername", "labo_name", "laboname")
+            company_id_col = pick_column(cols, "company_id", "companyid")
+            amount_col = pick_column(cols, "amount", "amount_total", "total", "price_total")
+            warranty_col = pick_column(cols, "warranty", "warranty_name", "warranty_code")
+            note_col = pick_column(cols, "note", "memo", "description")
+            customer_name_col = pick_column(cols, "customer_name", "customername", "patient_name", "patientname")
+            product_name_col = pick_column(cols, "product_name", "productname", "service_name")
+            date_planned_col = pick_column(cols, "date_planned", "planned_date", "date_expected", "delivery_date")
+
+            new_id = f"labo-{uuid.uuid4().hex[:8]}"
+            insert_cols: list[str] = [id_col]
+            values: list = [new_id]
+
+            if name_col and body.name:
+                insert_cols.append(name_col)
+                values.append(body.name)
+            if date_col:
+                insert_cols.append(date_col)
+                values.append("NOW()")
+            if state_col:
+                insert_cols.append(state_col)
+                values.append(body.state)
+            if partner_id_col and body.partnerId:
+                insert_cols.append(partner_id_col)
+                values.append(body.partnerId)
+            if partner_name_col and body.partnerName:
+                insert_cols.append(partner_name_col)
+                values.append(body.partnerName)
+            if company_id_col and body.companyId:
+                insert_cols.append(company_id_col)
+                values.append(body.companyId)
+            if amount_col and body.amount is not None:
+                insert_cols.append(amount_col)
+                values.append(body.amount)
+            if warranty_col and body.warranty:
+                insert_cols.append(warranty_col)
+                values.append(body.warranty)
+            if note_col and body.note:
+                insert_cols.append(note_col)
+                values.append(body.note)
+            if customer_name_col and body.customerName:
+                insert_cols.append(customer_name_col)
+                values.append(body.customerName)
+            if product_name_col and body.productName:
+                insert_cols.append(product_name_col)
+                values.append(body.productName)
+            if date_planned_col and body.datePlanned:
+                insert_cols.append(date_planned_col)
+                values.append(body.datePlanned)
+
+            # Build placeholders: NOW() is raw SQL, rest are %s
+            placeholders: list[str] = []
+            actual_params: list = []
+            for i, col in enumerate(insert_cols):
+                if col == date_col and values[i] == "NOW()":
+                    placeholders.append("NOW()")
+                else:
+                    placeholders.append("%s")
+                    actual_params.append(values[i])
+
+            sql = (
+                f"INSERT INTO {labo_table.qualified_name} "
+                f"({', '.join(quote_ident(c) for c in insert_cols)}) "
+                f"VALUES ({', '.join(placeholders)})"
+            )
+
+            with conn.cursor() as cur:
+                cur.execute(sql, tuple(actual_params))
+
+            return {"id": new_id, "name": body.name, "state": body.state}
+    except HTTPException:
+        raise
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+@router.put("/labo-orders/{order_id}")
+async def update_labo_order(
+    order_id: str = Path(..., min_length=1),
+    body: LaboOrderUpdatePayload = Body(...),
+    _user: dict = Depends(require_auth),
+):
+    """Update an existing labo order."""
+    try:
+        with get_conn() as conn:
+            labo_table, cols = _resolve_labo_table(conn)
+            if not labo_table:
+                raise HTTPException(status_code=503, detail="Labo order table not found")
+
+            id_col = pick_column(cols, "id")
+            name_col = pick_column(cols, "name", "display_name", "reference", "ref", "order_name")
+            state_col = pick_column(cols, "state", "status")
+            partner_id_col = pick_column(cols, "partner_id", "partnerid", "supplier_id", "supplierid", "labo_id", "laboid")
+            partner_name_col = pick_column(cols, "partner_name", "partnername", "supplier_name", "suppliername", "labo_name", "laboname")
+            company_id_col = pick_column(cols, "company_id", "companyid")
+            amount_col = pick_column(cols, "amount", "amount_total", "total", "price_total")
+            warranty_col = pick_column(cols, "warranty", "warranty_name", "warranty_code")
+            note_col = pick_column(cols, "note", "memo", "description")
+            customer_name_col = pick_column(cols, "customer_name", "customername", "patient_name", "patientname")
+            product_name_col = pick_column(cols, "product_name", "productname", "service_name")
+            date_planned_col = pick_column(cols, "date_planned", "planned_date", "date_expected", "delivery_date")
+            date_received_col = pick_column(cols, "date_received", "received_date", "date_done")
+            updated_col = pick_column(cols, "write_date", "updated_at", "last_updated")
+
+            updates: list[str] = []
+            params: list = []
+
+            if body.name is not None and name_col:
+                updates.append(f"{quote_ident(name_col)} = %s")
+                params.append(body.name)
+            if body.state is not None and state_col:
+                updates.append(f"{quote_ident(state_col)} = %s")
+                params.append(body.state)
+            if body.partnerId is not None and partner_id_col:
+                updates.append(f"{quote_ident(partner_id_col)} = %s")
+                params.append(body.partnerId)
+            if body.partnerName is not None and partner_name_col:
+                updates.append(f"{quote_ident(partner_name_col)} = %s")
+                params.append(body.partnerName)
+            if body.companyId is not None and company_id_col:
+                updates.append(f"{quote_ident(company_id_col)} = %s")
+                params.append(body.companyId)
+            if body.amount is not None and amount_col:
+                updates.append(f"{quote_ident(amount_col)} = %s")
+                params.append(body.amount)
+            if body.warranty is not None and warranty_col:
+                updates.append(f"{quote_ident(warranty_col)} = %s")
+                params.append(body.warranty)
+            if body.note is not None and note_col:
+                updates.append(f"{quote_ident(note_col)} = %s")
+                params.append(body.note)
+            if body.customerName is not None and customer_name_col:
+                updates.append(f"{quote_ident(customer_name_col)} = %s")
+                params.append(body.customerName)
+            if body.productName is not None and product_name_col:
+                updates.append(f"{quote_ident(product_name_col)} = %s")
+                params.append(body.productName)
+            if body.datePlanned is not None and date_planned_col:
+                updates.append(f"{quote_ident(date_planned_col)} = %s")
+                params.append(body.datePlanned)
+            if body.dateReceived is not None and date_received_col:
+                updates.append(f"{quote_ident(date_received_col)} = %s")
+                params.append(body.dateReceived)
+
+            if updated_col:
+                updates.append(f"{quote_ident(updated_col)} = NOW()")
+
+            if not updates:
+                raise HTTPException(status_code=422, detail="No fields to update")
+
+            params.append(order_id)
+            sql = (
+                f"UPDATE {labo_table.qualified_name} "
+                f"SET {', '.join(updates)} "
+                f"WHERE {quote_ident(id_col)}::text = %s"
+            )
+
+            with conn.cursor() as cur:
+                cur.execute(sql, tuple(params))
+                if cur.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="Labo order not found")
+
+            return {"id": order_id, "updated": True}
+    except HTTPException:
+        raise
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+@router.delete("/labo-orders/{order_id}")
+async def delete_labo_order(
+    order_id: str = Path(..., min_length=1),
+    _user: dict = Depends(require_auth),
+):
+    """Soft-delete a labo order by setting state to 'cancel', or hard-delete if no state column."""
+    try:
+        with get_conn() as conn:
+            labo_table, cols = _resolve_labo_table(conn)
+            if not labo_table:
+                raise HTTPException(status_code=503, detail="Labo order table not found")
+
+            id_col = pick_column(cols, "id")
+            state_col = pick_column(cols, "state", "status")
+            updated_col = pick_column(cols, "write_date", "updated_at", "last_updated")
+
+            with conn.cursor() as cur:
+                if state_col:
+                    set_clauses = [f"{quote_ident(state_col)} = %s"]
+                    params: list = ["cancel"]
+                    if updated_col:
+                        set_clauses.append(f"{quote_ident(updated_col)} = NOW()")
+                    params.append(order_id)
+                    sql = (
+                        f"UPDATE {labo_table.qualified_name} "
+                        f"SET {', '.join(set_clauses)} "
+                        f"WHERE {quote_ident(id_col)}::text = %s"
+                    )
+                    cur.execute(sql, tuple(params))
+                else:
+                    sql = (
+                        f"DELETE FROM {labo_table.qualified_name} "
+                        f"WHERE {quote_ident(id_col)}::text = %s"
+                    )
+                    cur.execute(sql, (order_id,))
+
+                if cur.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="Labo order not found")
+
+            return {"id": order_id, "deleted": True}
+    except HTTPException:
+        raise
     except RuntimeError:
         raise HTTPException(status_code=503, detail="Database is unavailable")
 

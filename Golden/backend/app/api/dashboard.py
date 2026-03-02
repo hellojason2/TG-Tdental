@@ -272,8 +272,8 @@ async def reports_summary(body: SummaryRequest, _user: dict = Depends(require_au
         raise HTTPException(status_code=503, detail="Database is unavailable")
 
 
-@router.get("/revenue-trend")
-async def reports_revenue_trend(
+@router.get("/overview-trend")
+async def dashboard_overview_trend(
     companyId: str | None = Query(default=None),
     days: int = Query(default=7, ge=1, le=90),
     dateTo: date | None = Query(default=None),

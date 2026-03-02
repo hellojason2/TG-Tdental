@@ -582,6 +582,205 @@ async def list_task_categories(
         raise HTTPException(status_code=503, detail="Database is unavailable")
 
 
+class TaskCategoryCreateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = None
+    active: bool = True
+    isTemplate: bool = False
+
+
+class TaskCategoryUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = None
+    active: bool | None = None
+    isTemplate: bool | None = None
+
+
+@router.post("/task-categories", status_code=201)
+async def create_task_category(
+    body: TaskCategoryCreateRequest,
+    user: dict = Depends(require_auth),
+):
+    """Create a new task category."""
+    del user
+    try:
+        with get_conn() as conn:
+            table_ref = _resolve_task_categories_table(conn)
+            fields = _task_categories_field_map(table_columns(conn, table_ref))
+            if not fields["id"] or not fields["name"]:
+                raise HTTPException(status_code=503, detail="Task categories table schema is missing required columns")
+
+            cat_id = str(uuid4())
+            now = datetime.now(timezone.utc)
+
+            insert_values: dict[str, object] = {
+                fields["id"]: cat_id,
+                fields["name"]: body.name.strip(),
+            }
+
+            if fields["description"] and body.description is not None:
+                insert_values[fields["description"]] = body.description
+            if fields["active"]:
+                insert_values[fields["active"]] = body.active
+            if fields["is_template"]:
+                insert_values[fields["is_template"]] = body.isTemplate
+            if fields["is_deleted"]:
+                insert_values[fields["is_deleted"]] = False
+            if fields["date_created"]:
+                insert_values[fields["date_created"]] = now
+            if fields["last_updated"]:
+                insert_values[fields["last_updated"]] = now
+
+            cols = list(insert_values.keys())
+            params = [insert_values[col] for col in cols]
+            placeholders = ["%s"] * len(cols)
+            sql = (
+                f"INSERT INTO {table_ref.qualified_name} "
+                f"({', '.join(quote_ident(col) for col in cols)}) "
+                f"VALUES ({', '.join(placeholders)})"
+            )
+
+            with conn.cursor() as cur:
+                cur.execute(sql, tuple(params))
+
+            # Fetch and return the created category
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                description_expr = (
+                    f"c.{quote_ident(fields['description'])}"
+                    if fields["description"]
+                    else "NULL::text"
+                )
+                active_expr = (
+                    f"COALESCE(c.{quote_ident(fields['active'])}, TRUE)"
+                    if fields["active"]
+                    else "TRUE"
+                )
+                template_expr = (
+                    f"COALESCE(c.{quote_ident(fields['is_template'])}, FALSE)"
+                    if fields["is_template"]
+                    else "FALSE"
+                )
+                fetch_sql = (
+                    "SELECT "
+                    f"c.{quote_ident(fields['id'])}::text AS id, "
+                    f"c.{quote_ident(fields['name'])} AS name, "
+                    f"{description_expr} AS description, "
+                    f"{active_expr} AS active, "
+                    f"{template_expr} AS \"isTemplate\" "
+                    f"FROM {table_ref.qualified_name} c "
+                    f"WHERE c.{quote_ident(fields['id'])}::text = %s LIMIT 1"
+                )
+                cur.execute(fetch_sql, (cat_id,))
+                row = cur.fetchone()
+
+            if not row:
+                return {"id": cat_id, "name": body.name.strip()}
+            return dict(row)
+    except HTTPException:
+        raise
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+@router.put("/task-categories/{cat_id}")
+async def update_task_category(
+    body: TaskCategoryUpdateRequest,
+    cat_id: str = Path(..., min_length=1),
+    user: dict = Depends(require_auth),
+):
+    """Update an existing task category."""
+    del user
+    try:
+        with get_conn() as conn:
+            table_ref = _resolve_task_categories_table(conn)
+            fields = _task_categories_field_map(table_columns(conn, table_ref))
+            if not fields["id"]:
+                raise HTTPException(status_code=503, detail="Task categories table schema is missing id column")
+
+            updates: dict[str, object] = {}
+            if body.name is not None and fields["name"]:
+                updates[fields["name"]] = body.name.strip()
+            if body.description is not None and fields["description"]:
+                updates[fields["description"]] = body.description
+            if body.active is not None and fields["active"]:
+                updates[fields["active"]] = body.active
+            if body.isTemplate is not None and fields["is_template"]:
+                updates[fields["is_template"]] = body.isTemplate
+
+            if fields["last_updated"]:
+                updates[fields["last_updated"]] = datetime.now(timezone.utc)
+
+            if not updates:
+                raise HTTPException(status_code=422, detail="No fields to update")
+
+            set_clauses = [f"{quote_ident(col)} = %s" for col in updates.keys()]
+            params = list(updates.values()) + [cat_id]
+            sql = (
+                f"UPDATE {table_ref.qualified_name} "
+                f"SET {', '.join(set_clauses)} "
+                f"WHERE {quote_ident(fields['id'])}::text = %s"
+            )
+            if fields["is_deleted"]:
+                sql += f" AND COALESCE({quote_ident(fields['is_deleted'])}, FALSE) = FALSE"
+
+            with conn.cursor() as cur:
+                cur.execute(sql, tuple(params))
+                if cur.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="Task category not found")
+
+            return {"id": cat_id, "updated": True}
+    except HTTPException:
+        raise
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+@router.delete("/task-categories/{cat_id}")
+async def delete_task_category(
+    cat_id: str = Path(..., min_length=1),
+    user: dict = Depends(require_auth),
+):
+    """Delete a task category (soft delete when schema supports it)."""
+    del user
+    try:
+        with get_conn() as conn:
+            table_ref = _resolve_task_categories_table(conn)
+            fields = _task_categories_field_map(table_columns(conn, table_ref))
+            if not fields["id"]:
+                raise HTTPException(status_code=503, detail="Task categories table schema is missing id column")
+
+            with conn.cursor() as cur:
+                if fields["is_deleted"]:
+                    params: list = [True]
+                    set_clauses = [f"{quote_ident(fields['is_deleted'])} = %s"]
+                    if fields["last_updated"]:
+                        set_clauses.append(f"{quote_ident(fields['last_updated'])} = %s")
+                        params.append(datetime.now(timezone.utc))
+                    params.append(cat_id)
+                    sql = (
+                        f"UPDATE {table_ref.qualified_name} "
+                        f"SET {', '.join(set_clauses)} "
+                        f"WHERE {quote_ident(fields['id'])}::text = %s "
+                        f"AND COALESCE({quote_ident(fields['is_deleted'])}, FALSE) = FALSE"
+                    )
+                    cur.execute(sql, tuple(params))
+                else:
+                    sql = (
+                        f"DELETE FROM {table_ref.qualified_name} "
+                        f"WHERE {quote_ident(fields['id'])}::text = %s"
+                    )
+                    cur.execute(sql, (cat_id,))
+
+                if cur.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="Task category not found")
+
+            return {"id": cat_id, "deleted": True}
+    except HTTPException:
+        raise
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
 @router.post("/tasks")
 async def create_task(
     body: TaskCreateRequest,

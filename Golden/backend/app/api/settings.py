@@ -6,7 +6,7 @@ from datetime import datetime
 from uuid import uuid4
 
 import psycopg2
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
 from pydantic import BaseModel, Field
 from psycopg2.extras import RealDictCursor
 
@@ -21,6 +21,22 @@ from app.core.lookup_sql import (
 )
 from app.core.middleware import require_admin
 from app.core.pagination import paginate
+
+
+class CompanyCreatePayload(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    address: str | None = None
+    phone: str | None = None
+    active: bool = True
+    isHead: bool = False
+
+
+class CompanyUpdatePayload(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    address: str | None = None
+    phone: str | None = None
+    active: bool | None = None
+    isHead: bool | None = None
 
 router = APIRouter(prefix="/api", tags=["settings"])
 
@@ -743,5 +759,477 @@ async def team_members(team_id: str, _user: dict = Depends(require_admin)):
                 query += f" AND COALESCE(m.{quote_ident(active_col)}, TRUE)"
             query += " ORDER BY name ASC NULLS LAST"
             return paginate(query=query, params=tuple(params), conn=conn, offset=0, limit=200)
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+# ---------------------------------------------------------------------------
+# Team member management
+# ---------------------------------------------------------------------------
+
+
+def _resolve_team_members_table(conn):
+    """Resolve team members table and key columns."""
+    members_tbl = resolve_table(
+        conn,
+        "crm_team_members",
+        "crmteammembers",
+        "team_members",
+        "teammembers",
+        "app_team_members",
+        "appteammembers",
+    )
+    if not members_tbl:
+        return None, None
+    cols = table_columns(conn, members_tbl)
+    return members_tbl, cols
+
+
+@router.post("/teams/{team_id}/members", status_code=201)
+async def add_team_member(
+    team_id: str = Path(..., min_length=1),
+    body: dict = Body(...),
+    _user: dict = Depends(require_admin),
+):
+    """Add a member to a team."""
+    user_id = str((body or {}).get("userId") or "").strip()
+    if not user_id:
+        raise HTTPException(status_code=422, detail="userId is required")
+
+    try:
+        with get_conn() as conn:
+            members_tbl, cols = _resolve_team_members_table(conn)
+            if not members_tbl:
+                raise HTTPException(status_code=503, detail="Team members table not found")
+
+            id_col = pick_column(cols, "id")
+            team_col = pick_column(cols, "crm_team_id", "crmteamid", "team_id", "teamid")
+            user_col = pick_column(cols, "user_id", "userid", "employee_id", "employeeid", "member_id", "memberid")
+            active_col = pick_column(cols, "active", "is_active")
+            role_col = pick_column(cols, "role")
+
+            if not team_col or not user_col:
+                raise HTTPException(status_code=503, detail="Team members table schema incomplete")
+
+            insert_cols: list[str] = []
+            values: list = []
+
+            if id_col:
+                insert_cols.append(id_col)
+                values.append(str(uuid4()))
+            insert_cols.append(team_col)
+            values.append(team_id)
+            insert_cols.append(user_col)
+            values.append(user_id)
+            if active_col:
+                insert_cols.append(active_col)
+                values.append(True)
+            if role_col and (body or {}).get("role"):
+                insert_cols.append(role_col)
+                values.append((body or {}).get("role"))
+
+            created_col = pick_column(cols, "date_created", "datecreated", "created_at")
+            if created_col:
+                insert_cols.append(created_col)
+                values.append(datetime.utcnow())
+
+            quoted_cols = ", ".join(quote_ident(c) for c in insert_cols)
+            placeholders = ", ".join(["%s"] * len(values))
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"INSERT INTO {members_tbl.qualified_name} ({quoted_cols}) VALUES ({placeholders})",
+                    tuple(values),
+                )
+
+            return {
+                "ok": True,
+                "teamId": team_id,
+                "userId": user_id,
+                "id": values[0] if id_col else None,
+            }
+    except HTTPException:
+        raise
+    except psycopg2.Error as exc:
+        if "duplicate" in str(exc).lower() or "unique" in str(exc).lower():
+            raise HTTPException(status_code=409, detail="Member already exists in this team")
+        raise HTTPException(status_code=500, detail=f"Failed to add team member: {exc.pgerror or str(exc)}")
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+@router.delete("/teams/{team_id}/members/{member_id}")
+async def remove_team_member(
+    team_id: str = Path(..., min_length=1),
+    member_id: str = Path(..., min_length=1),
+    _user: dict = Depends(require_admin),
+):
+    """Remove a member from a team."""
+    try:
+        with get_conn() as conn:
+            members_tbl, cols = _resolve_team_members_table(conn)
+            if not members_tbl:
+                raise HTTPException(status_code=503, detail="Team members table not found")
+
+            id_col = pick_column(cols, "id")
+            team_col = pick_column(cols, "crm_team_id", "crmteamid", "team_id", "teamid")
+            user_col = pick_column(cols, "user_id", "userid", "employee_id", "employeeid", "member_id", "memberid")
+
+            if not team_col:
+                raise HTTPException(status_code=503, detail="Team members table schema incomplete")
+
+            with conn.cursor() as cur:
+                # Try matching by id first, then by user_id
+                if id_col:
+                    sql = (
+                        f"DELETE FROM {members_tbl.qualified_name} "
+                        f"WHERE {quote_ident(id_col)}::text = %s "
+                        f"AND {quote_ident(team_col)}::text = %s"
+                    )
+                    cur.execute(sql, (member_id, team_id))
+                    if cur.rowcount == 0 and user_col:
+                        # Fallback: try matching by user_id
+                        sql = (
+                            f"DELETE FROM {members_tbl.qualified_name} "
+                            f"WHERE {quote_ident(user_col)}::text = %s "
+                            f"AND {quote_ident(team_col)}::text = %s"
+                        )
+                        cur.execute(sql, (member_id, team_id))
+                elif user_col:
+                    sql = (
+                        f"DELETE FROM {members_tbl.qualified_name} "
+                        f"WHERE {quote_ident(user_col)}::text = %s "
+                        f"AND {quote_ident(team_col)}::text = %s"
+                    )
+                    cur.execute(sql, (member_id, team_id))
+                else:
+                    raise HTTPException(status_code=503, detail="Team members table schema incomplete")
+
+                if cur.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="Team member not found")
+
+            return {"teamId": team_id, "memberId": member_id, "deleted": True}
+    except HTTPException:
+        raise
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+# ---------------------------------------------------------------------------
+# Team update/delete
+# ---------------------------------------------------------------------------
+
+
+def _resolve_teams_table(conn):
+    """Resolve teams table and return (table_ref, cols) or (None, None)."""
+    tbl = resolve_table(
+        conn,
+        "crm_teams",
+        "crmteams",
+        "teams",
+        "app_teams",
+        "user_teams",
+    )
+    if not tbl:
+        return None, None
+    cols = table_columns(conn, tbl)
+    id_col = pick_column(cols, "id")
+    if not id_col:
+        return None, None
+    return tbl, cols
+
+
+@router.put("/teams/{team_id}")
+async def update_team(
+    team_id: str = Path(..., min_length=1),
+    body: dict = Body(...),
+    _user: dict = Depends(require_admin),
+):
+    """Update a team."""
+    try:
+        with get_conn() as conn:
+            tbl, cols = _resolve_teams_table(conn)
+            if not tbl:
+                raise HTTPException(status_code=503, detail="Team table not found")
+
+            id_col = pick_column(cols, "id")
+            name_col = pick_column(cols, "name", "team_name", "title")
+            desc_col = pick_column(
+                cols,
+                "description",
+                "note",
+                "desc",
+                "lead_properties_definition",
+                "leadpropertiesdefinition",
+            )
+            active_col = pick_column(cols, "active", "is_active")
+            updated_col = pick_column(cols, "lastupdated", "updated_at")
+
+            updates: list[str] = []
+            params: list = []
+
+            if body.get("name") is not None and name_col:
+                updates.append(f"{quote_ident(name_col)} = %s")
+                params.append(str(body["name"]).strip())
+            if body.get("description") is not None and desc_col:
+                updates.append(f"{quote_ident(desc_col)} = %s")
+                params.append(str(body["description"]).strip() or None)
+            if body.get("active") is not None and active_col:
+                updates.append(f"{quote_ident(active_col)} = %s")
+                params.append(bool(body["active"]))
+            if updated_col:
+                updates.append(f"{quote_ident(updated_col)} = %s")
+                params.append(datetime.utcnow())
+
+            if not updates:
+                raise HTTPException(status_code=422, detail="No fields to update")
+
+            params.append(team_id)
+            sql = (
+                f"UPDATE {tbl.qualified_name} "
+                f"SET {', '.join(updates)} "
+                f"WHERE {quote_ident(id_col)}::text = %s"
+            )
+
+            with conn.cursor() as cur:
+                cur.execute(sql, tuple(params))
+                if cur.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="Team not found")
+
+            return {"id": team_id, "updated": True}
+    except HTTPException:
+        raise
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+@router.delete("/teams/{team_id}")
+async def delete_team(
+    team_id: str = Path(..., min_length=1),
+    _user: dict = Depends(require_admin),
+):
+    """Delete a team (soft-delete via active=false if possible, else hard delete)."""
+    try:
+        with get_conn() as conn:
+            tbl, cols = _resolve_teams_table(conn)
+            if not tbl:
+                raise HTTPException(status_code=503, detail="Team table not found")
+
+            id_col = pick_column(cols, "id")
+            active_col = pick_column(cols, "active", "is_active")
+            updated_col = pick_column(cols, "lastupdated", "updated_at")
+
+            with conn.cursor() as cur:
+                if active_col:
+                    set_clauses = [f"{quote_ident(active_col)} = %s"]
+                    params: list = [False]
+                    if updated_col:
+                        set_clauses.append(f"{quote_ident(updated_col)} = %s")
+                        params.append(datetime.utcnow())
+                    params.append(team_id)
+                    sql = (
+                        f"UPDATE {tbl.qualified_name} "
+                        f"SET {', '.join(set_clauses)} "
+                        f"WHERE {quote_ident(id_col)}::text = %s"
+                    )
+                    cur.execute(sql, tuple(params))
+                else:
+                    sql = (
+                        f"DELETE FROM {tbl.qualified_name} "
+                        f"WHERE {quote_ident(id_col)}::text = %s"
+                    )
+                    cur.execute(sql, (team_id,))
+
+                if cur.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="Team not found")
+
+            return {"id": team_id, "deleted": True}
+    except HTTPException:
+        raise
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+# ---------------------------------------------------------------------------
+# Company/branch CRUD (settings context)
+# ---------------------------------------------------------------------------
+
+
+@router.post("/settings/companies", status_code=201)
+async def create_company(
+    body: CompanyCreatePayload = Body(...),
+    _user: dict = Depends(require_admin),
+):
+    """Create a new company/branch."""
+    try:
+        with get_conn() as conn:
+            companies_table = resolve_table(conn, "companies", "company")
+            if not companies_table:
+                raise HTTPException(status_code=503, detail="Companies table not found")
+
+            cols = table_columns(conn, companies_table)
+            id_col = pick_column(cols, "id")
+            name_col = pick_column(cols, "name", "display_name", "company_name")
+            if not id_col or not name_col:
+                raise HTTPException(status_code=503, detail="Companies table schema incomplete")
+
+            address_col = pick_column(cols, "address", "address_v2")
+            phone_col = pick_column(cols, "phone", "hotline", "tax_phone", "mobile")
+            active_col = pick_column(cols, "active", "is_active", "enabled")
+            is_head_col = pick_column(cols, "is_head", "ishead", "is_head_office")
+            created_col = pick_column(cols, "date_created", "datecreated", "created_at", "create_date")
+
+            new_id = str(uuid4())
+            insert_cols: list[str] = [id_col, name_col]
+            values: list = [new_id, body.name.strip()]
+
+            if address_col and body.address:
+                insert_cols.append(address_col)
+                values.append(body.address)
+            if phone_col and body.phone:
+                insert_cols.append(phone_col)
+                values.append(body.phone)
+            if active_col:
+                insert_cols.append(active_col)
+                values.append(body.active)
+            if is_head_col:
+                insert_cols.append(is_head_col)
+                values.append(body.isHead)
+            if created_col:
+                insert_cols.append(created_col)
+                values.append(datetime.utcnow())
+
+            quoted_cols = ", ".join(quote_ident(c) for c in insert_cols)
+            placeholders = ", ".join(["%s"] * len(values))
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"INSERT INTO {companies_table.qualified_name} ({quoted_cols}) VALUES ({placeholders})",
+                    tuple(values),
+                )
+
+            return {"id": new_id, "name": body.name.strip(), "active": body.active}
+    except HTTPException:
+        raise
+    except psycopg2.Error as exc:
+        if "duplicate" in str(exc).lower() or "unique" in str(exc).lower():
+            raise HTTPException(status_code=409, detail="Company name already exists")
+        raise HTTPException(status_code=500, detail=f"Failed to create company: {exc.pgerror or str(exc)}")
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+@router.put("/settings/companies/{company_id}")
+async def update_company(
+    company_id: str = Path(..., min_length=1),
+    body: CompanyUpdatePayload = Body(...),
+    _user: dict = Depends(require_admin),
+):
+    """Update a company/branch."""
+    try:
+        with get_conn() as conn:
+            companies_table = resolve_table(conn, "companies", "company")
+            if not companies_table:
+                raise HTTPException(status_code=503, detail="Companies table not found")
+
+            cols = table_columns(conn, companies_table)
+            id_col = pick_column(cols, "id")
+            name_col = pick_column(cols, "name", "display_name", "company_name")
+            address_col = pick_column(cols, "address", "address_v2")
+            phone_col = pick_column(cols, "phone", "hotline", "tax_phone", "mobile")
+            active_col = pick_column(cols, "active", "is_active", "enabled")
+            is_head_col = pick_column(cols, "is_head", "ishead", "is_head_office")
+            updated_col = pick_column(cols, "write_date", "updated_at", "last_updated")
+
+            if not id_col:
+                raise HTTPException(status_code=503, detail="Companies table schema incomplete")
+
+            updates: list[str] = []
+            params: list = []
+
+            if body.name is not None and name_col:
+                updates.append(f"{quote_ident(name_col)} = %s")
+                params.append(body.name.strip())
+            if body.address is not None and address_col:
+                updates.append(f"{quote_ident(address_col)} = %s")
+                params.append(body.address)
+            if body.phone is not None and phone_col:
+                updates.append(f"{quote_ident(phone_col)} = %s")
+                params.append(body.phone)
+            if body.active is not None and active_col:
+                updates.append(f"{quote_ident(active_col)} = %s")
+                params.append(body.active)
+            if body.isHead is not None and is_head_col:
+                updates.append(f"{quote_ident(is_head_col)} = %s")
+                params.append(body.isHead)
+            if updated_col:
+                updates.append(f"{quote_ident(updated_col)} = NOW()")
+
+            if not updates:
+                raise HTTPException(status_code=422, detail="No fields to update")
+
+            params.append(company_id)
+            sql = (
+                f"UPDATE {companies_table.qualified_name} "
+                f"SET {', '.join(updates)} "
+                f"WHERE {quote_ident(id_col)}::text = %s"
+            )
+
+            with conn.cursor() as cur:
+                cur.execute(sql, tuple(params))
+                if cur.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="Company not found")
+
+            return {"id": company_id, "updated": True}
+    except HTTPException:
+        raise
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+@router.delete("/settings/companies/{company_id}")
+async def delete_company(
+    company_id: str = Path(..., min_length=1),
+    _user: dict = Depends(require_admin),
+):
+    """Soft-delete a company by setting active=false, or hard-delete if no active column."""
+    try:
+        with get_conn() as conn:
+            companies_table = resolve_table(conn, "companies", "company")
+            if not companies_table:
+                raise HTTPException(status_code=503, detail="Companies table not found")
+
+            cols = table_columns(conn, companies_table)
+            id_col = pick_column(cols, "id")
+            active_col = pick_column(cols, "active", "is_active", "enabled")
+            updated_col = pick_column(cols, "write_date", "updated_at", "last_updated")
+
+            if not id_col:
+                raise HTTPException(status_code=503, detail="Companies table schema incomplete")
+
+            with conn.cursor() as cur:
+                if active_col:
+                    set_clauses = [f"{quote_ident(active_col)} = %s"]
+                    params: list = [False]
+                    if updated_col:
+                        set_clauses.append(f"{quote_ident(updated_col)} = NOW()")
+                    params.append(company_id)
+                    sql = (
+                        f"UPDATE {companies_table.qualified_name} "
+                        f"SET {', '.join(set_clauses)} "
+                        f"WHERE {quote_ident(id_col)}::text = %s"
+                    )
+                    cur.execute(sql, tuple(params))
+                else:
+                    sql = (
+                        f"DELETE FROM {companies_table.qualified_name} "
+                        f"WHERE {quote_ident(id_col)}::text = %s"
+                    )
+                    cur.execute(sql, (company_id,))
+
+                if cur.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="Company not found")
+
+            return {"id": company_id, "deleted": True}
+    except HTTPException:
+        raise
     except RuntimeError:
         raise HTTPException(status_code=503, detail="Database is unavailable")

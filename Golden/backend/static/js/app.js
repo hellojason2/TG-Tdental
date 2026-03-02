@@ -1407,10 +1407,35 @@
     document.addEventListener('keydown', function (e) {
       if (e.key === 'F2') {
         e.preventDefault();
-        var searchInput = document.getElementById('topbar-search-input');
-        if (searchInput) searchInput.focus();
+        openGlobalSearch();
       }
     });
+
+    // Wire topbar search input to open global search overlay
+    var topbarSearchInput = document.getElementById('topbar-search-input');
+    if (topbarSearchInput) {
+      topbarSearchInput.addEventListener('focus', function () {
+        openGlobalSearch();
+        // Transfer any typed text to the global search input
+        var gsInput = document.getElementById('global-search-input');
+        if (gsInput && topbarSearchInput.value) {
+          gsInput.value = topbarSearchInput.value;
+          performGlobalSearch(topbarSearchInput.value);
+        }
+        topbarSearchInput.blur();
+      });
+      topbarSearchInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          openGlobalSearch();
+          var gsInput = document.getElementById('global-search-input');
+          if (gsInput && topbarSearchInput.value) {
+            gsInput.value = topbarSearchInput.value;
+            performGlobalSearch(topbarSearchInput.value);
+          }
+        }
+      });
+    }
 
     // Timer - counts from a reference date (e.g., account creation or start of year)
     initTopbarTimer();
@@ -1672,7 +1697,7 @@
     item.isRead = true;
     APP.notifications.unreadCount = Math.max(0, (APP.notifications.unreadCount || 1) - 1);
     // Update badge
-    var badge = document.getElementById('notification-badge');
+    var badge = document.getElementById('notif-count');
     if (badge) {
       badge.textContent = APP.notifications.unreadCount > 0 ? APP.notifications.unreadCount : '';
       badge.style.display = APP.notifications.unreadCount > 0 ? 'block' : 'none';
@@ -2667,14 +2692,15 @@
           e.stopPropagation();
           var apptId = deleteBtn.getAttribute('data-id');
           if (!apptId) return;
-          if (confirm('Ban co chan chan muon xoa lich hen nay?')) {
+          tdsConfirm('B\u1ea1n c\u00f3 ch\u1eafc ch\u1eafn mu\u1ed1n x\u00f3a l\u1ecbch h\u1eb9n n\u00e0y?', { title: 'X\u00f3a l\u1ecbch h\u1eb9n', okText: 'X\u00f3a' }).then(function (ok) {
+            if (!ok) return;
             api('/api/appointments/' + encodeURIComponent(apptId), { method: 'DELETE' }).then(function () {
-              showToast('success', 'Xoa lich hen thanh cong');
+              showToast('success', '\u0110\u00e3 x\u00f3a l\u1ecbch h\u1eb9n th\u00e0nh c\u00f4ng');
               renderDashboard();
             }).catch(function (err) {
-              showToast('error', 'Khong the xoa lich hen: ' + (err.message || 'Loi khong xac dinh'));
+              showToast('error', 'Kh\u00f4ng th\u1ec3 x\u00f3a l\u1ecbch h\u1eb9n: ' + (err.message || 'L\u1ed7i kh\u00f4ng x\u00e1c \u0111\u1ecbnh'));
             });
-          }
+          });
         }
       });
     }
@@ -2971,7 +2997,18 @@
     var end = Math.min(page * pageSize, total);
 
     if (total === 0) {
-      paginationWrap.innerHTML = '';
+      paginationWrap.innerHTML =
+        '<div class="partners-pagination-left">' +
+        '<select class="partners-pagesize-select" id="partners-pagesize">' +
+        '<option value="20"' + (pageSize === 20 ? ' selected' : '') + '>20</option>' +
+        '<option value="50"' + (pageSize === 50 ? ' selected' : '') + '>50</option>' +
+        '<option value="100"' + (pageSize === 100 ? ' selected' : '') + '>100</option>' +
+        '</select>' +
+        '<span class="partners-pagesize-label">hàng trên trang</span>' +
+        '</div>' +
+        '<div class="partners-pagination-right">' +
+        '<span>Hiển thị 0-0 / 0</span>' +
+        '</div>';
       return;
     }
 
@@ -3000,7 +3037,7 @@
       '<span class="partners-pagesize-label">hàng trên trang</span>' +
       '</div>' +
       '<div class="partners-pagination-right">' +
-      '<span>' + start + '-' + end + ' của ' + total + ' dòng</span>' +
+      '<span>Hiển thị ' + start + '-' + end + ' / ' + total + '</span>' +
       '</div>';
 
     var pageBtns = paginationWrap.querySelectorAll('.partners-page-btn');
@@ -3053,6 +3090,11 @@
       APP.customerDetail.treatments = safeItems(result[2]);
       APP.customerDetail.exams = safeItems(result[3]);
       APP.customerDetail.payments = safeItems(result[4]);
+      // Also fetch images in parallel (non-blocking)
+      APP.customerDetail.images = [];
+      api('/api/customers/' + encodeURIComponent(customerId) + '/images?limit=100&offset=0').then(function (imgData) {
+        APP.customerDetail.images = safeItems(imgData);
+      }).catch(function () { APP.customerDetail.images = []; });
       APP.customerDetail.loading = false;
       buildCustomerDetailDOM(el);
     } catch (err) {
@@ -3459,7 +3501,8 @@
       return;
     }
     if (sideTab === 'notes') {
-      timeline.innerHTML = '<div class="cdetail-timeline-notes"><textarea class="cdetail-notes-input" placeholder="Nhập ghi chú cho bệnh nhân..." rows="4"></textarea><button class="tds-btn tds-btn-primary tds-btn-sm cdetail-notes-save">Lưu ghi chú</button><div class="cdetail-timeline-empty" style="margin-top:16px">Chưa có ghi chú</div></div>';
+      var existingNote = (APP.customerDetail.data && (APP.customerDetail.data.comment || APP.customerDetail.data.notes || APP.customerDetail.data.note)) || '';
+      timeline.innerHTML = '<div class="cdetail-timeline-notes"><textarea class="cdetail-notes-input" placeholder="Nhập ghi chú cho bệnh nhân..." rows="4">' + escapeHtml(existingNote) + '</textarea><button class="tds-btn tds-btn-primary tds-btn-sm cdetail-notes-save">Lưu ghi chú</button>' + (existingNote ? '' : '<div class="cdetail-timeline-empty" style="margin-top:16px">Chưa có ghi chú</div>') + '</div>';
       var saveBtn = timeline.querySelector('.cdetail-notes-save');
       if (saveBtn) saveBtn.addEventListener('click', async function () {
         var noteArea = timeline.querySelector('.cdetail-notes-input');
@@ -4353,10 +4396,78 @@
         '<td>' + escapeHtml(t.customerName || '') + '</td>' +
         '<td>' + escapeHtml(t.content || '') + '</td>' +
         '<td><span class="' + statusClass + '">' + escapeHtml(statusLabel) + '</span></td>' +
-        '<td><button class="tds-btn tds-btn-ghost tds-btn-sm">...</button></td>' +
+        '<td class="work-action-cell" style="position:relative"><button class="tds-btn tds-btn-ghost tds-btn-sm work-action-btn" data-task-idx="' + i + '">...</button></td>' +
         '</tr>';
     }
     tbody.innerHTML = html;
+
+    // Wire work "..." action buttons
+    var actionBtns = tbody.querySelectorAll('.work-action-btn');
+    for (var ab = 0; ab < actionBtns.length; ab++) {
+      actionBtns[ab].addEventListener('click', function (e) {
+        e.stopPropagation();
+        var tIdx = parseInt(this.getAttribute('data-task-idx'), 10);
+        var task = tasks[tIdx];
+        if (!task) return;
+        // Remove any existing dropdown
+        var existing = document.querySelector('.work-action-dropdown');
+        if (existing) existing.remove();
+        // Create dropdown
+        var dd = document.createElement('div');
+        dd.className = 'work-action-dropdown';
+        dd.style.cssText = 'position:absolute;right:0;top:100%;z-index:100;background:#fff;border:1px solid #E2E8F0;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);min-width:140px;padding:4px 0;';
+        dd.innerHTML =
+          '<div class="work-action-item" data-action="view" style="padding:8px 16px;cursor:pointer;font-size:13px;">Xem chi ti\u1ebft</div>' +
+          '<div class="work-action-item" data-action="edit" style="padding:8px 16px;cursor:pointer;font-size:13px;">S\u1eeda</div>' +
+          '<div class="work-action-item" data-action="delete" style="padding:8px 16px;cursor:pointer;font-size:13px;color:#EF4444;">X\u00f3a</div>';
+        this.parentElement.appendChild(dd);
+
+        dd.querySelector('[data-action="view"]').addEventListener('click', function () {
+          dd.remove();
+          openWorkDetailDrawer(task);
+        });
+        dd.querySelector('[data-action="edit"]').addEventListener('click', function () {
+          dd.remove();
+          openTaskModal(task);
+        });
+        dd.querySelector('[data-action="delete"]').addEventListener('click', async function () {
+          dd.remove();
+          var ok = await tdsConfirm('X\u00f3a c\u00f4ng vi\u1ec7c "' + (task.title || '') + '"?', { title: 'X\u00f3a c\u00f4ng vi\u1ec7c' });
+          if (!ok) return;
+          try {
+            await api('/api/tasks/' + encodeURIComponent(task.id), { method: 'DELETE' });
+            showToast('success', '\u0110\u00e3 x\u00f3a c\u00f4ng vi\u1ec7c');
+            renderWork();
+          } catch (err) { showToast('error', (err && err.message) || 'Kh\u00f4ng th\u1ec3 x\u00f3a'); }
+        });
+
+        // Close dropdown on outside click
+        setTimeout(function () {
+          document.addEventListener('click', function closeDD() {
+            dd.remove();
+            document.removeEventListener('click', closeDD);
+          });
+        }, 0);
+      });
+    }
+  }
+
+  function openWorkDetailDrawer(task) {
+    var content =
+      '<div class="drawer-header">' +
+      '<h3>Chi ti\u1ebft c\u00f4ng vi\u1ec7c</h3>' +
+      '<button class="drawer-close" onclick="TDS.closeDrawer()">&times;</button>' +
+      '</div>' +
+      '<div class="drawer-content">' +
+      '<div class="drawer-field"><label>Ti\u00eau \u0111\u1ec1</label><span>' + escapeHtml(task.title || '\u2014') + '</span></div>' +
+      '<div class="drawer-field"><label>Lo\u1ea1i</label><span>' + escapeHtml(task.type || '\u2014') + '</span></div>' +
+      '<div class="drawer-field"><label>Ng\u01b0\u1eddi ph\u1ee5 tr\u00e1ch</label><span>' + escapeHtml(task.assignee || '\u2014') + '</span></div>' +
+      '<div class="drawer-field"><label>Kh\u00e1ch h\u00e0ng</label><span>' + escapeHtml(task.customerName || '\u2014') + '</span></div>' +
+      '<div class="drawer-field"><label>Tr\u1ea1ng th\u00e1i</label><span class="work-status-badge work-status-' + (task.status || 'new') + '">' + escapeHtml(task.statusLabel || task.status || '\u2014') + '</span></div>' +
+      (task.content ? '<div class="drawer-field"><label>N\u1ed9i dung</label><span>' + escapeHtml(task.content) + '</span></div>' : '') +
+      (task.description ? '<div class="drawer-field"><label>M\u00f4 t\u1ea3</label><span style="white-space:pre-wrap">' + escapeHtml(task.description) + '</span></div>' : '') +
+      '</div>';
+    openDrawer(content, 480);
   }
 
   async function loadWorkEmployees() {
@@ -5302,7 +5413,14 @@
       body.innerHTML = renderCalendarMonthMarkup(monthData);
     } catch (err) {
       if (requestSeq !== state.requestSeq) return;
-      body.innerHTML = renderErrorState('Không tải được dữ liệu lịch hẹn.');
+      // Render an empty grid on error instead of a blank area
+      if (state.view === 'day') {
+        body.innerHTML = renderCalendarDayMarkup(null);
+      } else if (state.view === 'week') {
+        body.innerHTML = renderCalendarWeekMarkup(null);
+      } else {
+        body.innerHTML = renderCalendarMonthMarkup(null);
+      }
       if (window.console && typeof window.console.error === 'function') {
         console.error('calendar-load-error', err);
       }
@@ -5529,8 +5647,15 @@
   }
 
   function renderCalendarWeekMarkup(data) {
+    // Always render the week grid structure, even with no data
     if (!data || !Array.isArray(data.days)) {
-      return renderErrorState('Không có dữ liệu lịch tuần.');
+      // Build a default empty week from current date so the grid is visible
+      var _ws = weekStartInput(TODAY_ISO);
+      var _emptyDays = [];
+      for (var _di = 0; _di < 7; _di++) {
+        _emptyDays.push({ date: shiftDateInput(_ws, _di), appointments: [] });
+      }
+      data = { startHour: 6, endHour: 21, weekStart: _ws, days: _emptyDays };
     }
 
     var state = getCalendarViewState();
@@ -5617,8 +5742,16 @@
   }
 
   function renderCalendarMonthMarkup(data) {
+    // Always render the month grid structure, even with no data
     if (!data || !Array.isArray(data.cells)) {
-      return renderErrorState('Không có dữ liệu lịch tháng.');
+      var _ms = monthStartInput(TODAY_ISO);
+      var _gs = weekStartInput(_ms);
+      var _emptyCells = [];
+      for (var _ci = 0; _ci < 42; _ci++) {
+        var _iso = shiftDateInput(_gs, _ci);
+        _emptyCells.push({ date: _iso, day: Number(_iso.split('-')[2] || 0), inMonth: _iso.slice(0, 7) === _ms.slice(0, 7), appointments: [] });
+      }
+      data = { month: _ms.slice(0, 7), cells: _emptyCells };
     }
     var state = getCalendarViewState();
     var weekDays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
@@ -6512,9 +6645,9 @@
       '<table class="tds-table">' +
       '<thead><tr><th>Mã chứng từ</th><th>Ngày</th><th>Loại</th><th>Đối tác</th><th>Chi nhánh</th><th>Trạng thái</th></tr></thead>' +
       '<tbody>' +
-      rows.map(function (item) {
+      rows.map(function (item, pIdx) {
         return (
-          '<tr>' +
+          '<tr class="purchase-row-clickable" data-pidx="' + pIdx + '" style="cursor:pointer">' +
           '<td>' + escapeHtml(item.name || item.id || '—') + '</td>' +
           '<td>' + escapeHtml(formatDate(item.date)) + '</td>' +
           '<td>' + escapeHtml(normalizePickingTypeLabel(item.pickingType)) + '</td>' +
@@ -6527,6 +6660,34 @@
       '</tbody>' +
       '</table>' +
       '</div>';
+
+    // Wire row clicks to open purchase detail drawer
+    var purchaseClickRows = tableWrap.querySelectorAll('.purchase-row-clickable');
+    for (var pi = 0; pi < purchaseClickRows.length; pi++) {
+      purchaseClickRows[pi].addEventListener('click', function () {
+        var idx = parseInt(this.getAttribute('data-pidx'), 10);
+        var pItem = rows[idx];
+        if (pItem) openPurchaseDetailDrawer(pItem);
+      });
+    }
+  }
+
+  function openPurchaseDetailDrawer(item) {
+    var content =
+      '<div class="drawer-header">' +
+      '<h3>Chi ti\u1ebft ch\u1ee9ng t\u1eeb kho</h3>' +
+      '<button class="drawer-close" onclick="TDS.closeDrawer()">&times;</button>' +
+      '</div>' +
+      '<div class="drawer-content">' +
+      '<div class="drawer-field"><label>M\u00e3 ch\u1ee9ng t\u1eeb</label><span>' + escapeHtml(item.name || item.id || '\u2014') + '</span></div>' +
+      '<div class="drawer-field"><label>Ng\u00e0y</label><span>' + escapeHtml(formatDate(item.date)) + '</span></div>' +
+      '<div class="drawer-field"><label>Lo\u1ea1i</label><span>' + escapeHtml(normalizePickingTypeLabel(item.pickingType)) + '</span></div>' +
+      '<div class="drawer-field"><label>\u0110\u1ed1i t\u00e1c</label><span>' + escapeHtml(item.partnerName || '\u2014') + '</span></div>' +
+      '<div class="drawer-field"><label>Chi nh\u00e1nh</label><span>' + escapeHtml(item.companyName || '\u2014') + '</span></div>' +
+      '<div class="drawer-field"><label>Tr\u1ea1ng th\u00e1i</label><span class="tds-badge ' + stateBadgeClass(item.state || 'draft') + '">' + escapeHtml(translateState(item.state || 'draft')) + '</span></div>' +
+      (item.origin ? '<div class="drawer-field"><label>Ngu\u1ed3n</label><span>' + escapeHtml(item.origin) + '</span></div>' : '') +
+      '</div>';
+    openDrawer(content, 420);
   }
 
   function renderWarehouse() {
@@ -6648,9 +6809,9 @@
       '<table class="tds-table">' +
       '<thead><tr><th>Ngày</th><th>Sản phẩm</th><th>Loại</th><th>SL</th><th>Tham chiếu</th><th>Chi nhánh</th></tr></thead>' +
       '<tbody>' +
-      rows.map(function (item) {
+      rows.map(function (item, wIdx) {
         return (
-          '<tr>' +
+          '<tr class="warehouse-row-clickable" data-widx="' + wIdx + '" style="cursor:pointer">' +
           '<td>' + escapeHtml(formatDate(item.date)) + '</td>' +
           '<td>' + escapeHtml(item.productName || '—') + '</td>' +
           '<td>' + escapeHtml(normalizePickingTypeLabel(item.pickingType)) + '</td>' +
@@ -6663,6 +6824,34 @@
       '</tbody>' +
       '</table>' +
       '</div>';
+
+    // Wire row clicks to open warehouse detail drawer
+    var whClickRows = tableWrap.querySelectorAll('.warehouse-row-clickable');
+    for (var wi = 0; wi < whClickRows.length; wi++) {
+      whClickRows[wi].addEventListener('click', function () {
+        var idx = parseInt(this.getAttribute('data-widx'), 10);
+        var wItem = rows[idx];
+        if (wItem) openWarehouseDetailDrawer(wItem);
+      });
+    }
+  }
+
+  function openWarehouseDetailDrawer(item) {
+    var content =
+      '<div class="drawer-header">' +
+      '<h3>Chi ti\u1ebft bi\u1ebfn \u0111\u1ed9ng kho</h3>' +
+      '<button class="drawer-close" onclick="TDS.closeDrawer()">&times;</button>' +
+      '</div>' +
+      '<div class="drawer-content">' +
+      '<div class="drawer-field"><label>Ng\u00e0y</label><span>' + escapeHtml(formatDate(item.date)) + '</span></div>' +
+      '<div class="drawer-field"><label>S\u1ea3n ph\u1ea9m</label><span>' + escapeHtml(item.productName || '\u2014') + '</span></div>' +
+      '<div class="drawer-field"><label>Lo\u1ea1i</label><span>' + escapeHtml(normalizePickingTypeLabel(item.pickingType)) + '</span></div>' +
+      '<div class="drawer-field"><label>S\u1ed1 l\u01b0\u1ee3ng</label><span>' + escapeHtml(formatNumber(item.quantity || 0)) + '</span></div>' +
+      '<div class="drawer-field"><label>Tham chi\u1ebfu</label><span>' + escapeHtml(item.reference || '\u2014') + '</span></div>' +
+      '<div class="drawer-field"><label>Chi nh\u00e1nh</label><span>' + escapeHtml(item.companyName || '\u2014') + '</span></div>' +
+      (item.locationName ? '<div class="drawer-field"><label>V\u1ecb tr\u00ed kho</label><span>' + escapeHtml(item.locationName) + '</span></div>' : '') +
+      '</div>';
+    openDrawer(content, 420);
   }
 
   function renderCashbook() {
@@ -6920,16 +7109,6 @@
       '</div>' +
       '</div>' +
       '</div>' +
-      '<div class="tds-table-wrapper">' +
-      '<table class="tds-table">' +
-      '<thead><tr>' +
-      '<th>Người giới thiệu</th>' +
-      '<th>Phân loại</th>' +
-      '<th>Lợi nhuận tính hoa hồng</th>' +
-      '<th>Tiền hoa hồng</th>' +
-      '</tr></thead>' +
-      '</table>' +
-      '</div>' +
       '<div id="commission-table"></div>' +
       '</div>' +
       '</div>';
@@ -7071,7 +7250,38 @@
       var rows = safeItems(await api('/api/sale-orders' + toQueryString({ search: search, companyId: getSelectedBranchId(), limit: 50, offset: 0 })));
       if (!rows.length) { tw.innerHTML = renderEmptyState('Ch\u01b0a c\u00f3 \u0111\u01a1n h\u00e0ng Labo'); return; }
       tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>M\u00e3 \u0111\u01a1n</th><th>Ng\u00e0y</th><th>Kh\u00e1ch h\u00e0ng</th><th>B\u00e1c s\u0129</th><th>Tr\u1ea1ng th\u00e1i</th><th class="text-right">Gi\u00e1 tr\u1ecb</th></tr></thead><tbody>' + rows.map(function (r) { return '<tr><td>' + escapeHtml(r.name || r.id || '\u2014') + '</td><td>' + escapeHtml(formatDate(r.date)) + '</td><td>' + escapeHtml(r.partnerName || '\u2014') + '</td><td>' + escapeHtml(r.doctorName || '\u2014') + '</td><td><span class="tds-badge ' + stateBadgeClass(r.state) + '">' + escapeHtml(translateState(r.state)) + '</span></td><td class="text-right">' + escapeHtml(formatCurrency(r.amountTotal || 0)) + '</td></tr>'; }).join('') + '</tbody></table></div>';
+      // Wire row clicks to open sale order detail drawer
+      var loClickRows = tw.querySelectorAll('tbody tr');
+      for (var li = 0; li < loClickRows.length; li++) {
+        loClickRows[li].style.cursor = 'pointer';
+        (function (idx) {
+          loClickRows[idx].addEventListener('click', function () {
+            var loItem = rows[idx];
+            if (loItem) openSaleOrderDrawer(loItem);
+          });
+        })(li);
+      }
     } catch (_e) { tw.innerHTML = renderEmptyState('Kh\u00f4ng th\u1ec3 t\u1ea3i'); }
+  }
+
+  // Sale order detail drawer (for labo-orders sub-route)
+  function openSaleOrderDrawer(item) {
+    var content =
+      '<div class="drawer-header">' +
+      '<h3>Chi ti\u1ebft \u0111\u01a1n h\u00e0ng</h3>' +
+      '<button class="drawer-close" onclick="TDS.closeDrawer()">&times;</button>' +
+      '</div>' +
+      '<div class="drawer-content">' +
+      '<div class="drawer-field"><label>M\u00e3 \u0111\u01a1n</label><span>' + escapeHtml(item.name || item.id || '\u2014') + '</span></div>' +
+      '<div class="drawer-field"><label>Ng\u00e0y</label><span>' + escapeHtml(formatDate(item.date)) + '</span></div>' +
+      '<div class="drawer-field"><label>Kh\u00e1ch h\u00e0ng</label><span>' + escapeHtml(item.partnerName || '\u2014') + '</span></div>' +
+      '<div class="drawer-field"><label>B\u00e1c s\u0129</label><span>' + escapeHtml(item.doctorName || '\u2014') + '</span></div>' +
+      '<div class="drawer-field"><label>Gi\u00e1 tr\u1ecb</label><span>' + escapeHtml(formatCurrency(item.amountTotal || 0)) + '</span></div>' +
+      '<div class="drawer-field"><label>Tr\u1ea1ng th\u00e1i</label><span class="tds-badge ' + stateBadgeClass(item.state || 'draft') + '">' + escapeHtml(translateState(item.state || 'draft')) + '</span></div>' +
+      (item.companyName ? '<div class="drawer-field"><label>Chi nh\u00e1nh</label><span>' + escapeHtml(item.companyName) + '</span></div>' : '') +
+      (item.notes || item.note ? '<div class="drawer-field"><label>Ghi ch\u00fa</label><span>' + escapeHtml(item.notes || item.note) + '</span></div>' : '') +
+      '</div>';
+    openDrawer(content, 420);
   }
 
   // Open labo order detail drawer
@@ -7205,10 +7415,19 @@
       tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr>' +
         cols.map(function (c) { return '<th' + (c.cls ? ' class="' + c.cls + '"' : '') + '>' + c.label + '</th>'; }).join('') +
         '<th>Thao tác</th></tr></thead><tbody>' +
-        rows.map(function (r) {
+        rows.map(function (r, rIdx) {
           return '<tr>' + cols.map(function (c) { return '<td' + (c.cls ? ' class="' + c.cls + '"' : '') + '>' + c.fmt(r[c.key]) + '</td>'; }).join('') +
-            '<td><button class="tds-btn tds-btn-sm tds-btn-secondary">Xem</button></td></tr>';
+            '<td><button class="tds-btn tds-btn-sm tds-btn-secondary payment-sub-view-btn" data-row-idx="' + rIdx + '">Xem</button></td></tr>';
         }).join('') + '</tbody></table></div>';
+      // Wire "Xem" buttons to open payment detail drawer
+      var subViewBtns = tw.querySelectorAll('.payment-sub-view-btn');
+      for (var vi = 0; vi < subViewBtns.length; vi++) {
+        subViewBtns[vi].addEventListener('click', function () {
+          var idx = parseInt(this.getAttribute('data-row-idx'), 10);
+          var item = rows[idx];
+          if (item) openPaymentDetailDrawer(item);
+        });
+      }
     } catch (_e) { tw.innerHTML = renderEmptyState(emptyMsg); }
   }
 
@@ -7368,11 +7587,33 @@
 
   function renderCallHistory() {
     var el = document.getElementById('page-callcenter'); if (!el) return;
-    var rc = APP.callcenter.recentCalls || [];
     el.innerHTML = '<div class="tds-card"><div class="tds-card-header"><h2>L\u1ecbch s\u1eed cu\u1ed9c g\u1ecdi</h2></div><div id="ch-table"></div></div>';
     var tw = document.getElementById('ch-table'); if (!tw) return;
+    tw.innerHTML = renderLoadingState('\u0110ang t\u1ea3i l\u1ecbch s\u1eed cu\u1ed9c g\u1ecdi...');
+
+    // Try backend first, fall back to localStorage
+    _loadCallHistory(tw);
+  }
+
+  async function _loadCallHistory(tw) {
+    try {
+      var data = await api('/api/callcenter/history' + toQueryString({ companyId: getSelectedBranchId(), limit: 50 }));
+      var items = safeItems(data);
+      if (items.length) {
+        _renderCallHistoryTable(tw, items);
+        return;
+      }
+    } catch (_err) {
+      // API failed, fall back to localStorage
+    }
+    // Fallback: use localStorage recent calls
+    var rc = APP.callcenter.recentCalls || [];
     if (!rc.length) { tw.innerHTML = renderEmptyState('Ch\u01b0a c\u00f3 l\u1ecbch s\u1eed cu\u1ed9c g\u1ecdi'); return; }
-    tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Th\u1eddi gian</th><th>S\u1ed1 \u0111i\u1ec7n tho\u1ea1i</th><th>Kh\u00e1ch h\u00e0ng</th><th>Lo\u1ea1i</th></tr></thead><tbody>' + rc.map(function (c) { return '<tr><td>' + escapeHtml(formatDateTime(c.time || c.date)) + '</td><td>' + escapeHtml(c.phone || '\u2014') + '</td><td>' + escapeHtml(c.customerName || c.name || '\u2014') + '</td><td>' + escapeHtml(c.type || 'G\u1ecdi \u0111i') + '</td></tr>'; }).join('') + '</tbody></table></div>';
+    _renderCallHistoryTable(tw, rc);
+  }
+
+  function _renderCallHistoryTable(tw, items) {
+    tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Th\u1eddi gian</th><th>S\u1ed1 \u0111i\u1ec7n tho\u1ea1i</th><th>Kh\u00e1ch h\u00e0ng</th><th>Lo\u1ea1i</th></tr></thead><tbody>' + items.map(function (c) { return '<tr><td>' + escapeHtml(formatDateTime(c.time || c.date || c.callDate)) + '</td><td>' + escapeHtml(c.phone || c.phoneNumber || '\u2014') + '</td><td>' + escapeHtml(c.customerName || c.name || c.partnerName || '\u2014') + '</td><td>' + escapeHtml(c.type || c.callType || 'G\u1ecdi \u0111i') + '</td></tr>'; }).join('') + '</tbody></table></div>';
   }
 
   function renderCommissionEmployee() {
@@ -8904,7 +9145,12 @@
     } catch (err) {
       if (rId !== st.requestId) return;
       st.loading = false;
-      container.innerHTML = '<div class="tds-empty"><p>' + escapeHtml((err && err.message) || 'Không thể tải báo cáo') + '</p></div>';
+      // Guard against HTML error responses (e.g. 404 pages) leaking into the DOM
+      var errMsg = (err && err.message) || '';
+      if (errMsg.indexOf('<') !== -1 || errMsg.indexOf('<!') !== -1 || errMsg.length > 200) {
+        errMsg = 'Không có dữ liệu';
+      }
+      container.innerHTML = renderEmptyState(errMsg || 'Không thể tải báo cáo');
     }
   }
 
@@ -8954,13 +9200,13 @@
   function renderReportRevenue() {
     renderSubReportPage({
       title: 'Báo cáo doanh thu',
-      endpoint: '/api/reports/services',
+      endpoint: '/api/reports/revenue-trend', // Fixed: was /api/reports/services (same as services report)
       stateKey: 'rptRevenue',
       columns: [
-        { key: 'serviceName', label: 'Dịch vụ', type: 'text' },
-        { key: 'quantity', label: 'Số lượng', type: 'number' },
+        { key: 'reportDate', label: 'Ngày', type: 'date' },
         { key: 'totalAmount', label: 'Doanh thu', type: 'currency' },
-        { key: 'ratio', label: 'Tỷ lệ', type: 'text' },
+        { key: 'income', label: 'Thu', type: 'currency' },
+        { key: 'expense', label: 'Chi', type: 'currency' },
       ],
     });
   }
@@ -9041,7 +9287,7 @@
   function renderReportTasks() {
     renderSubReportPage({
       title: 'Báo cáo công việc',
-      endpoint: '/api/reports/staff',
+      endpoint: '/api/reports/staff', // No /api/reports/tasks endpoint exists; using staff data grouped by employee
       stateKey: 'rptTasks',
       columns: [
         { key: 'staffName', label: 'Nhân viên', type: 'text' },
@@ -9455,6 +9701,10 @@
       addBtn.addEventListener('click', function () {
         if (opts && opts.manageKind) {
           openCatSimpleModal(opts, null);
+        } else if (opts && typeof opts.onAdd === 'function') {
+          opts.onAdd(opts);
+        } else if (opts && (opts.endpoint || opts.loader)) {
+          openCatSimpleGenericModal(opts, null);
         } else {
           showToast('info', 'Chức năng thêm mới cho trang này đang phát triển');
         }
@@ -9630,6 +9880,10 @@
         var item = rawItems[rowIdx];
         if (opts && opts.manageKind && item) {
           openCatSimpleModal(opts, item);
+        } else if (opts && typeof opts.onEdit === 'function' && item) {
+          opts.onEdit(opts, item);
+        } else if (item && (opts.endpoint || opts.loader)) {
+          openCatSimpleGenericModal(opts, item);
         } else {
           showToast('info', 'Chức năng sửa cho trang này đang phát triển');
         }
@@ -9643,6 +9897,10 @@
         var item = rawItems[rowIdx];
         if (opts && opts.manageKind && item && item.id) {
           deleteCatSimpleItem(opts, item.id);
+        } else if (opts && typeof opts.onDelete === 'function' && item) {
+          opts.onDelete(opts, item);
+        } else if (item && item.id && opts.endpoint) {
+          deleteCatSimpleGenericItem(opts, item.id);
         } else {
           showToast('info', 'Chức năng xóa cho trang này đang phát triển');
         }
@@ -9719,6 +9977,88 @@
     if (!ok) return;
     try {
       await api('/api/categories/manage/' + encodeURIComponent(opts.manageKind) + '/' + encodeURIComponent(itemId), {
+        method: 'DELETE',
+      });
+      showToast('success', 'Đã xóa thành công');
+      loadCatSimpleData(opts);
+    } catch (err) {
+      showToast('error', (err && err.message) || 'Không thể xóa');
+    }
+  }
+
+  // Generic modal for catalog pages that use endpoint/loader instead of manageKind
+  function openCatSimpleGenericModal(opts, item) {
+    var editing = !!item;
+    var content =
+      '<form id="cat-generic-form">' +
+      '<div class="tds-form-group">' +
+      '<label class="tds-label">Tên</label>' +
+      '<input class="tds-input" id="cat-generic-name" required value="' + escapeHtml((item && (item.name || item.displayName)) || '') + '">' +
+      '</div>' +
+      '<div class="tds-form-group">' +
+      '<label class="tds-label">Mã</label>' +
+      '<input class="tds-input" id="cat-generic-code" value="' + escapeHtml((item && (item.code || item.defaultCode)) || '') + '">' +
+      '</div>' +
+      '<label class="tds-checkbox-label">' +
+      '<input type="checkbox" id="cat-generic-active" ' + ((item ? !!item.active : true) ? 'checked' : '') + '>' +
+      '<span>Kích hoạt</span>' +
+      '</label>' +
+      '</form>';
+
+    showModal(editing ? 'Cập nhật' : 'Thêm mới', content, {
+      footer:
+        '<button class="tds-btn tds-btn-ghost" id="cat-generic-cancel">Hủy</button>' +
+        '<button class="tds-btn tds-btn-primary" id="cat-generic-save">' + (editing ? 'Cập nhật' : 'Thêm mới') + '</button>',
+      onOpen: function () {
+        var cancelBtn = document.getElementById('cat-generic-cancel');
+        var saveBtn = document.getElementById('cat-generic-save');
+        if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+        if (saveBtn) {
+          saveBtn.addEventListener('click', async function () {
+            var payload = {
+              name: getInputValue('cat-generic-name'),
+              code: getInputValue('cat-generic-code') || null,
+              active: !!(document.getElementById('cat-generic-active') || {}).checked,
+              companyId: getSelectedBranchId() || null,
+            };
+            if (!payload.name) {
+              showToast('warning', 'Tên là bắt buộc');
+              return;
+            }
+            try {
+              var endpoint = opts.endpoint;
+              if (!endpoint) { showToast('info', 'Không có endpoint để lưu'); return; }
+              if (editing && item && item.id) {
+                await api(endpoint + '/' + encodeURIComponent(item.id), {
+                  method: 'PUT',
+                  body: JSON.stringify(payload),
+                });
+                showToast('success', 'Cập nhật thành công');
+              } else {
+                await api(endpoint, {
+                  method: 'POST',
+                  body: JSON.stringify(payload),
+                });
+                showToast('success', 'Tạo mới thành công');
+              }
+              closeModal();
+              loadCatSimpleData(opts);
+            } catch (err) {
+              showToast('error', (err && err.message) || 'Không thể lưu');
+            }
+          });
+        }
+      },
+    });
+  }
+
+  async function deleteCatSimpleGenericItem(opts, itemId) {
+    var ok = await tdsConfirm('Xóa mục này?', { title: 'Xóa mục' });
+    if (!ok) return;
+    try {
+      var endpoint = opts.endpoint;
+      if (!endpoint) { showToast('info', 'Không có endpoint để xóa'); return; }
+      await api(endpoint + '/' + encodeURIComponent(itemId), {
         method: 'DELETE',
       });
       showToast('success', 'Đã xóa thành công');
@@ -10541,8 +10881,8 @@
               });
               showToast('success', 'Đã xóa thành viên');
             } catch (err) {
-              // If API not available, just show success
-              showToast('success', 'Đã xóa thành viên (API chưa hỗ trợ)');
+              showToast('error', (err && err.message) || 'Không thể xóa thành viên');
+              return;
             }
             closeModal();
             if (refreshCallback) refreshCallback(teamId);

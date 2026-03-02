@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import uuid
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
+from pydantic import BaseModel
+from psycopg2.extras import RealDictCursor
 
 from app.core.database import get_conn
 from app.core.lookup_sql import (
@@ -19,6 +22,45 @@ from app.core.middleware import require_auth
 from app.core.pagination import paginate
 
 router = APIRouter(prefix="/api", tags=["exam-sessions"])
+
+
+class ExamSessionCreatePayload(BaseModel):
+    name: str | None = None
+    partnerId: str | None = None
+    doctorId: str | None = None
+    companyId: str | None = None
+    state: str = "draft"
+    reason: str | None = None
+    date: str | None = None
+
+
+class ExamSessionUpdatePayload(BaseModel):
+    name: str | None = None
+    partnerId: str | None = None
+    doctorId: str | None = None
+    companyId: str | None = None
+    state: str | None = None
+    reason: str | None = None
+    date: str | None = None
+
+
+def _resolve_exam_table(conn):
+    """Resolve exam sessions table and return (table_ref, cols) or (None, None)."""
+    sessions_table = resolve_table(
+        conn,
+        "dot_khams",
+        "dotkham",
+        "dotkhams",
+        "exam_sessions",
+        "exam_session",
+    )
+    if not sessions_table:
+        return None, None
+    cols = table_columns(conn, sessions_table)
+    id_col = pick_column(cols, "id")
+    if not id_col:
+        return None, None
+    return sessions_table, cols
 
 
 @router.get("/dot-khams")
@@ -196,5 +238,197 @@ async def list_dot_khams(
                 offset=effective_offset,
                 limit=effective_limit,
             )
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+@router.post("/dot-khams", status_code=201)
+async def create_exam_session(
+    body: ExamSessionCreatePayload = Body(...),
+    _user: dict = Depends(require_auth),
+):
+    """Create a new exam session (dot kham)."""
+    try:
+        with get_conn() as conn:
+            sessions_table, cols = _resolve_exam_table(conn)
+            if not sessions_table:
+                raise HTTPException(status_code=503, detail="Exam session table not found")
+
+            id_col = pick_column(cols, "id")
+            name_col = pick_column(cols, "name", "display_name", "session_name")
+            date_col = pick_column(cols, "date", "exam_date", "kham_date", "created_at")
+            state_col = pick_column(cols, "state", "status")
+            doctor_id_col = pick_column(cols, "doctor_id", "doctorid", "employee_id")
+            company_id_col = pick_column(cols, "company_id", "companyid")
+            partner_id_col = pick_column(cols, "partner_id", "partnerid", "customer_id", "customerid")
+            reason_col = pick_column(cols, "reason", "note", "description")
+
+            new_id = f"dk-{uuid.uuid4().hex[:8]}"
+            insert_cols: list[str] = [id_col]
+            insert_placeholders: list[str] = ["%s"]
+            params: list = [new_id]
+
+            if name_col and body.name:
+                insert_cols.append(name_col)
+                insert_placeholders.append("%s")
+                params.append(body.name)
+            if date_col:
+                insert_cols.append(date_col)
+                if body.date:
+                    insert_placeholders.append("%s")
+                    params.append(body.date)
+                else:
+                    insert_placeholders.append("NOW()")
+            if state_col:
+                insert_cols.append(state_col)
+                insert_placeholders.append("%s")
+                params.append(body.state)
+            if partner_id_col and body.partnerId:
+                insert_cols.append(partner_id_col)
+                insert_placeholders.append("%s")
+                params.append(body.partnerId)
+            if doctor_id_col and body.doctorId:
+                insert_cols.append(doctor_id_col)
+                insert_placeholders.append("%s")
+                params.append(body.doctorId)
+            if company_id_col and body.companyId:
+                insert_cols.append(company_id_col)
+                insert_placeholders.append("%s")
+                params.append(body.companyId)
+            if reason_col and body.reason:
+                insert_cols.append(reason_col)
+                insert_placeholders.append("%s")
+                params.append(body.reason)
+
+            sql = (
+                f"INSERT INTO {sessions_table.qualified_name} "
+                f"({', '.join(quote_ident(c) for c in insert_cols)}) "
+                f"VALUES ({', '.join(insert_placeholders)})"
+            )
+
+            with conn.cursor() as cur:
+                cur.execute(sql, tuple(params))
+
+            return {"id": new_id, "name": body.name, "state": body.state}
+    except HTTPException:
+        raise
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+@router.put("/dot-khams/{session_id}")
+async def update_exam_session(
+    session_id: str = Path(..., min_length=1),
+    body: ExamSessionUpdatePayload = Body(...),
+    _user: dict = Depends(require_auth),
+):
+    """Update an existing exam session."""
+    try:
+        with get_conn() as conn:
+            sessions_table, cols = _resolve_exam_table(conn)
+            if not sessions_table:
+                raise HTTPException(status_code=503, detail="Exam session table not found")
+
+            id_col = pick_column(cols, "id")
+            name_col = pick_column(cols, "name", "display_name", "session_name")
+            date_col = pick_column(cols, "date", "exam_date", "kham_date", "created_at")
+            state_col = pick_column(cols, "state", "status")
+            doctor_id_col = pick_column(cols, "doctor_id", "doctorid", "employee_id")
+            company_id_col = pick_column(cols, "company_id", "companyid")
+            partner_id_col = pick_column(cols, "partner_id", "partnerid", "customer_id", "customerid")
+            reason_col = pick_column(cols, "reason", "note", "description")
+            updated_col = pick_column(cols, "write_date", "updated_at", "last_updated")
+
+            updates: list[str] = []
+            params: list = []
+
+            if body.name is not None and name_col:
+                updates.append(f"{quote_ident(name_col)} = %s")
+                params.append(body.name)
+            if body.state is not None and state_col:
+                updates.append(f"{quote_ident(state_col)} = %s")
+                params.append(body.state)
+            if body.partnerId is not None and partner_id_col:
+                updates.append(f"{quote_ident(partner_id_col)} = %s")
+                params.append(body.partnerId)
+            if body.doctorId is not None and doctor_id_col:
+                updates.append(f"{quote_ident(doctor_id_col)} = %s")
+                params.append(body.doctorId)
+            if body.companyId is not None and company_id_col:
+                updates.append(f"{quote_ident(company_id_col)} = %s")
+                params.append(body.companyId)
+            if body.reason is not None and reason_col:
+                updates.append(f"{quote_ident(reason_col)} = %s")
+                params.append(body.reason)
+            if body.date is not None and date_col:
+                updates.append(f"{quote_ident(date_col)} = %s")
+                params.append(body.date)
+            if updated_col:
+                updates.append(f"{quote_ident(updated_col)} = NOW()")
+
+            if not updates:
+                raise HTTPException(status_code=422, detail="No fields to update")
+
+            params.append(session_id)
+            sql = (
+                f"UPDATE {sessions_table.qualified_name} "
+                f"SET {', '.join(updates)} "
+                f"WHERE {quote_ident(id_col)}::text = %s"
+            )
+
+            with conn.cursor() as cur:
+                cur.execute(sql, tuple(params))
+                if cur.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="Exam session not found")
+
+            return {"id": session_id, "updated": True}
+    except HTTPException:
+        raise
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+@router.delete("/dot-khams/{session_id}")
+async def delete_exam_session(
+    session_id: str = Path(..., min_length=1),
+    _user: dict = Depends(require_auth),
+):
+    """Delete an exam session (soft-delete via state='cancel' if possible)."""
+    try:
+        with get_conn() as conn:
+            sessions_table, cols = _resolve_exam_table(conn)
+            if not sessions_table:
+                raise HTTPException(status_code=503, detail="Exam session table not found")
+
+            id_col = pick_column(cols, "id")
+            state_col = pick_column(cols, "state", "status")
+            updated_col = pick_column(cols, "write_date", "updated_at", "last_updated")
+
+            with conn.cursor() as cur:
+                if state_col:
+                    set_clauses = [f"{quote_ident(state_col)} = %s"]
+                    params: list = ["cancel"]
+                    if updated_col:
+                        set_clauses.append(f"{quote_ident(updated_col)} = NOW()")
+                    params.append(session_id)
+                    sql = (
+                        f"UPDATE {sessions_table.qualified_name} "
+                        f"SET {', '.join(set_clauses)} "
+                        f"WHERE {quote_ident(id_col)}::text = %s"
+                    )
+                    cur.execute(sql, tuple(params))
+                else:
+                    sql = (
+                        f"DELETE FROM {sessions_table.qualified_name} "
+                        f"WHERE {quote_ident(id_col)}::text = %s"
+                    )
+                    cur.execute(sql, (session_id,))
+
+                if cur.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="Exam session not found")
+
+            return {"id": session_id, "deleted": True}
+    except HTTPException:
+        raise
     except RuntimeError:
         raise HTTPException(status_code=503, detail="Database is unavailable")
