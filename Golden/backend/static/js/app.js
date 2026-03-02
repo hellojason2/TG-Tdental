@@ -2191,7 +2191,7 @@
           '</div>';
         panel.innerHTML = summaryHtml + '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Ng\u00e0y</th><th>Lo\u1ea1i</th><th class="text-right">S\u1ed1 ti\u1ec1n</th><th>S\u1ed5 qu\u1ef9</th><th>Ghi ch\u00fa</th><th>Tr\u1ea1ng th\u00e1i</th></tr></thead><tbody>' +
           payments.map(function (p) {
-            return '<tr><td>' + escapeHtml(formatDate(p.date || p.createdAt)) + '</td><td>' + escapeHtml(normalizePaymentTypeLabel(p.paymentType)) + '</td><td class="text-right">' + escapeHtml(formatCurrency(p.amount || 0)) + '</td><td>' + escapeHtml(p.journalName || '\u2014') + '</td><td>' + escapeHtml(p.memo || p.communication || p.notes || '\u2014') + '</td><td><span class="partners-badge partners-badge-blue">' + escapeHtml(p.state || '\u2014') + '</span></td></tr>';
+            return '<tr><td>' + escapeHtml(formatDate(p.date || p.createdAt)) + '</td><td>' + escapeHtml(normalizePaymentTypeLabel(p.paymentType)) + '</td><td class="text-right">' + escapeHtml(formatCurrency(p.amount || 0)) + '</td><td>' + escapeHtml(p.journalName || '\u2014') + '</td><td>' + escapeHtml(p.memo || p.communication || p.notes || '\u2014') + '</td><td><span class="tds-badge ' + stateBadgeClass(p.state) + '">' + escapeHtml(translateState(p.state)) + '</span></td></tr>';
           }).join('') + '</tbody></table></div>';
       } else { panel.innerHTML = renderEmptyState('Ch\u01b0a c\u00f3 phi\u1ebfu thu chi'); }
 
@@ -2395,7 +2395,7 @@
       treatedKeys.sort(function (a, b) { return Number(a) - Number(b); }).forEach(function (key) {
         treatedTeeth[key].forEach(function (info) {
           var tBadge = info.state === 'done' ? 'partners-badge-green' : info.state === 'sale' ? 'partners-badge-blue' : 'partners-badge-orange';
-          html += '<tr><td><strong>R\u0103ng ' + escapeHtml(key) + '</strong></td><td>' + escapeHtml(info.product) + '</td><td>' + escapeHtml(formatDate(info.date)) + '</td><td><span class="partners-badge ' + tBadge + '">' + escapeHtml(info.state) + '</span></td></tr>';
+          html += '<tr><td><strong>R\u0103ng ' + escapeHtml(key) + '</strong></td><td>' + escapeHtml(info.product) + '</td><td>' + escapeHtml(formatDate(info.date)) + '</td><td><span class="partners-badge ' + tBadge + '">' + escapeHtml(translateState(info.state)) + '</span></td></tr>';
         });
       });
       html += '</tbody></table></div>';
@@ -4169,7 +4169,7 @@
           '<td>' + escapeHtml(formatDate(item.date)) + '</td>' +
           '<td>' + escapeHtml(item.partnerName || '—') + '</td>' +
           '<td>' + escapeHtml(item.doctorName || '—') + '</td>' +
-          '<td>' + escapeHtml(item.state || '—') + '</td>' +
+          '<td><span class="tds-badge ' + stateBadgeClass(item.state) + '">' + escapeHtml(translateState(item.state)) + '</span></td>' +
           '<td class="text-right">' + escapeHtml(formatCurrency(item.amountTotal || 0)) + '</td>' +
           '</tr>'
         );
@@ -4285,7 +4285,7 @@
           '<td>' + escapeHtml(normalizePickingTypeLabel(item.pickingType)) + '</td>' +
           '<td>' + escapeHtml(item.partnerName || '—') + '</td>' +
           '<td>' + escapeHtml(item.companyName || '—') + '</td>' +
-          '<td>' + escapeHtml(item.state || '—') + '</td>' +
+          '<td><span class="tds-badge ' + stateBadgeClass(item.state) + '">' + escapeHtml(translateState(item.state)) + '</span></td>' +
           '</tr>'
         );
       }).join('') +
@@ -4537,7 +4537,7 @@
           '<td>' + escapeHtml(item.name || '—') + '</td>' +
           '<td>' + escapeHtml(item.partnerName || '—') + '</td>' +
           '<td>' + escapeHtml(normalizePaymentTypeLabel(item.paymentType)) + '</td>' +
-          '<td>' + escapeHtml(item.state || '—') + '</td>' +
+          '<td><span class="tds-badge ' + stateBadgeClass(item.state) + '">' + escapeHtml(translateState(item.state)) + '</span></td>' +
           '<td>' + escapeHtml(item.companyName || '—') + '</td>' +
           '<td class="text-right">' + escapeHtml(formatCurrency(item.amount || 0)) + '</td>' +
           '</tr>'
@@ -4785,7 +4785,7 @@
     try {
       var rows = safeItems(await api('/api/sale-orders' + toQueryString({ search: search, companyId: getSelectedBranchId(), limit: 50, offset: 0 })));
       if (!rows.length) { tw.innerHTML = renderEmptyState('Ch\u01b0a c\u00f3 \u0111\u01a1n h\u00e0ng Labo'); return; }
-      tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>M\u00e3 \u0111\u01a1n</th><th>Ng\u00e0y</th><th>Kh\u00e1ch h\u00e0ng</th><th>B\u00e1c s\u0129</th><th>Tr\u1ea1ng th\u00e1i</th><th class="text-right">Gi\u00e1 tr\u1ecb</th></tr></thead><tbody>' + rows.map(function (r) { return '<tr><td>' + escapeHtml(r.name || r.id || '\u2014') + '</td><td>' + escapeHtml(formatDate(r.date)) + '</td><td>' + escapeHtml(r.partnerName || '\u2014') + '</td><td>' + escapeHtml(r.doctorName || '\u2014') + '</td><td>' + escapeHtml(r.state || '\u2014') + '</td><td class="text-right">' + escapeHtml(formatCurrency(r.amountTotal || 0)) + '</td></tr>'; }).join('') + '</tbody></table></div>';
+      tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>M\u00e3 \u0111\u01a1n</th><th>Ng\u00e0y</th><th>Kh\u00e1ch h\u00e0ng</th><th>B\u00e1c s\u0129</th><th>Tr\u1ea1ng th\u00e1i</th><th class="text-right">Gi\u00e1 tr\u1ecb</th></tr></thead><tbody>' + rows.map(function (r) { return '<tr><td>' + escapeHtml(r.name || r.id || '\u2014') + '</td><td>' + escapeHtml(formatDate(r.date)) + '</td><td>' + escapeHtml(r.partnerName || '\u2014') + '</td><td>' + escapeHtml(r.doctorName || '\u2014') + '</td><td><span class="tds-badge ' + stateBadgeClass(r.state) + '">' + escapeHtml(translateState(r.state)) + '</span></td><td class="text-right">' + escapeHtml(formatCurrency(r.amountTotal || 0)) + '</td></tr>'; }).join('') + '</tbody></table></div>';
     } catch (_e) { tw.innerHTML = renderEmptyState('Kh\u00f4ng th\u1ec3 t\u1ea3i'); }
   }
 
@@ -4806,7 +4806,7 @@
     try {
       var rows = safeItems(await api('/api/stock-pickings' + toQueryString({ companyId: getSelectedBranchId(), pickingType: 'outgoing', limit: 50, offset: 0 })));
       if (!rows.length) { tw.innerHTML = renderEmptyState('Ch\u01b0a c\u00f3 phi\u1ebfu tr\u1ea3 h\u00e0ng'); return; }
-      tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>M\u00e3 ch\u1ee9ng t\u1eeb</th><th>Ng\u00e0y</th><th>\u0110\u1ed1i t\u00e1c</th><th>Chi nh\u00e1nh</th><th>Tr\u1ea1ng th\u00e1i</th></tr></thead><tbody>' + rows.map(function (r) { return '<tr><td>' + escapeHtml(r.name || r.id || '\u2014') + '</td><td>' + escapeHtml(formatDate(r.date)) + '</td><td>' + escapeHtml(r.partnerName || '\u2014') + '</td><td>' + escapeHtml(r.companyName || '\u2014') + '</td><td>' + escapeHtml(r.state || '\u2014') + '</td></tr>'; }).join('') + '</tbody></table></div>';
+      tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>M\u00e3 ch\u1ee9ng t\u1eeb</th><th>Ng\u00e0y</th><th>\u0110\u1ed1i t\u00e1c</th><th>Chi nh\u00e1nh</th><th>Tr\u1ea1ng th\u00e1i</th></tr></thead><tbody>' + rows.map(function (r) { return '<tr><td>' + escapeHtml(r.name || r.id || '\u2014') + '</td><td>' + escapeHtml(formatDate(r.date)) + '</td><td>' + escapeHtml(r.partnerName || '\u2014') + '</td><td>' + escapeHtml(r.companyName || '\u2014') + '</td><td><span class="tds-badge ' + stateBadgeClass(r.state) + '">' + escapeHtml(translateState(r.state)) + '</span></td></tr>'; }).join('') + '</tbody></table></div>';
     } catch (_e) { tw.innerHTML = renderEmptyState('Kh\u00f4ng th\u1ec3 t\u1ea3i'); }
   }
 
@@ -5243,7 +5243,7 @@
             escapeHtml(item.employeeName || 'N/A'),
             '<span class="text-right d-block">' + escapeHtml(formatNumber(item.hours || 0)) + '</span>',
             '<span class="text-right d-block">' + escapeHtml(formatNumber(item.overtime || 0)) + '</span>',
-            escapeHtml(item.state || '—'),
+            '<span class="tds-badge ' + stateBadgeClass(item.state) + '">' + escapeHtml(translateState(item.state)) + '</span>',
           ];
         }),
         'Không có dữ liệu chấm công trong kỳ lọc'
@@ -5259,7 +5259,7 @@
             escapeHtml(item.employeeName || 'N/A'),
             '<span class="text-right d-block">' + escapeHtml(formatCurrency(item.amount || 0)) + '</span>',
             escapeHtml(item.reason || '—'),
-            escapeHtml(item.state || '—'),
+            '<span class="tds-badge ' + stateBadgeClass(item.state) + '">' + escapeHtml(translateState(item.state)) + '</span>',
           ];
         }),
         'Không có dữ liệu tạm ứng trong kỳ lọc'
@@ -5527,7 +5527,7 @@
             return [
               escapeHtml(formatDate(item.appointmentDate || item.date)),
               escapeHtml(item.doctorName || '—'),
-              escapeHtml(item.state || item.status || '—'),
+              '<span class="tds-badge ' + stateBadgeClass(item.state || item.status) + '">' + escapeHtml(translateState(item.state || item.status)) + '</span>',
               escapeHtml(item.notes || item.note || '—'),
             ];
           }),
@@ -5543,7 +5543,7 @@
             return [
               escapeHtml(item.name || item.ref || item.id || '—'),
               escapeHtml(formatDate(item.date || item.orderDate || item.createdAt)),
-              escapeHtml(item.state || item.status || '—'),
+              '<span class="tds-badge ' + stateBadgeClass(item.state || item.status) + '">' + escapeHtml(translateState(item.state || item.status)) + '</span>',
               '<span class="text-right d-block">' + escapeHtml(formatCurrency(item.totalAmount || item.amountTotal || 0)) + '</span>',
               '<span class="text-right d-block">' + escapeHtml(formatNumber(lines.length)) + '</span>',
             ];
@@ -5560,7 +5560,7 @@
               escapeHtml(formatDate(item.date)),
               escapeHtml(item.name || item.sessionName || item.id || '—'),
               escapeHtml(item.doctorName || '—'),
-              escapeHtml(item.state || '—'),
+              '<span class="tds-badge ' + stateBadgeClass(item.state) + '">' + escapeHtml(translateState(item.state)) + '</span>',
               escapeHtml(item.reason || '—'),
             ];
           }),
@@ -5577,7 +5577,7 @@
               escapeHtml(normalizePaymentTypeLabel(item.paymentType)),
               '<span class="text-right d-block">' + escapeHtml(formatCurrency(item.amount || 0)) + '</span>',
               escapeHtml(item.journalName || '—'),
-              escapeHtml(item.state || '—'),
+              '<span class="tds-badge ' + stateBadgeClass(item.state) + '">' + escapeHtml(translateState(item.state)) + '</span>',
             ];
           }),
           'Chưa có lịch sử thanh toán'
@@ -5646,7 +5646,7 @@
           return [
             escapeHtml(item.name || item.id || '—'),
             escapeHtml(formatDate(item.date || item.orderDate)),
-            escapeHtml(item.state || '—'),
+            '<span class="tds-badge ' + stateBadgeClass(item.state) + '">' + escapeHtml(translateState(item.state)) + '</span>',
             '<span class="text-right d-block">' + escapeHtml(formatCurrency(item.totalAmount || item.amountTotal || 0)) + '</span>',
           ];
         }),
@@ -5677,7 +5677,7 @@
             escapeHtml(item.name || '—'),
             '<span class="text-right d-block">' + escapeHtml(formatCurrency(item.amount || 0)) + '</span>',
             escapeHtml(item.journalName || '—'),
-            escapeHtml(item.state || '—'),
+            '<span class="tds-badge ' + stateBadgeClass(item.state) + '">' + escapeHtml(translateState(item.state)) + '</span>',
           ];
         }),
         'Chưa có tạm ứng'
@@ -5798,7 +5798,7 @@
           return [
             escapeHtml(key),
             escapeHtml(info.product),
-            escapeHtml(info.state),
+            '<span class="tds-badge ' + stateBadgeClass(info.state) + '">' + escapeHtml(translateState(info.state)) + '</span>',
           ];
         }),
         ''
@@ -7267,6 +7267,30 @@
     var number = Number(value || 0);
     if (!isFinite(number)) number = 0;
     return number.toLocaleString('vi-VN');
+  }
+
+  var STATE_VI = {
+    draft: 'Nháp', confirmed: 'Đã xác nhận', done: 'Hoàn thành', cancel: 'Đã hủy',
+    cancelled: 'Đã hủy', posted: 'Đã xác nhận', paid: 'Đã thanh toán',
+    waiting: 'Chờ khám', arrived: 'Đã đến', examining: 'Đang khám',
+    in_progress: 'Đang khám', open: 'Mở', closed: 'Đóng',
+    sent: 'Đã gửi', received: 'Đã nhận', approved: 'Đã duyệt',
+    refused: 'Từ chối', pending: 'Chờ xử lý'
+  };
+
+  function translateState(state) {
+    if (!state) return '—';
+    return STATE_VI[state.toLowerCase()] || state;
+  }
+
+  function stateBadgeClass(state) {
+    if (!state) return 'tds-badge-default';
+    var s = state.toLowerCase();
+    if (s === 'done' || s === 'posted' || s === 'paid' || s === 'approved') return 'tds-badge-green';
+    if (s === 'cancel' || s === 'cancelled' || s === 'refused') return 'tds-badge-red';
+    if (s === 'draft' || s === 'pending') return 'tds-badge-default';
+    if (s === 'confirmed' || s === 'sent' || s === 'open') return 'tds-badge-blue';
+    return 'tds-badge-default';
   }
 
   function getUserInitials(value) {

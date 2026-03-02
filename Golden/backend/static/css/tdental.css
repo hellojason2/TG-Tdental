@@ -12,20 +12,20 @@
   --tds-color-primary-light: #E8F0FE;
 
   /* Sidebar */
-  --tds-sidebar-bg: #0F172A;
-  --tds-sidebar-text: #8D97A6;
-  --tds-sidebar-active: #1A6DE3;
-  --tds-sidebar-hover: rgba(255, 255, 255, 0.08);
-  --tds-sidebar-width: 48px;
+  --tds-sidebar-bg: #0C1014;
+  --tds-sidebar-text: #656D7C;
+  --tds-sidebar-active: #22262D;
+  --tds-sidebar-hover: rgba(255, 255, 255, 0.06);
+  --tds-sidebar-width: 56px;
 
   /* Topbar */
-  --tds-topbar-bg: #0C1014;
+  --tds-topbar-bg: #FFFFFF;
 
   /* Layout */
   --tds-topbar-height: 56px;
   --tds-content-bg: #F5F7FA;
   --tds-card-bg: #FFFFFF;
-  --tds-card-radius: 10px;
+  --tds-card-radius: 6px;
   --tds-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 
   /* Typography */
@@ -168,7 +168,7 @@ ol {
 }
 
 /* --------------------------------------------------------------------------
-   Sidebar (icon-only, 48px)
+   Sidebar (icon-only, 56px)
    -------------------------------------------------------------------------- */
 #sidebar {
   width: var(--tds-sidebar-width);
@@ -208,10 +208,10 @@ ol {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  margin: 3px auto;
-  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  margin: 2px auto;
+  border-radius: 4px;
   color: var(--tds-sidebar-text);
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
@@ -227,7 +227,7 @@ ol {
 
 .sidebar-nav-item.active {
   background: var(--tds-sidebar-active);
-  color: #FFFFFF;
+  color: #D1D5DB;
 }
 
 .sidebar-nav-item .nav-icon {
@@ -260,7 +260,7 @@ ol {
 .sidebar-submenu {
   display: none;
   position: absolute;
-  left: 48px;
+  left: 56px;
   top: 0;
   width: 200px;
   background: var(--tds-sidebar-bg);
@@ -315,7 +315,7 @@ ol {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--tds-sidebar-active);
+  background: #4FC3F7;
 }
 
 .submenu-item.active {
@@ -334,12 +334,13 @@ ol {
 }
 
 /* --------------------------------------------------------------------------
-   Topbar (dark)
+   Topbar (white)
    -------------------------------------------------------------------------- */
 #topbar {
   height: var(--tds-topbar-height);
   min-height: var(--tds-topbar-height);
   background: var(--tds-topbar-bg);
+  border-bottom: 1px solid #E5E7EB;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -361,7 +362,7 @@ ol {
   background: none;
   border: none;
   cursor: pointer;
-  color: #7E8796;
+  color: #6B7280;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -371,7 +372,7 @@ ol {
 }
 
 #sidebar-toggle:hover {
-  color: #CBD5E1;
+  color: #374151;
 }
 
 /* Topbar Search */
@@ -393,21 +394,21 @@ ol {
   height: 34px;
   padding: 0 12px 0 34px;
   font-size: 13px;
-  color: #CBD5E1;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid #333D4D;
+  color: #1F2937;
+  background: #F3F4F6;
+  border: 1px solid #E5E7EB;
   border-radius: 6px;
   outline: none;
   transition: border-color 0.15s ease;
 }
 
 #topbar-search-input::placeholder {
-  color: #5A6270;
+  color: #9CA3AF;
 }
 
 #topbar-search-input:focus {
   border-color: var(--tds-color-primary);
-  background: rgba(255, 255, 255, 0.1);
+  background: #FFFFFF;
 }
 
 /* Topbar Center */
@@ -457,7 +458,7 @@ ol {
 
 .topbar-timer {
   font-size: 13px;
-  color: #CBD5E1;
+  color: #6B7280;
   white-space: nowrap;
 }
 
@@ -478,9 +479,9 @@ ol {
   padding: 0 12px;
   font-size: 13px;
   font-weight: 500;
-  color: #CBD5E1;
+  color: #374151;
   background: transparent;
-  border: 1px solid #3B82F6;
+  border: 1px solid #D1D5DB;
   border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
@@ -488,7 +489,7 @@ ol {
 }
 
 .branch-btn:hover {
-  background: rgba(59, 130, 246, 0.1);
+  background: #F3F4F6;
 }
 
 /* Hidden branch selector (still functional) */
@@ -511,13 +512,13 @@ ol {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #7E8796;
+  color: #6B7280;
   transition: color 0.15s ease;
   border-radius: 6px;
 }
 
 #notification-bell:hover {
-  color: #CBD5E1;
+  color: #374151;
 }
 
 #notification-bell svg {
@@ -596,7 +597,7 @@ ol {
 .topbar-user-name {
   font-size: 13px;
   font-weight: 500;
-  color: #FFFFFF;
+  color: #374151;
   white-space: nowrap;
 }
 
@@ -605,7 +606,7 @@ ol {
   height: 32px;
   background: none;
   border: none;
-  color: #7E8796;
+  color: #9CA3AF;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1774,9 +1775,25 @@ ol {
   color: #8B5CF6;
 }
 
-.tds-badge-gray {
+.tds-badge-gray,
+.tds-badge-default {
   background: rgba(100, 116, 139, 0.1);
   color: var(--tds-text-secondary);
+}
+
+.tds-badge-green {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--tds-success);
+}
+
+.tds-badge-red {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--tds-danger);
+}
+
+.tds-badge-blue {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3B82F6;
 }
 
 /* Status-specific badges */
