@@ -12,6 +12,7 @@ from psycopg2.extras import RealDictCursor
 
 from app.core.database import get_conn
 from app.core.lookup_sql import (
+    TableRef,
     empty_page,
     page_window,
     pick_column,
@@ -351,7 +352,7 @@ _MANAGE_SPECS: dict[str, ManageSpec] = {
     # --- Additional category sub-types ---
     "customer-labels": ManageSpec(
         key="customer-labels",
-        table_candidates=("partner_categories", "partnercategories", "customer_labels", "customerlabels"),
+        table_candidates=("customer_labels", "customerlabels"),
         mode="generic",
     ),
     "customer-titles": ManageSpec(
@@ -446,6 +447,64 @@ _MANAGE_SPECS: dict[str, ManageSpec] = {
     ),
 }
 
+_APP_MANAGE_TABLE_BY_KIND: dict[str, str] = {
+    "customer-labels": "app_category_customer_labels",
+    "customer-titles": "app_category_customer_titles",
+    "medical-history": "app_category_medical_history",
+    "customer-stages": "app_category_customer_stages",
+    "suppliers": "app_category_suppliers",
+    "insurance": "app_category_insurance",
+    "referrers": "app_category_referrers",
+    "prescriptions": "app_category_prescriptions",
+    "price-lists": "app_category_price_lists",
+    "commission-tables": "app_category_commission_tables",
+    "departments": "app_category_departments",
+    "job-titles": "app_category_job_titles",
+    "labo-materials": "app_category_labo_materials",
+    "labo-attachments": "app_category_labo_attachments",
+    "income-types": "app_category_income_types",
+    "expense-types": "app_category_expense_types",
+    "stock-criteria": "app_category_stock_criteria",
+    "tooth-diagnosis": "app_category_tooth_diagnosis",
+}
+
+
+def _ensure_app_manage_table(conn, table_name: str) -> TableRef:
+    with conn.cursor() as cur:
+        cur.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS public.{quote_ident(table_name)} (
+                id UUID PRIMARY KEY,
+                name TEXT NOT NULL,
+                code TEXT,
+                type TEXT,
+                active BOOLEAN NOT NULL DEFAULT TRUE,
+                company_id UUID,
+                company_name TEXT,
+                updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+            );
+            """
+        )
+        cur.execute(
+            f"""
+            CREATE INDEX IF NOT EXISTS idx_{table_name}_name
+            ON public.{quote_ident(table_name)} (name);
+            """
+        )
+        cur.execute(
+            f"""
+            CREATE INDEX IF NOT EXISTS idx_{table_name}_active
+            ON public.{quote_ident(table_name)} (active);
+            """
+        )
+        cur.execute(
+            f"""
+            CREATE INDEX IF NOT EXISTS idx_{table_name}_company_id
+            ON public.{quote_ident(table_name)} (company_id);
+            """
+        )
+    return TableRef(schema="public", table=table_name)
+
 
 def _normalise_manage_kind(kind: str) -> ManageSpec:
     key = (kind or "").strip().lower()
@@ -470,8 +529,21 @@ def _table_column_data_types(conn, table_ref) -> dict[str, str]:
     return {row[0]: row[1] for row in rows}
 
 
+def _resolve_manage_table(conn, candidates: tuple[str, ...]) -> TableRef | None:
+    """Resolve manage table using candidate priority order."""
+    for candidate in candidates:
+        table_ref = resolve_table(conn, candidate)
+        if table_ref:
+            return table_ref
+    return None
+
+
 def _manage_context(conn, spec: ManageSpec) -> dict | None:
-    table = resolve_table(conn, *spec.table_candidates)
+    table = _resolve_manage_table(conn, spec.table_candidates)
+    if not table:
+        fallback_table = _APP_MANAGE_TABLE_BY_KIND.get(spec.key)
+        if fallback_table:
+            table = _ensure_app_manage_table(conn, fallback_table)
     if not table:
         return None
 

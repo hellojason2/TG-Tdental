@@ -6,7 +6,7 @@ from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from psycopg2.extras import RealDictCursor
 
 from app.core.database import get_conn
@@ -467,14 +467,14 @@ async def reports_overview(
 
 class DashboardSummaryRequest(BaseModel):
     companyId: str | None = None
-    date: date | None = None
+    reportDate: date | None = Field(default=None, alias="date")
 
 
 @router.post("/dashboard/summary", tags=["dashboard"])
 async def dashboard_summary(body: DashboardSummaryRequest, _user: dict = Depends(require_auth)):
     """Aggregate stats for the dashboard KPI cards: total customers,
     appointments today, revenue today, and pending payments."""
-    target_date = body.date or date.today()
+    target_date = body.reportDate or date.today()
     company_id = body.companyId.strip() if body.companyId else None
 
     try:

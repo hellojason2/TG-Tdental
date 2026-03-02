@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date as dt_date
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from psycopg2.extras import RealDictCursor
 
+from app.api.finance import (
+    PaymentCreateRequest,
+    create_payment_record,
+    list_payments as finance_list_payments,
+)
 from app.core.database import get_conn
 from app.core.lookup_sql import pick_column, quote_ident, resolve_table, table_columns
 from app.core.middleware import require_auth
@@ -26,10 +32,20 @@ _NUMERIC_TYPES = {
 _BOOLEAN_TYPES = {"boolean", "bool"}
 
 
+class HrAdvanceCreateRequest(BaseModel):
+    date: dt_date | None = None
+    employeeName: str = Field(min_length=1, max_length=255)
+    type: str = "advance"
+    method: str = "cash"
+    amount: float = Field(gt=0)
+    reason: str | None = None
+    companyId: str | None = None
+
+
 @router.get("/salary")
 async def salary_overview(
-    dateFrom: date | None = Query(default=None),
-    dateTo: date | None = Query(default=None),
+    dateFrom: dt_date | None = Query(default=None),
+    dateTo: dt_date | None = Query(default=None),
     companyId: str | None = Query(default=None),
     _user: dict = Depends(require_auth),
 ):
@@ -180,8 +196,8 @@ def _load_employees(conn, *, company_id: str | None) -> list[dict]:
 def _load_timekeeping(
     conn,
     *,
-    date_from: date | None,
-    date_to: date | None,
+    date_from: dt_date | None,
+    date_to: dt_date | None,
     company_id: str | None,
 ) -> list[dict]:
     table = resolve_table(conn, "chamcongs", "timekeepings", "timesheets", "attendance")
@@ -306,8 +322,8 @@ def _numeric_select_expr(alias: str, column_name: str, data_type: str) -> str:
 def _load_advances(
     conn,
     *,
-    date_from: date | None,
-    date_to: date | None,
+    date_from: dt_date | None,
+    date_to: dt_date | None,
     company_id: str | None,
 ) -> list[dict]:
     table = resolve_table(
@@ -402,8 +418,8 @@ def _load_advances(
 
 @router.get("/timekeeping")
 async def hr_timekeeping(
-    dateFrom: date | None = Query(default=None),
-    dateTo: date | None = Query(default=None),
+    dateFrom: dt_date | None = Query(default=None),
+    dateTo: dt_date | None = Query(default=None),
     companyId: str | None = Query(default=None),
     employeeId: str | None = Query(default=None),
     _user: dict = Depends(require_auth),
@@ -436,8 +452,8 @@ async def hr_timekeeping(
 
 @router.get("/salary-advances")
 async def hr_salary_advances(
-    dateFrom: date | None = Query(default=None),
-    dateTo: date | None = Query(default=None),
+    dateFrom: dt_date | None = Query(default=None),
+    dateTo: dt_date | None = Query(default=None),
     companyId: str | None = Query(default=None),
     employeeId: str | None = Query(default=None),
     _user: dict = Depends(require_auth),
@@ -464,6 +480,112 @@ async def hr_salary_advances(
 
 
 # ---------------------------------------------------------------------------
+# Compatibility aliases: /api/hr/advances
+# ---------------------------------------------------------------------------
+
+
+@router.get("/advances")
+async def hr_advances(
+    dateFrom: dt_date | None = Query(default=None),
+    dateTo: dt_date | None = Query(default=None),
+    companyId: str | None = Query(default=None),
+    employeeId: str | None = Query(default=None),
+    _user: dict = Depends(require_auth),
+):
+    base_payload = await hr_salary_advances(
+        dateFrom=dateFrom,
+        dateTo=dateTo,
+        companyId=companyId,
+        employeeId=employeeId,
+        _user=_user,
+    )
+    if (base_payload.get("totalItems") or 0) > 0:
+        return base_payload
+
+    # No dedicated advances table in this dataset; fallback to outbound payments.
+    payments_payload = await finance_list_payments(
+        page=1,
+        per_page=200,
+        offset=0,
+        limit=200,
+        companyId=companyId,
+        partnerId=None,
+        paymentType="outbound",
+        dateFrom=dateFrom,
+        dateTo=dateTo,
+        state=None,
+        _user=_user,
+    )
+    payment_items = payments_payload.get("items") or []
+    if employeeId:
+        payment_items = [item for item in payment_items if item.get("partnerId") == employeeId]
+
+    mapped_items = []
+    for item in payment_items:
+        mapped_items.append(
+            {
+                "id": item.get("id"),
+                "date": item.get("date"),
+                "employeeId": item.get("partnerId"),
+                "employeeName": item.get("partnerName"),
+                "type": "advance",
+                "method": item.get("journalName"),
+                "amount": item.get("amount") or 0,
+                "reason": item.get("communication"),
+                "state": item.get("state") or "draft",
+                "companyId": item.get("companyId"),
+                "paymentId": item.get("id"),
+            }
+        )
+
+    return {
+        "items": mapped_items,
+        "totalItems": len(mapped_items),
+        "meta": {
+            "dateFrom": dateFrom.isoformat() if dateFrom else None,
+            "dateTo": dateTo.isoformat() if dateTo else None,
+            "companyId": companyId,
+        },
+    }
+
+
+@router.post("/advances")
+async def create_hr_advance(
+    payload: HrAdvanceCreateRequest,
+    _user: dict = Depends(require_auth),
+):
+    """Create salary advance vouchers via the shared payments table."""
+    payment_payload = PaymentCreateRequest(
+        date=payload.date,
+        paymentType="outbound",
+        method=payload.method or "cash",
+        category=payload.type or "advance",
+        partnerName=payload.employeeName,
+        amount=payload.amount,
+        note=payload.reason,
+        companyId=payload.companyId,
+        state="draft",
+    )
+    try:
+        with get_conn() as conn:
+            created = create_payment_record(conn, payment_payload, _user)
+            return {
+                "id": created.get("id"),
+                "date": created.get("date"),
+                "employeeName": payload.employeeName,
+                "type": payload.type or "advance",
+                "method": payload.method or "cash",
+                "amount": payload.amount,
+                "reason": payload.reason,
+                "state": created.get("state") or "draft",
+                "companyId": created.get("companyId"),
+                "paymentId": created.get("id"),
+            }
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+# ---------------------------------------------------------------------------
 # GET /api/hr/salary-payments
 # ---------------------------------------------------------------------------
 
@@ -474,8 +596,8 @@ async def hr_salary_payments(
     per_page: int = Query(default=20, ge=0, le=500),
     offset: int | None = Query(default=None, ge=0),
     limit: int | None = Query(default=None, ge=0, le=5000),
-    dateFrom: date | None = Query(default=None),
-    dateTo: date | None = Query(default=None),
+    dateFrom: dt_date | None = Query(default=None),
+    dateTo: dt_date | None = Query(default=None),
     companyId: str | None = Query(default=None),
     employeeId: str | None = Query(default=None),
     search: str = Query(default=""),
@@ -613,8 +735,8 @@ async def hr_salary_payments(
 
 @router.get("/salary-reports")
 async def hr_salary_reports(
-    dateFrom: date | None = Query(default=None),
-    dateTo: date | None = Query(default=None),
+    dateFrom: dt_date | None = Query(default=None),
+    dateTo: dt_date | None = Query(default=None),
     companyId: str | None = Query(default=None),
     _user: dict = Depends(require_auth),
 ):

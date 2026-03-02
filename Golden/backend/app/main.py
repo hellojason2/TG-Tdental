@@ -7,7 +7,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from app.core.middleware import validate_token
@@ -182,6 +182,12 @@ app.include_router(callcenter_router)
 def health_check():
     """Simple liveness probe."""
     return {"status": "ok"}
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    """Silence favicon 404 noise when no icon asset is provided."""
+    return Response(status_code=204)
 
 
 @app.get("/")

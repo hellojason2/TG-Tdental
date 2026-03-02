@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TDental - Đăng nhập</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/login.css">
+  <link rel="stylesheet" href="/static/css/login.css">
 </head>
 <body class="login-body">
   <div class="login-split">
@@ -156,10 +156,11 @@
 
       async function redirectIfAlreadyLoggedIn() {
         var token = localStorage.getItem('token');
-        var headers = {};
-        if (token) {
-          headers.Authorization = 'Bearer ' + token;
+        if (!token) {
+          return false;
         }
+        var headers = {};
+        headers.Authorization = 'Bearer ' + token;
 
         try {
           var res = await fetch('/api/auth/session', { headers: headers });

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from uuid import uuid4
 
 import psycopg2
@@ -478,16 +479,23 @@ async def list_activity_logs(
 
 
 # ---------------------------------------------------------------------------
-# Teams CRUD (simple stub for settings-team page)
+# Teams CRUD for settings-team page
 # ---------------------------------------------------------------------------
 
 
 @router.get("/teams")
 async def list_teams(_user: dict = Depends(require_admin)):
-    """Return teams list. Tries to find a teams table; returns empty if none."""
+    """Return teams list from CRM/app team tables."""
     try:
         with get_conn() as conn:
-            tbl = resolve_table(conn, "teams", "app_teams", "user_teams")
+            tbl = resolve_table(
+                conn,
+                "crm_teams",
+                "crmteams",
+                "teams",
+                "app_teams",
+                "user_teams",
+            )
             if not tbl:
                 return empty_page(0, 20)
             cols = table_columns(conn, tbl)
@@ -495,13 +503,24 @@ async def list_teams(_user: dict = Depends(require_admin)):
             if not id_col:
                 return empty_page(0, 20)
             name_col = pick_column(cols, "name", "team_name", "title")
-            desc_col = pick_column(cols, "description", "note", "desc")
+            desc_col = pick_column(
+                cols,
+                "description",
+                "note",
+                "desc",
+                "lead_properties_definition",
+                "leadpropertiesdefinition",
+            )
+            active_col = pick_column(cols, "active", "is_active")
             select_fields = [
                 f't.{quote_ident(id_col)}::text AS id',
                 (f't.{quote_ident(name_col)} AS name' if name_col else "'Unnamed' AS name"),
                 (f't.{quote_ident(desc_col)} AS description' if desc_col else "NULL::text AS description"),
             ]
-            q = f"SELECT {', '.join(select_fields)} FROM {tbl.qualified_name} t ORDER BY t.{quote_ident(name_col or id_col)}"
+            q = f"SELECT {', '.join(select_fields)} FROM {tbl.qualified_name} t"
+            if active_col:
+                q += f" WHERE COALESCE(t.{quote_ident(active_col)}, TRUE)"
+            q += f" ORDER BY t.{quote_ident(name_col or id_col)}"
             return paginate(query=q, params=(), conn=conn, offset=0, limit=100)
     except RuntimeError:
         raise HTTPException(status_code=503, detail="Database is unavailable")
@@ -509,11 +528,220 @@ async def list_teams(_user: dict = Depends(require_admin)):
 
 @router.post("/teams")
 async def create_team(body: dict, _user: dict = Depends(require_admin)):
-    """Stub: create a team. Returns success for now."""
-    return {"ok": True, "message": "Team created"}
+    """Create a team in the resolved CRM/app team table."""
+    name = str((body or {}).get("name") or "").strip()
+    description = str((body or {}).get("description") or "").strip() or None
+    if not name:
+        raise HTTPException(status_code=422, detail="name is required")
+
+    try:
+        with get_conn() as conn:
+            tbl = resolve_table(
+                conn,
+                "crm_teams",
+                "crmteams",
+                "teams",
+                "app_teams",
+                "user_teams",
+            )
+            if not tbl:
+                raise HTTPException(status_code=503, detail="Team table not found")
+
+            cols = table_columns(conn, tbl)
+            id_col = pick_column(cols, "id")
+            name_col = pick_column(cols, "name", "team_name", "title")
+            if not name_col:
+                raise HTTPException(status_code=500, detail="Team name column not found")
+
+            desc_col = pick_column(
+                cols,
+                "description",
+                "note",
+                "desc",
+                "lead_properties_definition",
+                "leadpropertiesdefinition",
+            )
+            active_col = pick_column(cols, "active", "is_active")
+            company_col = pick_column(cols, "company_id", "companyid")
+            user_col = pick_column(cols, "user_id", "userid", "owner_id", "ownerid")
+            is_ho_col = pick_column(cols, "is_ho", "isho")
+            created_col = pick_column(cols, "date_created", "datecreated", "created_at")
+            updated_col = pick_column(cols, "lastupdated", "updated_at")
+            created_by_col = pick_column(cols, "created_by_id", "createdbyid")
+            write_by_col = pick_column(cols, "write_by_id", "writebyid")
+
+            insert_cols: list[str] = []
+            values: list = []
+
+            if id_col:
+                insert_cols.append(id_col)
+                values.append(str(uuid4()))
+
+            insert_cols.append(name_col)
+            values.append(name)
+
+            if desc_col:
+                insert_cols.append(desc_col)
+                values.append(description)
+            if active_col:
+                insert_cols.append(active_col)
+                values.append(True)
+            if is_ho_col:
+                insert_cols.append(is_ho_col)
+                values.append(bool((body or {}).get("isHo", False)))
+            if company_col:
+                insert_cols.append(company_col)
+                values.append((body or {}).get("companyId"))
+            if user_col and (body or {}).get("userId"):
+                insert_cols.append(user_col)
+                values.append((body or {}).get("userId"))
+            now = datetime.utcnow()
+            if created_col:
+                insert_cols.append(created_col)
+                values.append(now)
+            if updated_col:
+                insert_cols.append(updated_col)
+                values.append(now)
+            if created_by_col and (body or {}).get("createdById"):
+                insert_cols.append(created_by_col)
+                values.append((body or {}).get("createdById"))
+            if write_by_col and (body or {}).get("writeById"):
+                insert_cols.append(write_by_col)
+                values.append((body or {}).get("writeById"))
+
+            quoted_cols = ", ".join(quote_ident(c) for c in insert_cols)
+            placeholders = ", ".join(["%s"] * len(values))
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    f"INSERT INTO {tbl.qualified_name} ({quoted_cols}) VALUES ({placeholders})",
+                    tuple(values),
+                )
+
+            return {"ok": True, "id": values[0] if id_col else None, "name": name, "description": description}
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+    except psycopg2.Error as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to create team: {exc.pgerror or str(exc)}")
 
 
 @router.get("/teams/{team_id}/members")
 async def team_members(team_id: str, _user: dict = Depends(require_admin)):
-    """Return team members. Stub returns empty."""
-    return {"offset": 0, "limit": 20, "totalItems": 0, "items": []}
+    """Return team members with user info when available."""
+    try:
+        with get_conn() as conn:
+            members_tbl = resolve_table(
+                conn,
+                "crm_team_members",
+                "crmteammembers",
+                "team_members",
+                "teammembers",
+                "app_team_members",
+                "appteammembers",
+            )
+            if not members_tbl:
+                return empty_page(0, 20)
+
+            cols = table_columns(conn, members_tbl)
+            id_col = pick_column(cols, "id")
+            team_col = pick_column(cols, "crm_team_id", "crmteamid", "team_id", "teamid")
+            user_col = pick_column(cols, "user_id", "userid", "employee_id", "employeeid", "member_id", "memberid")
+            role_col = pick_column(cols, "role")
+            active_col = pick_column(cols, "active", "is_active")
+            if not team_col or not user_col:
+                return empty_page(0, 20)
+
+            joins = ""
+            name_expr = f"m.{quote_ident(user_col)}::text"
+            email_expr = "NULL::text"
+            role_expr = (
+                f"NULLIF(m.{quote_ident(role_col)}::text, '')"
+                if role_col
+                else "NULL::text"
+            )
+
+            user_tbl = resolve_table(conn, "app_users", "users", "application_users", "applicationusers")
+            if user_tbl:
+                u_cols = table_columns(conn, user_tbl)
+                u_id = pick_column(u_cols, "id")
+                u_name = pick_column(u_cols, "name", "display_name")
+                u_email = pick_column(u_cols, "email")
+                u_role = pick_column(u_cols, "role")
+                if u_id:
+                    joins += (
+                        f" LEFT JOIN {user_tbl.qualified_name} u"
+                        f" ON m.{quote_ident(user_col)}::text = u.{quote_ident(u_id)}::text"
+                    )
+                    if u_name:
+                        name_expr = f"COALESCE(NULLIF(u.{quote_ident(u_name)}::text, ''), {name_expr})"
+                    if u_email:
+                        email_expr = f"NULLIF(u.{quote_ident(u_email)}::text, '')"
+                    if u_role and role_col is None:
+                        role_expr = f"NULLIF(u.{quote_ident(u_role)}::text, '')"
+
+            employee_tbl = resolve_table(conn, "employees", "employee")
+            if employee_tbl:
+                e_cols = table_columns(conn, employee_tbl)
+                e_user_id = pick_column(e_cols, "user_id", "userid")
+                e_name = pick_column(e_cols, "name", "display_name")
+                e_email = pick_column(e_cols, "email")
+                e_is_doctor = pick_column(e_cols, "is_doctor", "isdoctor")
+                e_is_assistant = pick_column(e_cols, "is_assistant", "isassistant")
+                e_is_receptionist = pick_column(e_cols, "is_receptionist", "isreceptionist")
+                if e_user_id:
+                    joins += (
+                        f" LEFT JOIN {employee_tbl.qualified_name} e"
+                        f" ON m.{quote_ident(user_col)}::text = e.{quote_ident(e_user_id)}::text"
+                    )
+                    if e_name:
+                        name_expr = (
+                            f"COALESCE(NULLIF(e.{quote_ident(e_name)}::text, ''), {name_expr})"
+                        )
+                    if e_email:
+                        email_expr = (
+                            f"COALESCE(NULLIF(e.{quote_ident(e_email)}::text, ''), {email_expr})"
+                        )
+                    if role_col is None and role_expr == "NULL::text":
+                        role_parts: list[str] = []
+                        if e_is_doctor:
+                            role_parts.append(f"WHEN COALESCE(e.{quote_ident(e_is_doctor)}, FALSE) THEN 'doctor'")
+                        if e_is_assistant:
+                            role_parts.append(
+                                f"WHEN COALESCE(e.{quote_ident(e_is_assistant)}, FALSE) THEN 'assistant'"
+                            )
+                        if e_is_receptionist:
+                            role_parts.append(
+                                f"WHEN COALESCE(e.{quote_ident(e_is_receptionist)}, FALSE) THEN 'receptionist'"
+                            )
+                        if role_parts:
+                            role_expr = "CASE " + " ".join(role_parts) + " ELSE NULL END"
+
+            select_id_expr = (
+                f"m.{quote_ident(id_col)}::text"
+                if id_col
+                else f"m.{quote_ident(user_col)}::text"
+            )
+            select_active_expr = (
+                f"COALESCE(m.{quote_ident(active_col)}, TRUE)"
+                if active_col
+                else "TRUE"
+            )
+
+            query = (
+                "SELECT "
+                f"{select_id_expr} AS id, "
+                f"m.{quote_ident(user_col)}::text AS \"userId\", "
+                f"{name_expr} AS name, "
+                f"{email_expr} AS email, "
+                f"{role_expr} AS role, "
+                f"{select_active_expr} AS active "
+                f"FROM {members_tbl.qualified_name} m"
+                f"{joins} "
+                f"WHERE m.{quote_ident(team_col)}::text = %s"
+            )
+            params: list = [team_id]
+            if active_col:
+                query += f" AND COALESCE(m.{quote_ident(active_col)}, TRUE)"
+            query += " ORDER BY name ASC NULLS LAST"
+            return paginate(query=query, params=tuple(params), conn=conn, offset=0, limit=200)
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")

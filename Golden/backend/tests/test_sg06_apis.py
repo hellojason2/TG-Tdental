@@ -20,6 +20,31 @@ def _conn_ctx(conn):
     yield conn
 
 
+class _ExecCursor:
+    def __init__(self):
+        self.sql_history: list[str] = []
+        self.params_history: list[tuple] = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def execute(self, sql, params=None):
+        self.sql_history.append(sql)
+        self.params_history.append(tuple(params or ()))
+
+
+class _ExecConn:
+    def __init__(self):
+        self.cursor_obj = _ExecCursor()
+
+    def cursor(self, **kwargs):
+        del kwargs
+        return self.cursor_obj
+
+
 def test_payments_endpoint_filters_and_pagination(monkeypatch):
     conn = object()
     captured: dict = {}
@@ -76,6 +101,107 @@ def test_payments_endpoint_filters_and_pagination(monkeypatch):
     assert captured["params"][1] == date(2026, 2, 1)
     assert captured["params"][2] == date(2026, 2, 28)
     assert "paymentType" in captured["query"]
+
+
+def test_create_payment_inserts_required_fields(monkeypatch):
+    conn = _ExecConn()
+
+    monkeypatch.setattr(finance_module, "get_conn", lambda: _conn_ctx(conn))
+    monkeypatch.setattr(
+        finance_module,
+        "resolve_table",
+        lambda _conn, *_candidates: FakeTable('"public"."accountpayments"'),
+    )
+    monkeypatch.setattr(
+        finance_module,
+        "table_columns",
+        lambda _conn, _table: (
+            "id",
+            "paymentdate",
+            "amount",
+            "paymenttype",
+            "journalid",
+            "companyid",
+            "name",
+            "state",
+            "communication",
+            "isintercompany",
+            "isprepayment",
+        ),
+    )
+    monkeypatch.setattr(
+        finance_module,
+        "_resolve_default_journal",
+        lambda _conn, **_kwargs: {"id": "journal-001", "companyId": "cmp-01", "name": "Tiền mặt"},
+    )
+
+    result = asyncio.run(
+        finance_module.create_payment(
+            finance_module.PaymentCreateRequest(
+                date=date(2026, 3, 1),
+                paymentType="outbound",
+                method="cash",
+                category="salary",
+                partnerName="Nguyen Van A",
+                amount=1250000,
+                note="Tam ung",
+            ),
+            _user={"id": "user-01"},
+        )
+    )
+
+    assert result["paymentType"] == "outbound"
+    assert result["journalId"] == "journal-001"
+    assert result["companyId"] == "cmp-01"
+    assert result["state"] == "draft"
+    assert result["name"].startswith("MANUAL.PMT/")
+    assert conn.cursor_obj.sql_history
+    assert conn.cursor_obj.sql_history[0].startswith("INSERT INTO")
+    assert "journalid" in conn.cursor_obj.sql_history[0]
+    assert "journal-001" in conn.cursor_obj.params_history[0]
+
+
+def test_create_hr_advance_maps_to_payment_create(monkeypatch):
+    conn = object()
+    captured: dict = {}
+
+    monkeypatch.setattr(hr_module, "get_conn", lambda: _conn_ctx(conn))
+
+    def fake_create_payment_record(conn_obj, payload, user):
+        captured["conn"] = conn_obj
+        captured["payload"] = payload
+        captured["user"] = user
+        return {
+            "id": "payment-001",
+            "date": "2026-03-01T00:00:00",
+            "state": "draft",
+            "companyId": "cmp-01",
+        }
+
+    monkeypatch.setattr(hr_module, "create_payment_record", fake_create_payment_record)
+
+    result = asyncio.run(
+        hr_module.create_hr_advance(
+            hr_module.HrAdvanceCreateRequest(
+                date=date(2026, 3, 1),
+                employeeName="Employee A",
+                type="advance",
+                method="cash",
+                amount=550000,
+                reason="Tam ung thang",
+                companyId="cmp-01",
+            ),
+            _user={"id": "admin-1"},
+        )
+    )
+
+    assert captured["conn"] is conn
+    assert captured["payload"].paymentType == "outbound"
+    assert captured["payload"].partnerName == "Employee A"
+    assert captured["payload"].amount == 550000
+    assert captured["payload"].companyId == "cmp-01"
+    assert result["paymentId"] == "payment-001"
+    assert result["employeeName"] == "Employee A"
 
 
 def test_dot_khams_partner_filter(monkeypatch):

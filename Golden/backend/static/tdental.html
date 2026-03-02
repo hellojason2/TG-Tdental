@@ -236,13 +236,15 @@
           <span id="topbar-timer" class="topbar-timer"></span>
         </div>
         <div class="topbar-right">
-          <button id="branch-btn" class="branch-btn" title="Chi nhánh">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            <span id="branch-label">Chi nhánh</span>
-          </button>
-          <select id="branch-selector" title="Chi nhánh" style="display:none">
-            <option value="">Tất cả chi nhánh</option>
-          </select>
+          <div class="branch-wrap">
+            <button id="branch-btn" class="branch-btn" title="Chi nhánh">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span id="branch-label">Tất cả chi nhánh</span>
+            </button>
+            <select id="branch-selector" title="Chi nhánh">
+              <option value="">Tất cả chi nhánh</option>
+            </select>
+          </div>
           <div class="notification-wrap">
             <button id="notification-bell" title="Thông báo">
               <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -303,6 +305,6 @@
     <div id="drawer-container"></div>
   </div>
 
-  <script src="/static/js/app.js"></script>
+  <script src="/static/js/app.js?v=4"></script>
 </body>
 </html>
