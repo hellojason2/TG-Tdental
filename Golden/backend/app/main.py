@@ -2,6 +2,7 @@
 
 import hashlib
 import logging
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -126,23 +127,47 @@ def _file_hash(path: Path, length: int = 8) -> str:
 
 
 def _cache_busted_html(html_path: Path) -> str:
-    """Read an HTML file and append ?v=<hash> to CSS/JS asset paths."""
+    """Read HTML and rewrite static asset URLs with a content hash query param."""
     text = html_path.read_text(encoding="utf-8")
-    # Bust /static/css/tdental.css
-    css_path = _static_dir / "css" / "tdental.css"
-    css_v = _file_hash(css_path)
-    text = text.replace(
-        '/static/css/tdental.css"',
-        f'/static/css/tdental.css?v={css_v}"',
-    )
-    # Bust /static/js/app.js
-    js_path = _static_dir / "js" / "app.js"
-    js_v = _file_hash(js_path)
-    text = text.replace(
-        '/static/js/app.js"',
-        f'/static/js/app.js?v={js_v}"',
-    )
+    assets = [
+        ("/static/css/tdental.css", _static_dir / "css" / "tdental.css"),
+        ("/static/js/app.js", _static_dir / "js" / "app.js"),
+        ("/static/css/login.css", _static_dir / "css" / "login.css"),
+        ("/static/js/login.js", _static_dir / "js" / "login.js"),
+    ]
+    for asset_url, asset_path in assets:
+        version = _file_hash(asset_path)
+        # Replace both bare URL and existing ?v=... URL.
+        pattern = rf"{re.escape(asset_url)}(?:\?v=[^\"]*)?"
+        text = re.sub(pattern, f"{asset_url}?v={version}", text)
     return text
+
+
+def _html_no_cache_headers() -> dict[str, str]:
+    """Headers to force browser revalidation for HTML entry documents."""
+    return {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0",
+    }
+
+
+def _render_html(path: Path) -> HTMLResponse:
+    return HTMLResponse(_cache_busted_html(path), headers=_html_no_cache_headers())
+
+
+@app.middleware("http")
+async def serve_busted_static_html(request: Request, call_next):
+    """
+    Intercept direct static HTML entrypoints so they also get cache-busted assets.
+    This avoids stale UI when users open /static/tdental.html directly.
+    """
+    if request.method in {"GET", "HEAD"}:
+        if request.url.path == "/static/tdental.html":
+            return _render_html(_app_page)
+        if request.url.path == "/static/login.html":
+            return _render_html(_login_page)
+    return await call_next(request)
 
 
 if _static_dir.is_dir():
@@ -210,7 +235,7 @@ def root(request: Request):
         )
         return response
 
-    return HTMLResponse(_cache_busted_html(_app_page))
+    return _render_html(_app_page)
 
 
 @app.get("/login")
@@ -222,7 +247,7 @@ def login_page(request: Request):
             validate_token(token, require_session=True)
             return RedirectResponse(url="/")
         except HTTPException:
-            response = FileResponse(_login_page)
+            response = _render_html(_login_page)
             response.delete_cookie(
                 key="tdental_session",
                 path="/",
@@ -232,7 +257,7 @@ def login_page(request: Request):
             )
             return response
 
-    return FileResponse(_login_page)
+    return _render_html(_login_page)
 
 
 @app.get("/app")
@@ -255,7 +280,7 @@ def app_page(request: Request):
         )
         return response
 
-    return FileResponse(_app_page)
+    return _render_html(_app_page)
 
 
 # ---------------------------------------------------------------------------

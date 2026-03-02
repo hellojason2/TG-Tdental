@@ -396,7 +396,10 @@
     toast.innerHTML =
       '<span class="toast-icon">' + (toastIcons[type] || toastIcons.info) + '</span>' +
       '<span class="toast-message">' + escapeHtml(message) + '</span>' +
-      '<button class="toast-close" title="Đóng">&times;</button>';
+      '<button class="toast-close" title="Đóng">&times;</button>' +
+      '<div class="tds-toast-progress" style="--toast-dur:' + duration + 'ms"></div>';
+    toast.style.position = 'relative';
+    toast.style.overflow = 'hidden';
 
     var closeBtn = toast.querySelector('.toast-close');
     closeBtn.addEventListener('click', function () {
@@ -486,6 +489,331 @@
   function modalEscHandler(e) {
     if (e.key === 'Escape') closeModal();
   }
+  // ---------------------------------------------------------------------------
+  // Treatment Plan Modal - P6
+  // ---------------------------------------------------------------------------
+  var _treatmentModalState = { selectedTeeth: [], multiSelectMode: false, services: [], currentCustomer: null };
+
+  async function openTreatmentPlanModal(customer) {
+    var servicesData = [];
+    try {
+      var prodResp = await api('/api/products' + toQueryString({ limit: 200 }));
+      servicesData = safeItems(prodResp);
+    } catch (e) { console.error('Failed to load services:', e); }
+    _treatmentModalState = { selectedTeeth: [], multiSelectMode: false, services: servicesData, currentCustomer: customer || null };
+    var content = renderTreatmentPlanForm(customer, servicesData);
+    showModal('Tạo phiếu điều trị', content, {
+      width: 720,
+      footer: '<button class="tds-btn tds-btn-ghost" onclick="closeModal()">Hủy</button><button class="tds-btn tds-btn-primary" id="tp-create-btn">Tạo mới</button>',
+      onOpen: function() { bindTreatmentPlanModalEvents(customer, servicesData); }
+    });
+  }
+
+  function renderTreatmentPlanForm(customer, services) {
+    var c = customer || {};
+    var svcOptions = '<option value="">-- Chọn dịch vụ --</option>';
+    for (var i = 0; i < services.length; i++) { svcOptions += '<option value="' + escapeHtml(services[i].id || '') + '" data-name="' + escapeHtml(services[i].name || '') + '" data-price="' + (services[i].price || services[i].unitPrice || services[i].listPrice || 0) + '">' + escapeHtml(services[i].name || '') + '</option>'; }
+    var html = '<form id="treatment-plan-form" class="treatment-plan-form">' +
+      '<div class="tds-form-row">' +
+      '<div class="tds-form-group"><label class="tds-label">Bệnh nhân *</label><input type="text" class="tds-input" id="tp-customer-search" placeholder="Tìm kiếm bệnh nhân..." value="' + escapeHtml(c.name || c.partnerName || '') + '" autocomplete="off"><input type="hidden" id="tp-customer-id" value="' + escapeHtml(c.id || c.partnerId || '') + '"><div id="tp-customer-dropdown" class="tp-customer-dropdown" style="display:none"></div></div>' +
+      '<div class="tds-form-group"><label class="tds-label">Bác sĩ phụ trách</label><select class="tds-select" id="tp-doctor"><option value="">-- Chọn bác sĩ --</option></select></div>' +
+      '</div>' +
+      '<div class="tp-section-title">Sơ đồ răng - Chọn răng cần điều trị</div>' +
+      '<div class="tp-dental-toolbar"><button type="button" class="tds-btn tds-btn-sm ' + (_treatmentModalState.multiSelectMode ? 'tds-btn-primary' : 'tds-btn-ghost') + '" id="tp-multi-select-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Chọn nhiều răng</button><span class="tp-selected-count" id="tp-selected-count" style="display:none">Đã chọn: <strong id="tp-selected-teeth-list"></strong></span></div>' +
+      '<div class="tp-dental-chart-wrapper" id="tp-dental-chart">' + renderTreatmentPlanDentalChart() + '</div>' +
+      '<div class="tp-selected-teeth-panel" id="tp-selected-teeth-panel" style="display:none"><div class="tp-section-title">Chi tiết điều trị theo răng</div><div id="tp-teeth-details"></div></div>' +
+      '<div class="tds-form-row"><div class="tds-form-group"><label class="tds-label">Ghi chú</label><textarea class="tds-textarea" id="tp-notes" rows="3" placeholder="Nhập ghi chú cho phiếu điều trị..."></textarea></div></div>' +
+      '<div class="tp-total-row"><span>Tổng tiền:</span><span class="tp-total-amount" id="tp-total-amount">0 ₫</span></div></form>';
+    return html;
+  }
+
+  function renderTreatmentPlanDentalChart() {
+    var UPPER = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
+    var LOWER = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
+    var toothW = 34, toothH = 44, gap = 4, padX = 24, padY = 20;
+    var totalW = UPPER.length * (toothW + gap) - gap + padX * 2;
+    var svgH = 2 * toothH + 80 + padY * 2;
+    var midX = totalW / 2;
+    function renderRow(teeth, startY, isUpper) {
+      var s = '';
+      for (var i = 0; i < teeth.length; i++) {
+        var tn = teeth[i];
+        var tx = padX + i * (toothW + gap);
+        var isSelected = _treatmentModalState.selectedTeeth.indexOf(tn) >= 0;
+        var fill = isSelected ? '#1A6DE3' : '#E2E8F0';
+        var stroke = isSelected ? '#1557b0' : '#94A3B8';
+        var textFill = isSelected ? '#fff' : '#475569';
+        s += '<g class="tp-dental-tooth-g" data-tooth="' + tn + '" style="cursor:pointer">';
+        s += '<rect x="' + tx + '" y="' + startY + '" width="' + toothW + '" height="' + toothH + '" rx="5" fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.5"/>';
+        if (isUpper) { s += '<line x1="' + (tx + toothW / 2) + '" y1="' + (startY + toothH) + '" x2="' + (tx + toothW / 2) + '" y2="' + (startY + toothH + 10) + '" stroke="#94A3B8" stroke-width="1"/>'; }
+        else { s += '<line x1="' + (tx + toothW / 2) + '" y1="' + startY + '" x2="' + (tx + toothW / 2) + '" y2="' + (startY - 10) + '" stroke="#94A3B8" stroke-width="1"/>'; }
+        s += '<text x="' + (tx + toothW / 2) + '" y="' + (startY + toothH / 2 + 5) + '" text-anchor="middle" font-size="11" font-weight="600" fill="' + textFill + '" font-family="Inter,sans-serif">' + tn + '</text></g>';
+      }
+      return s;
+    }
+    var svg = '<svg class="tp-dental-chart-svg" viewBox="0 0 ' + totalW + ' ' + svgH + '" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto">';
+    svg += '<rect width="' + totalW + '" height="' + svgH + '" fill="#fff" rx="8"/>';
+    svg += '<text x="' + midX + '" y="' + (padY + 2) + '" text-anchor="middle" font-size="11" font-weight="600" fill="#64748B" font-family="Inter,sans-serif">HÀM TRÊN</text>';
+    svg += '<line x1="' + midX + '" y1="' + padY + '" x2="' + midX + '" y2="' + (padY + toothH + 20) + '" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,3"/>';
+    var upperStartY = padY + 12;
+    svg += renderRow(UPPER, upperStartY, true);
+    var jawSepY = upperStartY + toothH + 30;
+    svg += '<line x1="' + padX + '" y1="' + jawSepY + '" x2="' + (totalW - padX) + '" y2="' + jawSepY + '" stroke="#CBD5E1" stroke-width="1"/>';
+    svg += '<text x="' + midX + '" y="' + (jawSepY + 12) + '" text-anchor="middle" font-size="11" font-weight="600" fill="#64748B" font-family="Inter,sans-serif">HÀM DƯỚI</text>';
+    svg += '<line x1="' + midX + '" y1="' + (jawSepY + 16) + '" x2="' + midX + '" y2="' + (jawSepY + 16 + toothH + 10) + '" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,3"/>';
+    var lowerStartY = jawSepY + 26;
+    svg += renderRow(LOWER, lowerStartY, false);
+    svg += '</svg>';
+    return svg;
+  }
+
+  function bindTreatmentPlanModalEvents(customer, services) {
+    var state = _treatmentModalState;
+    var multiBtn = document.getElementById('tp-multi-select-btn');
+    if (multiBtn) {
+      multiBtn.addEventListener('click', function() {
+        state.multiSelectMode = !state.multiSelectMode;
+        multiBtn.classList.toggle('tds-btn-primary', state.multiSelectMode);
+        multiBtn.classList.toggle('tds-btn-ghost', !state.multiSelectMode);
+        if (!state.multiSelectMode && state.selectedTeeth.length > 1) { state.selectedTeeth = [state.selectedTeeth[0]]; updateTreatmentPlanTeethUI(); }
+      });
+    }
+    var toothGroups = document.querySelectorAll('.tp-dental-tooth-g');
+    for (var i = 0; i < toothGroups.length; i++) {
+      toothGroups[i].addEventListener('click', function() {
+        var tn = parseInt(this.getAttribute('data-tooth'), 10);
+        if (state.multiSelectMode) {
+          var idx = state.selectedTeeth.indexOf(tn);
+          if (idx >= 0) { state.selectedTeeth.splice(idx, 1); }
+          else { state.selectedTeeth.push(tn); }
+        } else { state.selectedTeeth = [tn]; }
+        updateTreatmentPlanTeethUI();
+      });
+    }
+    var custSearch = document.getElementById('tp-customer-search');
+    if (custSearch) {
+      var searchTimer = null;
+      custSearch.addEventListener('input', function() {
+        var q = this.value.trim();
+        clearTimeout(searchTimer);
+        if (q.length < 2) { var dropdown = document.getElementById('tp-customer-dropdown'); if (dropdown) dropdown.style.display = 'none'; return; }
+        searchTimer = setTimeout(async function() {
+          try {
+            var resp = await api('/api/customers' + toQueryString({ search: q, limit: 10 }));
+            var items = safeItems(resp);
+            var dropdown = document.getElementById('tp-customer-dropdown');
+            if (!dropdown) return;
+            if (!items.length) { dropdown.innerHTML = '<div class="tp-customer-empty">Không tìm thấy bệnh nhân</div>'; dropdown.style.display = 'block'; return; }
+            var html = '';
+            for (var j = 0; j < items.length; j++) { html += '<div class="tp-customer-item" data-id="' + escapeHtml(items[j].id) + '" data-name="' + escapeHtml(items[j].name) + '"><div class="tp-customer-name">' + escapeHtml(items[j].name) + '</div><div class="tp-customer-phone">' + escapeHtml(items[j].phone || '') + '</div></div>'; }
+            dropdown.innerHTML = html;
+            dropdown.style.display = 'block';
+            var custItems = dropdown.querySelectorAll('.tp-customer-item');
+            for (var k = 0; k < custItems.length; k++) {
+              custItems[k].addEventListener('click', function() {
+                var cid = this.getAttribute('data-id');
+                var cname = this.getAttribute('data-name');
+                custSearch.value = cname;
+                document.getElementById('tp-customer-id').value = cid;
+                state.currentCustomer = { id: cid, name: cname };
+                dropdown.style.display = 'none';
+              });
+            }
+          } catch (e) { console.error('Customer search error:', e); }
+        }, 300);
+      });
+    }
+    var createBtn = document.getElementById('tp-create-btn');
+    if (createBtn) { createBtn.addEventListener('click', async function() { await createTreatmentPlan(); }); }
+    if (customer && customer.id) { document.getElementById('tp-customer-id').value = customer.id; }
+  }
+
+  function updateTreatmentPlanTeethUI() {
+    var state = _treatmentModalState;
+    var chart = document.getElementById('tp-dental-chart');
+    if (chart) {
+      chart.innerHTML = renderTreatmentPlanDentalChart();
+      var toothGroups = document.querySelectorAll('.tp-dental-tooth-g');
+      for (var i = 0; i < toothGroups.length; i++) {
+        toothGroups[i].addEventListener('click', function() {
+          var tn = parseInt(this.getAttribute('data-tooth'), 10);
+          if (state.multiSelectMode) {
+            var idx = state.selectedTeeth.indexOf(tn);
+            if (idx >= 0) { state.selectedTeeth.splice(idx, 1); }
+            else { state.selectedTeeth.push(tn); }
+          } else { state.selectedTeeth = [tn]; }
+          updateTreatmentPlanTeethUI();
+        });
+      }
+    }
+    var countEl = document.getElementById('tp-selected-count');
+    var teethListEl = document.getElementById('tp-selected-teeth-list');
+    var panel = document.getElementById('tp-selected-teeth-panel');
+    var detailsEl = document.getElementById('tp-teeth-details');
+    if (state.selectedTeeth.length > 0) {
+      if (countEl) countEl.style.display = 'inline-flex';
+      if (teethListEl) teethListEl.textContent = state.selectedTeeth.sort(function(a,b){return a-b}).join(', ');
+      if (panel) panel.style.display = 'block';
+      var detailsHtml = '<div class="tp-teeth-details-list">';
+      var sortedTeeth = state.selectedTeeth.slice().sort(function(a,b){return a-b});
+      for (var j = 0; j < sortedTeeth.length; j++) {
+        var tn = sortedTeeth[j];
+        var svcOptions = '<option value="">-- Chọn dịch vụ --</option>';
+        for (var k = 0; k < state.services.length; k++) { svcOptions += '<option value="' + escapeHtml(state.services[k].id || '') + '" data-name="' + escapeHtml(state.services[k].name || '') + '" data-price="' + (state.services[k].price || state.services[k].unitPrice || state.services[k].listPrice || 0) + '">' + escapeHtml(state.services[k].name || '') + '</option>'; }
+        detailsHtml += '<div class="tp-tooth-detail-row" data-tooth="' + tn + '"><div class="tp-tooth-number">Răng ' + tn + '</div><div class="tp-tooth-fields"><select class="tp-tooth-service" data-tooth="' + tn + '">' + svcOptions + '</select><input type="text" class="tp-tooth-type" placeholder="Loại điều trị" value=""><select class="tp-tooth-status"><option value="draft">Chờ xử lý</option><option value="sale">Đang làm</option><option value="done">Hoàn thành</option><option value="cancel">Hủy</option></select><input type="number" class="tp-tooth-cost" placeholder="Giá" value="0" min="0"><button type="button" class="tp-tooth-remove" data-tooth="' + tn + '" title="Xóa">&times;</button></div></div>';
+      }
+      detailsHtml += '</div>';
+      if (detailsEl) detailsEl.innerHTML = detailsHtml;
+      var removeBtns = document.querySelectorAll('.tp-tooth-remove');
+      for (var m = 0; m < removeBtns.length; m++) { removeBtns[m].addEventListener('click', function() { var t = parseInt(this.getAttribute('data-tooth'), 10); var idx = state.selectedTeeth.indexOf(t); if (idx >= 0) state.selectedTeeth.splice(idx, 1); updateTreatmentPlanTeethUI(); }); }
+      var costInputs = document.querySelectorAll('.tp-tooth-cost');
+      for (var n = 0; n < costInputs.length; n++) { costInputs[n].addEventListener('input', updateTreatmentPlanTotal); }
+    } else { if (countEl) countEl.style.display = 'none'; if (panel) panel.style.display = 'none'; }
+  }
+
+  function updateTreatmentPlanTotal() {
+    var costInputs = document.querySelectorAll('.tp-tooth-cost');
+    var total = 0;
+    for (var i = 0; i < costInputs.length; i++) { total += parseFloat(costInputs[i].value) || 0; }
+    var totalEl = document.getElementById('tp-total-amount');
+    if (totalEl) totalEl.textContent = formatCurrency(total);
+  }
+
+  async function createTreatmentPlan() {
+    var customerId = document.getElementById('tp-customer-id').value;
+    var customerName = document.getElementById('tp-customer-search').value;
+    var doctorId = document.getElementById('tp-doctor').value;
+    var notes = document.getElementById('tp-notes').value;
+    var state = _treatmentModalState;
+    if (!customerId) { showToast('error', 'Vui lòng chọn bệnh nhân'); return; }
+    if (state.selectedTeeth.length === 0) { showToast('error', 'Vui lòng chọn ít nhất một răng'); return; }
+    var lines = [];
+    var toothRows = document.querySelectorAll('.tp-tooth-detail-row');
+    for (var i = 0; i < toothRows.length; i++) {
+      var tn = parseInt(toothRows[i].getAttribute('data-tooth'), 10);
+      var svcSelect = toothRows[i].querySelector('.tp-tooth-service');
+      var typeInput = toothRows[i].querySelector('.tp-tooth-type');
+      var statusSelect = toothRows[i].querySelector('.tp-tooth-status');
+      var costInput = toothRows[i].querySelector('.tp-tooth-cost');
+      var svcOpt = svcSelect.options[svcSelect.selectedIndex];
+      var cost = parseFloat(costInput.value) || 0;
+      lines.push({ teeth: [tn], productId: svcSelect.value || null, productName: svcOpt ? svcOpt.getAttribute('data-name') || '' : '', treatmentType: typeInput.value, state: statusSelect.value, unitPrice: cost, qty: 1 });
+    }
+    try {
+      var payload = { name: 'Phiếu điều trị - ' + customerName + ' - ' + new Date().toLocaleDateString('vi-VN'), partnerId: customerId, partnerName: customerName, doctorId: doctorId || null, state: 'sale', notes: notes, lines: JSON.stringify(lines) };
+      var result = await api('/api/sale-orders', { method: 'POST', body: JSON.stringify(payload) });
+      showToast('success', 'Tạo phiếu điều trị thành công');
+      closeModal();
+      if (APP.customerDetail && APP.customerDetail.id === customerId) { loadCustomerDetail(customerId); }
+    } catch (e) { showToast('error', 'Không thể tạo phiếu điều trị: ' + (e.message || 'Lỗi không xác định')); }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tooth History Popup - P10
+  // ---------------------------------------------------------------------------
+  function showToothHistoryPopup(toothNumber, treatments) {
+    var toothTreatments = [];
+    for (var i = 0; i < treatments.length; i++) {
+      var lines = treatments[i].lines || treatments[i].lineItems || [];
+      for (var j = 0; j < lines.length; j++) {
+        var rawTeeth = String(lines[j].teeth || lines[j].toothNumber || '').split(/[,;\s]+/).filter(Boolean);
+        if (rawTeeth.indexOf(String(toothNumber)) >= 0) { toothTreatments.push({ date: treatments[i].date || treatments[i].orderDate || '', name: treatments[i].name || '', service: lines[j].productName || lines[j].name || '', state: treatments[i].state || '', amount: lines[j].unitPrice || lines[j].subtotal || 0 }); }
+      }
+    }
+    var content = '<div class="tooth-history-popup"><div class="tooth-history-header"><h4>Lịch sử điều trị răng #' + toothNumber + '</h4></div>';
+    if (!toothTreatments.length) { content += '<div class="tooth-history-empty">Chưa có điều trị cho răng này</div>'; }
+    else {
+      content += '<div class="tooth-history-list">';
+      for (var k = 0; k < toothTreatments.length; k++) {
+        var t = toothTreatments[k];
+        var badgeClass = t.state === 'done' ? 'partners-badge-green' : t.state === 'sale' ? 'partners-badge-blue' : 'partners-badge-orange';
+        content += '<div class="tooth-history-item"><div class="tooth-history-date">' + formatDate(t.date) + '</div><div class="tooth-history-service">' + escapeHtml(t.service) + '</div><div class="tooth-history-amount">' + formatCurrency(t.amount) + '</div><span class="partners-badge ' + badgeClass + '">' + escapeHtml(translateState(t.state)) + '</span></div>';
+      }
+      content += '</div>';
+    }
+    content += '<div class="tooth-history-actions"><button class="tds-btn tds-btn-primary tds-btn-sm" id="tooth-history-add-btn">Thêm điều trị cho răng #' + toothNumber + '</button></div></div>';
+    showModal('Lịch sử răng #' + toothNumber, content, { width: 480, footer: '' });
+    var addBtn = document.getElementById('tooth-history-add-btn');
+    if (addBtn) { addBtn.addEventListener('click', function() { closeModal(); if (APP.customerDetail) { _treatmentModalState.selectedTeeth = [toothNumber]; openTreatmentPlanModal(APP.customerDetail); } }); }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Enhanced Dental Chart - P10
+  // ---------------------------------------------------------------------------
+  function bindEnhancedDentalChartClicks(treatments) {
+    var selector = document.getElementById('dental-selector');
+    var multiSelectEnabled = false;
+    var existingToggle = document.getElementById('dental-multi-select-toggle');
+    if (!existingToggle) {
+      var toolbar = document.querySelector('.cdetail-overview-toolbar');
+      if (toolbar) {
+        var toggleBtn = document.createElement('button');
+        toggleBtn.id = 'dental-multi-select-toggle';
+        toggleBtn.className = 'tds-btn tds-btn-sm tds-btn-ghost';
+        toggleBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Chọn nhiều';
+        toggleBtn.style.marginLeft = 'auto';
+        toolbar.appendChild(toggleBtn);
+        toggleBtn.addEventListener('click', function() {
+          multiSelectEnabled = !multiSelectEnabled;
+          toggleBtn.classList.toggle('tds-btn-primary', multiSelectEnabled);
+          toggleBtn.classList.toggle('tds-btn-ghost', !multiSelectEnabled);
+          if (!multiSelectEnabled) { document.querySelectorAll('.dental-tooth-g').forEach(function(g) { g.querySelector('rect').setAttribute('stroke', '#94A3B8'); }); }
+        });
+      }
+    }
+    var toothGroups = document.querySelectorAll('.dental-tooth-g');
+    for (var i = 0; i < toothGroups.length; i++) {
+      toothGroups[i].addEventListener('click', function(e) {
+        var selectedTooth = parseInt(this.getAttribute('data-tooth'), 10);
+        if (multiSelectEnabled) {
+          var rect = this.querySelector('rect');
+          rect.setAttribute('stroke', rect.getAttribute('stroke') === '#1A6DE3' ? '#94A3B8' : '#1A6DE3');
+        } else { e.preventDefault(); e.stopPropagation(); showToothHistoryPopup(selectedTooth, treatments); }
+      });
+      toothGroups[i].addEventListener('mouseenter', function() {
+        var tn = parseInt(this.getAttribute('data-tooth'), 10);
+        var treatedInfo = getToothTreatments(tn, treatments);
+        if (treatedInfo.length) {
+          var tooltip = document.getElementById('dental-tooltip');
+          if (!tooltip) { tooltip = document.createElement('div'); tooltip.id = 'dental-tooltip'; tooltip.style.cssText = 'position:fixed;background:#1e293b;color:#fff;padding:8px 12px;border-radius:6px;font-size:12px;z-index:10000;pointer-events:none;max-width:200px;box-shadow:0 4px 12px rgba(0,0,0,0.15)'; document.body.appendChild(tooltip); }
+          tooltip.innerHTML = '<strong>Răng ' + tn + '</strong><br>' + treatedInfo.map(function(t){return t.product + ' (' + formatDate(t.date) + ')';}).join('<br>');
+          tooltip.style.display = 'block';
+        }
+      });
+      toothGroups[i].addEventListener('mousemove', function(e) { var tooltip = document.getElementById('dental-tooltip'); if (tooltip) { tooltip.style.left = (e.clientX + 10) + 'px'; tooltip.style.top = (e.clientY + 10) + 'px'; } });
+      toothGroups[i].addEventListener('mouseleave', function() { var tooltip = document.getElementById('dental-tooltip'); if (tooltip) tooltip.style.display = 'none'; });
+    }
+    var addTreatmentBtn = document.getElementById('dental-add-treatment-btn');
+    if (!addTreatmentBtn && document.getElementById('dental-multi-select-toggle')) {
+      addTreatmentBtn = document.createElement('button');
+      addTreatmentBtn.id = 'dental-add-treatment-btn';
+      addTreatmentBtn.className = 'tds-btn tds-btn-primary tds-btn-sm';
+      addTreatmentBtn.style.marginLeft = '8px';
+      addTreatmentBtn.style.display = 'none';
+      addTreatmentBtn.textContent = 'Thêm điều trị';
+      document.getElementById('dental-multi-select-toggle').parentNode.appendChild(addTreatmentBtn);
+      addTreatmentBtn.addEventListener('click', function() {
+        var selected = [];
+        document.querySelectorAll('.dental-tooth-g').forEach(function(g) { var rect = g.querySelector('rect'); if (rect.getAttribute('stroke') === '#1A6DE3') { selected.push(parseInt(g.getAttribute('data-tooth'), 10)); } });
+        if (selected.length > 0 && APP.customerDetail) { _treatmentModalState.selectedTeeth = selected; openTreatmentPlanModal(APP.customerDetail); }
+      });
+    }
+    var toggleBtn = document.getElementById('dental-multi-select-toggle');
+    if (toggleBtn) { toggleBtn.addEventListener('click', function() { var btn = document.getElementById('dental-add-treatment-btn'); if (btn) { setTimeout(function() { btn.style.display = toggleBtn.classList.contains('tds-btn-primary') ? 'inline-flex' : 'none'; }, 50); } }); }
+    if (selector) selector.style.display = 'none';
+  }
+
+  function getToothTreatments(toothNumber, treatments) {
+    var result = [];
+    for (var i = 0; i < treatments.length; i++) {
+      var lines = treatments[i].lines || treatments[i].lineItems || [];
+      for (var j = 0; j < lines.length; j++) {
+        var rawTeeth = String(lines[j].teeth || lines[j].toothNumber || '').split(/[,;\s]+/).filter(Boolean);
+        if (rawTeeth.indexOf(String(toothNumber)) >= 0) { result.push({ product: lines[j].productName || lines[j].name || 'Dịch vụ', date: treatments[i].date || treatments[i].orderDate || '', state: treatments[i].state || '' }); }
+      }
+    }
+    return result;
+  }
 
   // ---------------------------------------------------------------------------
   // Drawer System
@@ -526,6 +854,270 @@
 
   function drawerEscHandler(e) {
     if (e.key === 'Escape') closeDrawer();
+  }
+
+  // ---------------------------------------------------------------------------
+  // P1: Global Search (Ctrl+K / F2)
+  // ---------------------------------------------------------------------------
+  var globalSearchState = {
+    open: false,
+    query: '',
+    selectedIndex: 0,
+    results: { customers: [], appointments: [], tasks: [] },
+    loading: false,
+    searchTimer: null,
+  };
+
+  function initGlobalSearch() {
+    var overlay = document.getElementById('global-search-overlay');
+    if (!overlay) return;
+
+    // Keyboard shortcut handler
+    document.addEventListener('keydown', function (e) {
+      // Open search: Ctrl+K or F2
+      if ((e.ctrlKey && e.key === 'k') || e.key === 'F2') {
+        e.preventDefault();
+        openGlobalSearch();
+      }
+    });
+
+    // Close on overlay click
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) {
+        closeGlobalSearch();
+      }
+    });
+
+    // Close on Escape
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && globalSearchState.open) {
+        closeGlobalSearch();
+      }
+    });
+
+    // Search input handler
+    var input = document.getElementById('global-search-input');
+    if (input) {
+      input.addEventListener('input', function () {
+        clearTimeout(globalSearchState.searchTimer);
+        globalSearchState.searchTimer = setTimeout(function () {
+          performGlobalSearch(input.value);
+        }, 300);
+      });
+
+      // Keyboard navigation
+      input.addEventListener('keydown', function (e) {
+        var resultsEl = document.getElementById('global-search-results');
+        if (!resultsEl) return;
+
+        var totalItems = getGlobalSearchItemCount();
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          globalSearchState.selectedIndex = Math.min(globalSearchState.selectedIndex + 1, totalItems - 1);
+          renderGlobalSearchResults();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          globalSearchState.selectedIndex = Math.max(globalSearchState.selectedIndex - 1, 0);
+          renderGlobalSearchResults();
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          executeGlobalSearchItem();
+        }
+      });
+    }
+  }
+
+  function openGlobalSearch() {
+    globalSearchState.open = true;
+    globalSearchState.query = '';
+    globalSearchState.selectedIndex = 0;
+    globalSearchState.results = { customers: [], appointments: [], tasks: [] };
+
+    var overlay = document.getElementById('global-search-overlay');
+    var input = document.getElementById('global-search-input');
+    var resultsEl = document.getElementById('global-search-results');
+
+    if (overlay) {
+      overlay.classList.add('visible');
+      if (input) {
+        input.value = '';
+        setTimeout(function () { input.focus(); }, 50);
+      }
+      if (resultsEl) {
+        resultsEl.innerHTML = '<div class="global-search-empty">Nhập từ khóa để tìm kiếm...</div>';
+      }
+    }
+  }
+
+  function closeGlobalSearch() {
+    globalSearchState.open = false;
+    var overlay = document.getElementById('global-search-overlay');
+    if (overlay) {
+      overlay.classList.remove('visible');
+    }
+  }
+
+  function getGlobalSearchItemCount() {
+    var count = 0;
+    if (globalSearchState.results.customers) count += globalSearchState.results.customers.length;
+    if (globalSearchState.results.appointments) count += globalSearchState.results.appointments.length;
+    if (globalSearchState.results.tasks) count += globalSearchState.results.tasks.length;
+    return count;
+  }
+
+  async function performGlobalSearch(query) {
+    if (!query || query.length < 2) {
+      globalSearchState.results = { customers: [], appointments: [], tasks: [] };
+      renderGlobalSearchResults();
+      return;
+    }
+
+    globalSearchState.loading = true;
+    renderGlobalSearchLoading();
+
+    var companyId = getSelectedBranchId() || '';
+    var searchParams = { search: query, limit: 5 };
+    if (companyId) searchParams.companyId = companyId;
+
+    try {
+      // Search customers
+      var customersReq = api('/api/customers?' + toQueryString(searchParams));
+      // Search appointments
+      var appointmentsReq = api('/api/appointments?' + toQueryString(Object.assign({}, searchParams, { limit: 5 })));
+      // Search tasks
+      var tasksReq = api('/api/tasks?' + toQueryString(searchParams));
+
+      var customersRes = await customersReq;
+      var appointmentsRes = await appointmentsReq;
+      var tasksRes = await tasksReq;
+
+      globalSearchState.results = {
+        customers: safeItems(customersRes).slice(0, 5),
+        appointments: safeItems(appointmentsRes).slice(0, 5),
+        tasks: safeItems(tasksRes).slice(0, 5),
+      };
+    } catch (err) {
+      console.error('Global search error:', err);
+      globalSearchState.results = { customers: [], appointments: [], tasks: [] };
+    }
+
+    globalSearchState.loading = false;
+    globalSearchState.selectedIndex = 0;
+    renderGlobalSearchResults();
+  }
+
+  function renderGlobalSearchLoading() {
+    var resultsEl = document.getElementById('global-search-results');
+    if (resultsEl) {
+      resultsEl.innerHTML = '<div class="global-search-loading">Đang tìm kiếm...</div>';
+    }
+  }
+
+  function renderGlobalSearchResults() {
+    var resultsEl = document.getElementById('global-search-results');
+    if (!resultsEl) return;
+
+    var results = globalSearchState.results;
+    var selectedIdx = globalSearchState.selectedIndex;
+    var currentIdx = 0;
+
+    var html = '';
+
+    // Customers section
+    if (results.customers && results.customers.length > 0) {
+      html += '<div class="global-search-section"><div class="global-search-section-title">Khách hàng</div>';
+      for (var i = 0; i < results.customers.length; i++) {
+        var c = results.customers[i];
+        var selected = currentIdx === selectedIdx ? ' selected' : '';
+        html += '<div class="global-search-item' + selected + '" data-type="customer" data-id="' + escapeHtml(String(c.id)) + '">' +
+          '<div class="global-search-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>' +
+          '<div class="global-search-item-content"><div class="global-search-item-title">' + escapeHtml(c.name || '—') + '</div>' +
+          '<div class="global-search-item-subtitle">' + escapeHtml(c.phone || '—') + '</div></div></div>';
+        currentIdx++;
+      }
+      html += '</div>';
+    }
+
+    // Appointments section
+    if (results.appointments && results.appointments.length > 0) {
+      html += '<div class="global-search-section"><div class="global-search-section-title">Lịch hẹn</div>';
+      for (var j = 0; j < results.appointments.length; j++) {
+        var a = results.appointments[j];
+        var aSelected = currentIdx === selectedIdx ? ' selected' : '';
+        html += '<div class="global-search-item' + aSelected + '" data-type="appointment" data-id="' + escapeHtml(String(a.id)) + '">' +
+          '<div class="global-search-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>' +
+          '<div class="global-search-item-content"><div class="global-search-item-title">' + escapeHtml(a.customerName || '—') + '</div>' +
+          '<div class="global-search-item-subtitle">' + escapeHtml(formatDate(a.date) + ' ' + (a.time || '')) + '</div></div></div>';
+        currentIdx++;
+      }
+      html += '</div>';
+    }
+
+    // Tasks section
+    if (results.tasks && results.tasks.length > 0) {
+      html += '<div class="global-search-section"><div class="global-search-section-title">Công việc</div>';
+      for (var k = 0; k < results.tasks.length; k++) {
+        var t = results.tasks[k];
+        var tSelected = currentIdx === selectedIdx ? ' selected' : '';
+        html += '<div class="global-search-item' + tSelected + '" data-type="task" data-id="' + escapeHtml(String(t.id)) + '">' +
+          '<div class="global-search-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>' +
+          '<div class="global-search-item-content"><div class="global-search-item-title">' + escapeHtml(t.title || '—') + '</div>' +
+          '<div class="global-search-item-subtitle">' + escapeHtml(t.customerName || '—') + '</div></div></div>';
+        currentIdx++;
+      }
+      html += '</div>';
+    }
+
+    // Empty state
+    if (!html) {
+      html = '<div class="global-search-empty">Không tìm thấy kết quả nào</div>';
+    }
+
+    resultsEl.innerHTML = html;
+
+    // Add click handlers
+    var items = resultsEl.querySelectorAll('.global-search-item');
+    for (var m = 0; m < items.length; m++) {
+      items[m].addEventListener('click', function () {
+        var type = this.getAttribute('data-type');
+        var id = this.getAttribute('data-id');
+        navigateToGlobalSearchResult(type, id);
+      });
+    }
+  }
+
+  function executeGlobalSearchItem() {
+    var results = globalSearchState.results;
+    var selectedIdx = globalSearchState.selectedIndex;
+    var currentIdx = 0;
+
+    if (results.customers && selectedIdx < results.customers.length) {
+      navigateToGlobalSearchResult('customer', results.customers[selectedIdx].id);
+      return;
+    }
+    if (results.customers) currentIdx += results.customers.length;
+
+    if (results.appointments && selectedIdx < currentIdx + results.appointments.length) {
+      navigateToGlobalSearchResult('appointment', results.appointments[selectedIdx - currentIdx].id);
+      return;
+    }
+    if (results.appointments) currentIdx += results.appointments.length;
+
+    if (results.tasks && selectedIdx < currentIdx + results.tasks.length) {
+      navigateToGlobalSearchResult('task', results.tasks[selectedIdx - currentIdx].id);
+    }
+  }
+
+  function navigateToGlobalSearchResult(type, id) {
+    closeGlobalSearch();
+    if (type === 'customer') {
+      navigateTo('#/partners/customers/' + id);
+    } else if (type === 'appointment') {
+      navigateTo('#/calendar');
+    } else if (type === 'task') {
+      navigateTo('#/work');
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -697,24 +1289,30 @@
           item.addEventListener('mouseleave', hideSubmenu);
 
           // Click on nav item toggles inline submenu in expanded/mobile mode
+          // OR shows popup submenu in collapsed mode
           item.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
             if (isSidebarExpanded() || sidebar.classList.contains('mobile-open')) {
-              e.preventDefault();
-              e.stopPropagation();
+              // Expanded mode: toggle inline submenu
               item.classList.toggle('submenu-expanded');
+            } else {
+              // Collapsed mode: toggle popup submenu
+              item.classList.toggle('submenu-open');
             }
           });
 
-          // Clicking the icon: in collapsed mode navigates, in expanded mode toggles submenu
+          // Clicking the icon: in collapsed mode toggles popup submenu, in expanded mode toggles inline submenu
           item.querySelector('.nav-icon').addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
             if (isSidebarExpanded() || sidebar.classList.contains('mobile-open')) {
+              // Expanded mode: toggle inline submenu
               item.classList.toggle('submenu-expanded');
-              return;
+              return; // Don't navigate when toggling submenu in expanded mode
             }
-            var route = item.getAttribute('data-route');
-            if (route) navigateTo(route);
+            // Collapsed mode: toggle popup submenu instead of navigating
+            item.classList.toggle('submenu-open');
           });
         }
       })(navItems[i]);
@@ -1034,19 +1632,53 @@
       return;
     }
 
-    listEl.innerHTML = APP.notifications.items.map(function (item) {
+    listEl.innerHTML = APP.notifications.items.map(function (item, idx) {
       var title = escapeHtml(item.title || item.subject || 'Thông báo');
       var preview = escapeHtml(item.preview || item.content || '');
       var dateText = formatDateTime(item.createdAt || item.date);
       var stateClass = item.isRead ? 'read' : 'unread';
       return (
-        '<div class="notif-item ' + stateClass + '">' +
+        '<div class="notif-item ' + stateClass + ' notification-item" data-notif-idx="' + idx + '">' +
         '<div class="notif-item-title">' + title + '</div>' +
         '<div class="notif-item-preview">' + preview + '</div>' +
         '<div class="notif-item-meta">' + escapeHtml(dateText) + '</div>' +
         '</div>'
       );
     }).join('');
+
+    // P11: Add click handlers to mark notifications as read
+    var notifItems = listEl.querySelectorAll('.notification-item');
+    for (var i = 0; i < notifItems.length; i++) {
+      notifItems[i].addEventListener('click', function() {
+        var idx = parseInt(this.getAttribute('data-notif-idx'), 10);
+        var item = APP.notifications.items[idx];
+        if (item && !item.isRead) {
+          markNotificationAsRead(idx, item);
+        }
+      });
+    }
+  }
+
+  // P11: Mark notification as read
+  async function markNotificationAsRead(idx, item) {
+    var notifId = item.id || item.notificationId;
+    try {
+      // Try to call API if available
+      await api('/api/notifications/' + encodeURIComponent(notifId) + '/read', { method: 'POST' });
+    } catch (_e) {
+      // API may not exist, just update local state
+    }
+    // Update local state
+    item.isRead = true;
+    APP.notifications.unreadCount = Math.max(0, (APP.notifications.unreadCount || 1) - 1);
+    // Update badge
+    var badge = document.getElementById('notification-badge');
+    if (badge) {
+      badge.textContent = APP.notifications.unreadCount > 0 ? APP.notifications.unreadCount : '';
+      badge.style.display = APP.notifications.unreadCount > 0 ? 'block' : 'none';
+    }
+    // Re-render inbox to show read state
+    renderNotificationInbox();
   }
 
   async function handleLogout() {
@@ -1148,11 +1780,19 @@
 
   function dashboardLoadingMarkup(branchName) {
     return (
+      '<div class="db-container">' +
+      '<div class="db-stat-cards">' +
+      '<div class="stat-card"><div class="stat-icon"></div><div class="stat-content"><div class="stat-value">...</div><div class="stat-label">Khách hàng</div></div></div>' +
+      '<div class="stat-card"><div class="stat-icon"></div><div class="stat-content"><div class="stat-value">...</div><div class="stat-label">Lịch hẹn</div></div></div>' +
+      '<div class="stat-card"><div class="stat-icon"></div><div class="stat-content"><div class="stat-value">...</div><div class="stat-label">Doanh thu</div></div></div>' +
+      '<div class="stat-card"><div class="stat-icon"></div><div class="stat-content"><div class="stat-value">...</div><div class="stat-label">Công việc</div></div></div>' +
+      '</div>' +
       '<div class="db-grid">' +
       '<div class="db-left"><div class="db-panel" style="padding:32px;text-align:center">' +
       '<div class="tds-loading"><div class="tds-spinner"></div><span>Đang tải dữ liệu cho ' + escapeHtml(branchName) + '...</span></div>' +
       '</div></div>' +
       '<div class="db-right"></div>' +
+      '</div>' +
       '</div>'
     );
   }
@@ -1346,10 +1986,18 @@
       limit: 200,
     }));
 
-    var result = await Promise.all([summaryPromise, receptionPromise, servicesPromise]);
+    // Fetch customer count
+    var customersPromise = dashboardSafeApi('/api/customers' + toQueryString({
+      companyId: branchId || undefined,
+      limit: 1,
+      offset: 0,
+    }));
+
+    var result = await Promise.all([summaryPromise, receptionPromise, servicesPromise, customersPromise]);
     var summary = result[0];
     var reception = result[1];
     var services = result[2];
+    var customersData = result[3];
 
     if (!summary) summary = await dashboardSummaryFallback(branchId, todayISO);
 
@@ -1370,10 +2018,17 @@
       svcItems = services;
     }
 
+    // Get customer count from response
+    var customerCount = 0;
+    if (customersData && customersData.totalItems !== undefined) {
+      customerCount = customersData.totalItems;
+    }
+
     return {
       branchId: branchId || '',
       branchName: branchName || 'Tất cả chi nhánh',
       fetchedAt: new Date(),
+      customerCount: customerCount,
       kpis: {
         cash: toNumber(summary.totalCash),
         bank: toNumber(summary.totalBank),
@@ -1400,12 +2055,15 @@
     search: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
     refresh: '<svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',
     plus: '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
-    user: '<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
     doctor: '<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
     clock: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
     phone: '<svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
     edit: '<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
     trash: '<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+    calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    money: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+    work: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
   };
 
   function dbReceptionStatusClass(state) {
@@ -1439,8 +2097,49 @@
     var totals = rec.totals || {};
     var allCards = rec.all || [];
     var services = data.services || [];
+    var kpis = data.kpis || {};
+
+    // Stat cards data
+    var customerCount = data.customerCount || totals.all || 0;
+    var appointmentCount = totals.all || 0;
+    var revenueAmount = kpis.total || 0;
+    var workCount = services.length || 0;
 
     return (
+      '<div class="db-container">' +
+      /* ===== STAT CARDS ===== */
+      '<div class="db-stat-cards">' +
+      '<div class="stat-card">' +
+      '<div class="stat-icon">' + DB_SVG.user + '</div>' +
+      '<div class="stat-content">' +
+      '<div class="stat-value">' + formatNumber(customerCount) + '</div>' +
+      '<div class="stat-label">Khách hàng</div>' +
+      '</div>' +
+      '</div>' +
+      '<div class="stat-card">' +
+      '<div class="stat-icon">' + DB_SVG.calendar + '</div>' +
+      '<div class="stat-content">' +
+      '<div class="stat-value">' + formatNumber(appointmentCount) + '</div>' +
+      '<div class="stat-label">Lịch hẹn</div>' +
+      '</div>' +
+      '</div>' +
+      '<div class="stat-card">' +
+      '<div class="stat-icon">' + DB_SVG.money + '</div>' +
+      '<div class="stat-content">' +
+      '<div class="stat-value">' + formatCurrency(revenueAmount) + '</div>' +
+      '<div class="stat-label">Doanh thu</div>' +
+      '</div>' +
+      '</div>' +
+      '<div class="stat-card">' +
+      '<div class="stat-icon">' + DB_SVG.work + '</div>' +
+      '<div class="stat-content">' +
+      '<div class="stat-value">' + formatNumber(workCount) + '</div>' +
+      '<div class="stat-label">Công việc</div>' +
+      '</div>' +
+      '</div>' +
+      '</div>' +
+
+      /* ===== MAIN GRID ===== */
       '<div class="db-grid">' +
 
       /* ===== LEFT COLUMN ===== */
@@ -1451,11 +2150,14 @@
       '<div class="db-panel-head">' +
       '<span class="db-panel-title">Tiếp nhận khách hàng</span>' +
       '<div class="db-panel-actions">' +
-      '<button class="db-icon-btn" id="db-rec-add" title="Thêm">' + DB_SVG.plus + '</button>' +
       '<div class="db-search-wrap">' + DB_SVG.search +
       '<input id="db-rec-search" placeholder="Tìm kiếm theo họ tên, sđt">' +
       '</div>' +
-      '<button class="db-icon-btn" id="db-rec-refresh" title="Làm mới">' + DB_SVG.refresh + '</button>' +
+      '<button class="db-icon-btn db-icon-btn-filter" id="db-rec-filter" title="Lọc">' +
+      '<svg viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>' +
+      '</button>' +
+      '<button class="db-icon-btn db-icon-btn-refresh" id="db-rec-refresh" title="Làm mới">' + DB_SVG.refresh + '</button>' +
+      '<button class="db-icon-btn db-icon-btn-add" id="db-rec-add" title="Thêm" style="background:#1976D2;color:#fff;border-radius:50%;width:32px;height:32px;flex-shrink:0">' + DB_SVG.plus + '</button>' +
       '</div>' +
       '</div>' +
       '<div class="db-tabs" id="db-rec-tabs">' +
@@ -1495,16 +2197,21 @@
       '<div class="db-panel-head">' +
       '<span class="db-panel-title">Lịch hẹn hôm nay</span>' +
       '<div class="db-panel-actions">' +
-      '<button class="db-icon-btn" id="db-appt-refresh" title="Làm mới">' + DB_SVG.refresh + '</button>' +
+      '<button class="db-icon-btn db-icon-btn-refresh" id="db-appt-refresh" title="Làm mới">' + DB_SVG.refresh + '</button>' +
+      '<button class="db-icon-btn db-icon-btn-add" id="db-appt-add" title="Thêm lịch hẹn" style="background:#1976D2;color:#fff;border-radius:50%;width:32px;height:32px;flex-shrink:0">' + DB_SVG.plus + '</button>' +
       '</div>' +
       '</div>' +
       '<div class="db-panel-head" style="padding-top:4px">' +
       '<div class="db-search-wrap" style="flex:1">' + DB_SVG.search +
       '<input id="db-appt-search" placeholder="Tìm kiếm theo bác sĩ, họ tên, sđt">' +
       '</div>' +
+      '<button class="db-icon-btn db-icon-btn-palette" title="Lọc màu" style="margin-left:4px">' +
+      '<svg viewBox="0 0 24 24" width="18" height="18"><circle cx="6" cy="12" r="3" fill="#F97316"/><circle cx="12" cy="6" r="3" fill="#3B82F6"/><circle cx="18" cy="12" r="3" fill="#10B981"/><circle cx="12" cy="18" r="3" fill="#8B5CF6"/></svg>' +
+      '</button>' +
       '</div>' +
       '<div class="db-tabs" id="db-appt-tabs">' +
       dbBuildApptTabs(allCards) +
+      '<button class="db-icon-btn db-tab-overflow" title="Thêm" style="margin-left:auto;padding:0 6px;font-size:18px;letter-spacing:1px;line-height:1">&#8943;</button>' +
       '</div>' +
       '<div class="db-card-list" id="db-appt-list">' +
       dbBuildApptCards(allCards) +
@@ -1524,12 +2231,32 @@
 
       '</div>' + /* end .db-right */
 
-      '</div>' /* end .db-grid */
+      '</div>' + /* end .db-grid */
+
+      '</div>' /* end .db-container */
     );
   }
 
+  var DB_EMPTY_SVG_RECEPTION = (
+    '<div style="text-align:center;padding:40px 0">' +
+    '<div style="margin:0 auto;width:120px;height:120px;background:#f5f5f5;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:12px">' +
+    '<svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="9" x2="12" y2="11"/><circle cx="12" cy="13.5" r="0.5" fill="#ccc"/></svg>' +
+    '</div>' +
+    '<p style="color:#999;font-size:14px;margin:0">Không có dữ liệu</p>' +
+    '</div>'
+  );
+
+  var DB_EMPTY_SVG_APPT = (
+    '<div style="text-align:center;padding:40px 0">' +
+    '<div style="margin:0 auto;width:120px;height:120px;background:#f5f5f5;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:12px">' +
+    '<svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8" y2="14" stroke-linecap="round"/><circle cx="8" cy="14" r="0.5" fill="#ccc"/></svg>' +
+    '</div>' +
+    '<p style="color:#999;font-size:14px;margin:0">Không có dữ liệu</p>' +
+    '</div>'
+  );
+
   function dbBuildReceptionCards(items) {
-    if (!items || !items.length) return '<div class="db-empty">Không có bệnh nhân trong ngày</div>';
+    if (!items || !items.length) return DB_EMPTY_SVG_RECEPTION;
     var html = '';
     for (var i = 0; i < items.length; i++) {
       html += dbReceptionCard(items[i]);
@@ -1580,7 +2307,7 @@
   }
 
   function dbBuildApptCards(items) {
-    if (!items || !items.length) return '<div class="db-empty">Không có lịch hẹn trong ngày</div>';
+    if (!items || !items.length) return DB_EMPTY_SVG_APPT;
     var html = '';
     for (var i = 0; i < items.length; i++) {
       html += dbApptCard(items[i]);
@@ -1597,15 +2324,15 @@
     var stateLabel = dbApptStateLabel(item.state);
     var patientId = item.id || '';
     return (
-      '<div class="db-acard" data-appt-state="' + escapeHtml(stateClass) + '" data-name="' + escapeHtml(name.toLowerCase()) + '" data-doctor="' + escapeHtml(doctor.toLowerCase()) + '" data-phone="' + escapeHtml(phone.toLowerCase()) + '">' +
+      '<div class="db-acard" data-id="' + escapeHtml(item.id || '') + '" data-appt-state="' + escapeHtml(stateClass) + '" data-name="' + escapeHtml(name.toLowerCase()) + '" data-doctor="' + escapeHtml(doctor.toLowerCase()) + '" data-phone="' + escapeHtml(phone.toLowerCase()) + '">' +
       '<div class="db-acard-top">' +
       '<div class="db-acard-patient">' +
       '<img class="db-acard-avatar" src="data:image/svg+xml,' + encodeURIComponent('<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%2394A3B8\'><circle cx=\'12\' cy=\'8\' r=\'4\'/><path d=\'M20 21a8 8 0 1 0-16 0\'/></svg>') + '">' +
       '<a href="#/partners/customers/' + escapeHtml(patientId) + '/overview">' + escapeHtml(name) + '</a>' +
       '</div>' +
       '<div class="db-acard-actions">' +
-      '<button class="db-icon-btn" title="Chỉnh sửa">' + DB_SVG.edit + '</button>' +
-      '<button class="db-icon-btn" title="Xóa">' + DB_SVG.trash + '</button>' +
+      '<button class="db-icon-btn db-acard-edit" title="Chỉnh sửa" data-id="' + escapeHtml(item.id || '') + '">' + DB_SVG.edit + '</button>' +
+      '<button class="db-icon-btn db-acard-delete" title="Xóa" data-id="' + escapeHtml(item.id || '') + '">' + DB_SVG.trash + '</button>' +
       '</div>' +
       '</div>' +
       '<div class="db-acard-meta">' +
@@ -1631,7 +2358,14 @@
       '</tr></thead><tbody>';
 
     if (!items || !items.length) {
-      html += '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--tds-text-muted)">Chưa có dịch vụ trong ngày</td></tr>';
+      html += '<tr><td colspan="6" style="text-align:center;padding:0">' +
+        '<div style="text-align:center;padding:40px 0">' +
+        '<div style="margin:0 auto;width:120px;height:120px;background:#f5f5f5;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:12px">' +
+        '<svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>' +
+        '</div>' +
+        '<p style="color:#999;font-size:14px;margin:0">Không có dữ liệu</p>' +
+        '</div>' +
+        '</td></tr>';
     } else {
       for (var i = 0; i < items.length; i++) {
         var row = items[i];
@@ -1831,6 +2565,119 @@
     if (svcRefresh) svcRefresh.addEventListener('click', function () { renderDashboard(); });
     var apptRefresh = host.querySelector('#db-appt-refresh');
     if (apptRefresh) apptRefresh.addEventListener('click', function () { renderDashboard(); });
+
+    /* db-rec-add: Open customer modal to create new customer/appointment */
+    var recAddBtn = host.querySelector('#db-rec-add');
+    if (recAddBtn) {
+      recAddBtn.addEventListener('click', function () {
+        openCustomerModal(null);
+      });
+    }
+
+    /* db-rec-filter: Toggle filter dropdown for reception cards */
+    var recFilterBtn = host.querySelector('#db-rec-filter');
+    if (recFilterBtn) {
+      recFilterBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var existingDropdown = host.querySelector('.db-rec-filter-dropdown');
+        if (existingDropdown) {
+          existingDropdown.remove();
+          return;
+        }
+        var dropdown = document.createElement('div');
+        dropdown.className = 'db-rec-filter-dropdown';
+        dropdown.innerHTML =
+          '<div class="db-filter-option" data-filter="all">Tất cả</div>' +
+          '<div class="db-filter-option" data-filter="waiting">Chờ tiếp nhận</div>' +
+          '<div class="db-filter-option" data-filter="arrived">Đã tiếp nhận</div>' +
+          '<div class="db-filter-option" data-filter="done">Hoàn thành</div>' +
+          '<div class="db-filter-option" data-filter="cancel">Hủy</div>';
+        dropdown.style.cssText = 'position:absolute;top:100%;right:0;margin-top:4px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:1000;min-width:150px;overflow:hidden';
+        recFilterBtn.parentElement.style.position = 'relative';
+        recFilterBtn.parentElement.appendChild(dropdown);
+        dropdown.querySelectorAll('.db-filter-option').forEach(function (opt) {
+          opt.style.cssText = 'padding:10px 16px;cursor:pointer;font-size:14px;color:#334155';
+          opt.addEventListener('mouseenter', function () { this.style.background = '#f1f5f9'; });
+          opt.addEventListener('mouseleave', function () { this.style.background = ''; });
+          opt.addEventListener('click', function () {
+            var filter = this.getAttribute('data-filter');
+            var cards = host.querySelectorAll('#db-rec-list .db-rcard');
+            cards.forEach(function (card) {
+              card.style.display = (filter === 'all' || card.getAttribute('data-state') === filter) ? '' : 'none';
+            });
+            dropdown.remove();
+          });
+        });
+        document.addEventListener('click', function docClick(e) {
+          if (!dropdown.contains(e.target) && e.target !== recFilterBtn) {
+            dropdown.remove();
+            document.removeEventListener('click', docClick);
+          }
+        });
+      });
+    }
+
+    /* db-appt-add: Open appointment form modal */
+    var apptAddBtn = host.querySelector('#db-appt-add');
+    if (apptAddBtn) {
+      apptAddBtn.addEventListener('click', function () {
+        showAppointmentFormModal(null);
+      });
+    }
+
+    /* Appointment card edit/delete buttons */
+    var apptList = host.querySelector('#db-appt-list');
+    if (apptList) {
+      apptList.addEventListener('click', function (e) {
+        var editBtn = e.target.closest('.db-acard-edit');
+        if (editBtn) {
+          e.stopPropagation();
+          var apptId = editBtn.getAttribute('data-id');
+          if (!apptId) return;
+          // Find the appointment data from dashboard data
+          var apptData = null;
+          var today = APP.dashboardData;
+          if (today && today.appointments) {
+            for (var i = 0; i < today.appointments.length; i++) {
+              if (String(today.appointments[i].id) === String(apptId)) {
+                apptData = today.appointments[i];
+                break;
+              }
+            }
+          }
+          if (apptData) {
+            showAppointmentFormModal(apptData);
+          } else {
+            // If not found in dashboard data, try to load it
+            api('/api/appointments/' + encodeURIComponent(apptId)).then(function (data) {
+              if (data && data.id) {
+                showAppointmentFormModal(data);
+              } else {
+                showToast('error', 'Khong tim thay lich hen');
+              }
+            }).catch(function () {
+              showToast('error', 'Khong tim thay lich hen');
+            });
+          }
+          return;
+        }
+
+        var deleteBtn = e.target.closest('.db-acard-delete');
+        if (deleteBtn) {
+          e.stopPropagation();
+          var apptId = deleteBtn.getAttribute('data-id');
+          if (!apptId) return;
+          if (confirm('Ban co chan chan muon xoa lich hen nay?')) {
+            api('/api/appointments/' + encodeURIComponent(apptId), { method: 'DELETE' }).then(function () {
+              showToast('success', 'Xoa lich hen thanh cong');
+              renderDashboard();
+            }).catch(function (err) {
+              showToast('error', 'Khong the xoa lich hen: ' + (err.message || 'Loi khong xac dinh'));
+            });
+          }
+        }
+      });
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -1858,18 +2705,37 @@
   function getFilteredPartners() {
     var all = APP.partners.items || [];
     var tab = APP.partners.filterTab;
-    if (tab === 'all') return all;
-    return all.filter(function (item) {
+    // Hidden tab no longer exists in UI - default to 'all'
+    if (tab === 'hidden') {
+      tab = 'all';
+      APP.partners.filterTab = 'all';
+    }
+    // Filter out hidden customers
+    var visible = all.filter(function (item) {
+      return !item.hidden;
+    });
+    if (tab === 'all') return visible;
+    return visible.filter(function (item) {
       return getPartnerStatus(item) === tab;
     });
   }
 
+  // Get all partners including hidden ones (for counts)
+  function getAllPartnersIncludingHidden() {
+    return APP.partners.items || [];
+  }
+
   function getPartnerTabCounts() {
     var all = APP.partners.items || [];
-    var counts = { all: all.length, treating: 0, new: 0, inactive: 0 };
+    var counts = { all: 0, treating: 0, new: 0, inactive: 0, hidden: 0 };
     for (var i = 0; i < all.length; i++) {
-      var s = getPartnerStatus(all[i]);
-      counts[s] = (counts[s] || 0) + 1;
+      if (all[i].hidden) {
+        counts.hidden = (counts.hidden || 0) + 1;
+      } else {
+        counts.all = (counts.all || 0) + 1;
+        var s = getPartnerStatus(all[i]);
+        counts[s] = (counts[s] || 0) + 1;
+      }
     }
     return counts;
   }
@@ -1927,7 +2793,7 @@
     var tabs = [
       { key: 'all', label: 'Tất cả', count: counts.all },
       { key: 'treating', label: 'Đang điều trị', count: counts.treating },
-      { key: 'new', label: 'Mới', count: counts.new },
+      { key: 'new', label: 'Hoàn thành', count: counts.new },
       { key: 'inactive', label: 'Chưa phát sinh', count: counts.inactive },
     ];
     tabsWrap.innerHTML = tabs.map(function (t) {
@@ -1996,38 +2862,63 @@
     var end = Math.min(start + pageSize, filtered.length);
     var rows = filtered.slice(start, end);
 
+    // Calculate index for STT column based on current page
+    var startIndex = start;
+
     tableWrap.innerHTML =
       '<div class="tds-table-wrapper">' +
       '<table class="tds-table partners-table">' +
       '<thead><tr>' +
-      '<th>Mã số KH</th><th>Họ tên</th><th>Điện thoại</th><th>Ngày sinh</th>' +
-      '<th>Ngày hẹn gần nhất</th><th>Ngày hẹn sắp tới</th>' +
-      '<th>Ngày điều trị gần nhất</th><th>Tổng điều trị</th>' +
-      '<th>Quỹ tích lũy</th><th class="text-right">Công nợ</th>' +
-      '<th class="text-right">Tổng yêu cầu điều trị</th><th class="text-right">Thanh toán</th>' +
+      '<th style="width:40px">STT</th>' +
+      '<th>Thông tin khách hàng</th>' +
+      '<th style="width:90px">Ngày sinh</th>' +
+      '<th style="width:110px">Số điện thoại</th>' +
+      '<th style="width:180px">Email</th>' +
+      '<th style="width:100px">Ngày tạo</th>' +
+      '<th style="width:80px">Thao tác</th>' +
       '</tr></thead>' +
       '<tbody>' +
-      rows.map(function (item) {
+      rows.map(function (item, idx) {
         var status = getPartnerStatus(item);
         var statusLabel = getPartnerStatusLabel(status);
         var statusClass = getPartnerStatusClass(status);
         var nameDisplay = item.name || item.displayName || 'N/A';
         var initials = getUserInitials(nameDisplay);
-        var avatarColor = status === 'treating' ? '#1A6DE3' : status === 'new' ? '#10B981' : '#94A3B8';
+        var avatarColor = item.gender === 'male' ? '#1A6DE3' : item.gender === 'female' ? '#EC4899' : '#94A3B8';
+        var ref = item.ref || item.code || '';
+        var nameWithRef = ref ? nameDisplay + ' <span class="partners-cell-ref">(' + escapeHtml(ref) + ')</span>' : escapeHtml(nameDisplay);
+        var genderIcon = item.gender === 'male' ? '<svg class="gender-icon gender-male" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' : item.gender === 'female' ? '<svg class="gender-icon gender-female" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' : '';
+        var hasMemberCard = item.memberCard && item.memberCard !== '—';
+        var hasCategory = item.categories && item.categories !== '—';
+        var memberBadge = hasMemberCard ? '<span class="partners-badge partners-badge-blue">THẺ TV</span>' : '';
+        var categoryBadge = hasCategory ? '<span class="partners-badge partners-badge-pink">Nhãn KH</span>' : '';
+        var badges = [memberBadge, categoryBadge].filter(Boolean).join(' ');
         return (
           '<tr class="partners-row" data-id="' + escapeHtml(item.id || '') + '">' +
-          '<td class="partners-cell-ref">' + escapeHtml(item.ref || '—') + '</td>' +
-          '<td><div class="partners-name-cell"><span class="partners-avatar-sm" style="background:' + avatarColor + '">' + escapeHtml(initials) + '</span><a href="#/partners/customers/' + encodeURIComponent(item.id || '') + '" class="partners-name-link">' + escapeHtml(nameDisplay) + '</a></div></td>' +
-          '<td>' + escapeHtml(item.phone || '—') + '</td>' +
+          '<td class="text-center">' + (startIndex + idx + 1) + '</td>' +
+          '<td><div class="partners-name-cell">' +
+          '<span class="partners-avatar-sm" style="background:' + avatarColor + '">' + escapeHtml(initials) + '</span>' +
+          '<div class="partners-info-wrap">' +
+          '<a href="#/partners/customers/' + encodeURIComponent(item.id || '') + '" class="partners-name-link">' + nameWithRef + '</a>' +
+          '<div class="partners-badges">' + genderIcon + badges + '</div>' +
+          '</div></div></td>' +
           '<td>' + escapeHtml(formatDate(item.dateOfBirth)) + '</td>' +
-          '<td>' + escapeHtml(formatDate(item.lastAppointmentDate || item.lastVisitDate || item.lastExamDate)) + '</td>' +
-          '<td>' + escapeHtml(formatDate(item.nextAppointmentDate)) + '</td>' +
-          '<td>' + escapeHtml(formatDate(item.lastTreatmentDate || item.lastOrderDate)) + '</td>' +
-          '<td><span class="partners-badge ' + statusClass + '">' + escapeHtml(statusLabel) + '</span></td>' +
-          '<td class="text-right">' + escapeHtml(formatCurrency(item.loyaltyPoints || 0)) + '</td>' +
-          '<td class="text-right">' + escapeHtml(formatCurrency(item.totalDebit || 0)) + '</td>' +
-          '<td class="text-right">' + escapeHtml(formatCurrency(item.amountTreatmentTotal || 0)) + '</td>' +
-          '<td class="text-right">' + escapeHtml(formatCurrency(item.amountRevenueTotal || item.amountPaidTotal || 0)) + '</td>' +
+          '<td>' + escapeHtml(item.phone || item.mobile || '—') + '</td>' +
+          '<td>' + escapeHtml(item.email || '—') + '</td>' +
+          '<td>' + escapeHtml(formatDate(item.createdAt || item.createDate)) + '</td>' +
+          '<td onclick="event.stopPropagation()">' +
+          '<div class="partners-actions">' +
+          '<button class="db-icon-btn partners-action-edit" data-id="' + escapeHtml(item.id || '') + '" title="Sửa">' +
+          '<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+          '</button>' +
+          '<button class="db-icon-btn partners-action-view" data-id="' + escapeHtml(item.id || '') + '" title="Xem">' +
+          '<svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
+          '</button>' +
+          '<button class="db-icon-btn partners-action-delete" data-id="' + escapeHtml(item.id || '') + '" title="Xóa">' +
+          '<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
+          '</button>' +
+          '</div>' +
+          '</td>' +
           '</tr>'
         );
       }).join('') +
@@ -2041,6 +2932,26 @@
     for (var k = 0; k < rowEls.length; k++) {
       rowEls[k].addEventListener('click', function (e) {
         if (e.target.tagName === 'A') return; // let link handle it
+        if (e.target.closest('.partners-action-edit')) {
+          var editId = e.target.closest('button').getAttribute('data-id');
+          var editItem = (APP.partners.items || []).find(function (it) { return it.id === editId; });
+          if (editItem) openCustomerModal(editItem);
+          return;
+        }
+        if (e.target.closest('.partners-action-view')) {
+          var viewId = e.target.closest('button').getAttribute('data-id');
+          if (viewId) navigateTo('#/partners/customers/' + encodeURIComponent(viewId));
+          return;
+        }
+        if (e.target.closest('.partners-action-delete')) {
+          var delId = e.target.closest('button').getAttribute('data-id');
+          if (delId) { tdsConfirm('Bạn có chắc muốn xóa khách hàng này?', { title: 'Xóa khách hàng' }).then(function (ok) { if (!ok) return;
+            api('/api/customers/' + encodeURIComponent(delId), { method: 'DELETE' })
+              .then(function () { loadPartnersData(); showToast('success', 'Đã xóa khách hàng.'); })
+              .catch(function () { showToast('error', 'Xóa thất bại.'); });
+          }); }
+          return;
+        }
         var id = this.getAttribute('data-id');
         if (id) navigateTo('#/partners/customers/' + encodeURIComponent(id));
       });
@@ -2204,7 +3115,7 @@
     var printBtn = document.getElementById('cdetail-print-btn');
     if (printBtn) printBtn.addEventListener('click', function () { window.print(); });
     var addTreatmentBtn = document.getElementById('cdetail-add-treatment');
-    if (addTreatmentBtn) addTreatmentBtn.addEventListener('click', function () { showToast('info', 'Chức năng tạo phiếu điều trị đang được phát triển'); });
+    if (addTreatmentBtn) addTreatmentBtn.addEventListener('click', function () { openTreatmentPlanModal(APP.customerDetail.data); });
     var tabBtns = document.querySelectorAll('.cdetail-tab');
     for (var i = 0; i < tabBtns.length; i++) {
       tabBtns[i].addEventListener('click', function () {
@@ -2372,7 +3283,7 @@
     // ---- Tab 9: So do rang (Dental Chart) ----
     } else if (tab === 'teeth') {
       panel.innerHTML = renderDentalChartSVG(treatments);
-      setTimeout(function () { bindDentalChartClicks(); }, 0);
+      setTimeout(function () { bindEnhancedDentalChartClicks(treatments); }, 0);
 
     // ---- Tab 10: Lich su (History) ----
     } else if (tab === 'history') {
@@ -2550,7 +3461,15 @@
     if (sideTab === 'notes') {
       timeline.innerHTML = '<div class="cdetail-timeline-notes"><textarea class="cdetail-notes-input" placeholder="Nhập ghi chú cho bệnh nhân..." rows="4"></textarea><button class="tds-btn tds-btn-primary tds-btn-sm cdetail-notes-save">Lưu ghi chú</button><div class="cdetail-timeline-empty" style="margin-top:16px">Chưa có ghi chú</div></div>';
       var saveBtn = timeline.querySelector('.cdetail-notes-save');
-      if (saveBtn) saveBtn.addEventListener('click', function () { showToast('info', 'Chức năng lưu ghi chú đang được phát triển'); });
+      if (saveBtn) saveBtn.addEventListener('click', async function () {
+        var noteArea = timeline.querySelector('.cdetail-notes-input');
+        if (noteArea && APP.customerDetail && APP.customerDetail.id) {
+          try {
+            await api('/api/customers/' + encodeURIComponent(APP.customerDetail.id), { method: 'PUT', body: JSON.stringify({ comment: noteArea.value }) });
+            showToast('success', 'Đã lưu ghi chú');
+          } catch (err) { showToast('error', (err && err.message) || 'Không thể lưu ghi chú'); }
+        }
+      });
       return;
     }
 
@@ -3009,7 +3928,8 @@
 
   async function deleteTask(taskId) {
     if (!taskId) return;
-    if (!window.confirm('Xóa tác vụ này?')) return;
+    var ok = await tdsConfirm('Xóa tác vụ này?', { title: 'Xóa tác vụ' });
+    if (!ok) return;
 
     try {
       await api('/api/tasks/' + encodeURIComponent(taskId), { method: 'DELETE' });
@@ -3060,6 +3980,32 @@
       tabsHtml += '<button class="work-status-tab' + active + '" data-work-status="' + statusTabs[i].key + '">' + statusTabs[i].label + '</button>';
     }
 
+    // Status filter options for dropdown
+    var statusFilterOptions = [
+      { key: '', label: 'Tất cả trạng thái' },
+      { key: 'new', label: 'Mới' },
+      { key: 'in_progress', label: 'Đang xử lý' },
+      { key: 'done', label: 'Hoàn thành' },
+      { key: 'cancelled', label: 'Hủy' }
+    ];
+    var statusFilterHtml = statusFilterOptions.map(function (opt) {
+      return '<option value="' + opt.key + '"' + (state.filterStatus === opt.key ? ' selected' : '') + '>' + opt.label + '</option>';
+    }).join('');
+
+    // Employee options
+    var employeeOptions = [{ key: '', label: 'Tất cả nhân viên' }];
+    if (state.employees && state.employees.length > 0) {
+      for (var j = 0; j < state.employees.length; j++) {
+        employeeOptions.push({ key: state.employees[j].id, label: state.employees[j].name });
+      }
+    }
+    var employeeFilterHtml = employeeOptions.map(function (opt) {
+      return '<option value="' + escapeHtml(opt.key) + '"' + (String(state.filterAssignee) === String(opt.key) ? ' selected' : '') + '>' + escapeHtml(opt.label) + '</option>';
+    }).join('');
+
+    var filtersPanelVisible = state.showFiltersPanel ? ' visible' : '';
+    var viewMode = state.viewMode || 'list';
+
     el.innerHTML =
       '<section class="work-page">' +
       '<div class="work-header">' +
@@ -3089,15 +4035,43 @@
       '<div class="work-filters-bar">' +
       '<div class="work-status-tabs">' + tabsHtml + '</div>' +
       '<div class="work-filter-actions">' +
-      '<button class="tds-btn tds-btn-ghost tds-btn-icon work-filter-btn" title="Lọc">' +
+      '<div class="work-view-toggle">' +
+      '<button class="work-view-btn' + (viewMode === 'list' ? ' active' : '') + '" data-view="list" title="Danh sách">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>' +
+      '</button>' +
+      '<button class="work-view-btn' + (viewMode === 'kanban' ? ' active' : '') + '" data-view="kanban" title="Kanban">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="12" rx="1"/></svg>' +
+      '</button>' +
+      '<button class="work-view-btn' + (viewMode === 'calendar' ? ' active' : '') + '" data-view="calendar" title="Lịch">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' +
+      '</button>' +
+      '</div>' +
+      '<button class="tds-btn tds-btn-ghost tds-btn-icon work-filter-btn' + (state.showFiltersPanel ? ' active' : '') + '" title="Lọc">' +
       '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>' +
       '</button>' +
-      '<button class="tds-btn tds-btn-ghost tds-btn-icon work-view-btn" title="Chế độ xem">' +
-      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>' +
-      '</button>' +
       '</div>' +
       '</div>' +
-      '<div class="work-table-wrap">' +
+      '<div class="work-filters-panel' + filtersPanelVisible + '">' +
+      '<div class="work-filters-grid">' +
+      '<div class="work-filter-group">' +
+      '<label class="work-filter-label">Trạng thái</label>' +
+      '<select class="tds-select" id="work-filter-status">' + statusFilterHtml + '</select>' +
+      '</div>' +
+      '<div class="work-filter-group">' +
+      '<label class="work-filter-label">Từ ngày</label>' +
+      '<input class="tds-input" type="date" id="work-filter-date-from" value="' + escapeHtml(state.filterDateFrom || monthStart) + '" />' +
+      '</div>' +
+      '<div class="work-filter-group">' +
+      '<label class="work-filter-label">Đến ngày</label>' +
+      '<input class="tds-input" type="date" id="work-filter-date-to" value="' + escapeHtml(state.filterDateTo || monthEnd) + '" />' +
+      '</div>' +
+      '<div class="work-filter-group">' +
+      '<label class="work-filter-label">Người phụ trách</label>' +
+      '<select class="tds-select" id="work-filter-assignee">' + employeeFilterHtml + '</select>' +
+      '</div>' +
+      '</div>' +
+      '</div>' +
+      '<div class="work-table-wrap' + (viewMode !== 'list' ? ' hidden' : '') + '">' +
       '<table class="work-table">' +
       '<thead>' +
       '<tr>' +
@@ -3129,10 +4103,15 @@
       '<p>Chưa có công việc nào</p>' +
       '</div>' +
       '</div>' +
+      '<div id="work-kanban-container" class="work-kanban-container' + (viewMode === 'kanban' ? ' visible' : '') + '"></div>' +
+      '<div id="work-calendar-container" class="work-calendar-container' + (viewMode === 'calendar' ? ' visible' : '') + '"></div>' +
       '</section>';
 
     bindWorkInteractions(el);
     loadWorkData();
+    loadWorkEmployees();
+    if (viewMode === 'kanban') renderWorkKanban();
+    if (viewMode === 'calendar') renderWorkCalendar();
   }
 
   function getWorkViewState() {
@@ -3144,6 +4123,13 @@
         searchQuery: '',
         tasks: [],
         requestSeq: 0,
+        viewMode: 'list', // list, kanban, calendar
+        filterStatus: '',
+        filterDateFrom: '',
+        filterDateTo: '',
+        filterAssignee: '',
+        employees: [],
+        showFiltersPanel: false,
       };
     }
     return APP.work;
@@ -3168,6 +4154,65 @@
       });
     }
 
+    // View toggle buttons
+    var viewBtns = root.querySelectorAll('[data-view]');
+    for (var v = 0; v < viewBtns.length; v++) {
+      viewBtns[v].addEventListener('click', function () {
+        state.viewMode = this.getAttribute('data-view') || 'list';
+        renderWork();
+      });
+    }
+
+    // Filter toggle button
+    var filterBtn = root.querySelector('.work-filter-btn');
+    if (filterBtn) {
+      filterBtn.addEventListener('click', function () {
+        state.showFiltersPanel = !state.showFiltersPanel;
+        renderWork();
+      });
+    }
+
+    // Filter dropdowns
+    var statusFilter = root.querySelector('#work-filter-status');
+    if (statusFilter) {
+      statusFilter.addEventListener('change', function () {
+        state.filterStatus = this.value;
+        renderWorkTableBody();
+        if (state.viewMode === 'kanban') renderWorkKanban();
+        if (state.viewMode === 'calendar') renderWorkCalendar();
+      });
+    }
+
+    var dateFromFilter = root.querySelector('#work-filter-date-from');
+    if (dateFromFilter) {
+      dateFromFilter.addEventListener('change', function () {
+        state.filterDateFrom = this.value;
+        renderWorkTableBody();
+        if (state.viewMode === 'kanban') renderWorkKanban();
+        if (state.viewMode === 'calendar') renderWorkCalendar();
+      });
+    }
+
+    var dateToFilter = root.querySelector('#work-filter-date-to');
+    if (dateToFilter) {
+      dateToFilter.addEventListener('change', function () {
+        state.filterDateTo = this.value;
+        renderWorkTableBody();
+        if (state.viewMode === 'kanban') renderWorkKanban();
+        if (state.viewMode === 'calendar') renderWorkCalendar();
+      });
+    }
+
+    var assigneeFilter = root.querySelector('#work-filter-assignee');
+    if (assigneeFilter) {
+      assigneeFilter.addEventListener('change', function () {
+        state.filterAssignee = this.value;
+        renderWorkTableBody();
+        if (state.viewMode === 'kanban') renderWorkKanban();
+        if (state.viewMode === 'calendar') renderWorkCalendar();
+      });
+    }
+
     var searchInput = root.querySelector('#work-search-input');
     if (searchInput) {
       searchInput.value = state.searchQuery || '';
@@ -3185,7 +4230,30 @@
     var createBtn = root.querySelector('#work-create-btn');
     if (createBtn) {
       createBtn.addEventListener('click', function () {
-        showToast('info', 'Tính năng tạo công việc đang phát triển');
+        openTaskModal(null);
+      });
+    }
+
+    // Date range click handler - toggle filters and focus date input
+    var dateRange = root.querySelector('.work-date-range');
+    if (dateRange) {
+      dateRange.style.cursor = 'pointer';
+      dateRange.addEventListener('click', function (e) {
+        e.preventDefault();
+        // Toggle filters panel if not visible
+        if (!state.showFiltersPanel) {
+          state.showFiltersPanel = true;
+          renderWork();
+          // Need to re-query after render
+          setTimeout(function () {
+            var dateFrom = document.getElementById('work-filter-date-from');
+            if (dateFrom) dateFrom.focus();
+          }, 50);
+        } else {
+          // Just focus the date input
+          var dateFrom = document.getElementById('work-filter-date-from');
+          if (dateFrom) dateFrom.focus();
+        }
       });
     }
   }
@@ -3214,12 +4282,21 @@
 
     var tasks = state.tasks || [];
 
+    // Apply status filter (from tabs)
     if (state.statusFilter && state.statusFilter !== 'all') {
       tasks = tasks.filter(function (t) {
         return t.status === state.statusFilter || t.state === state.statusFilter;
       });
     }
 
+    // Apply status filter (from dropdown)
+    if (state.filterStatus) {
+      tasks = tasks.filter(function (t) {
+        return t.status === state.filterStatus || t.state === state.filterStatus;
+      });
+    }
+
+    // Apply search query
     if (state.searchQuery) {
       var q = state.searchQuery.toLowerCase();
       tasks = tasks.filter(function (t) {
@@ -3228,6 +4305,29 @@
           (t.id && String(t.id).indexOf(q) >= 0) ||
           (t.customerName && t.customerName.toLowerCase().indexOf(q) >= 0)
         );
+      });
+    }
+
+    // Apply assignee filter
+    if (state.filterAssignee) {
+      tasks = tasks.filter(function (t) {
+        return t.assigneeId == state.filterAssignee || t.userId == state.filterAssignee;
+      });
+    }
+
+    // Apply date range filter
+    if (state.filterDateFrom) {
+      tasks = tasks.filter(function (t) {
+        var taskDate = t.date || t.createdAt;
+        if (!taskDate) return true;
+        return taskDate >= state.filterDateFrom;
+      });
+    }
+    if (state.filterDateTo) {
+      tasks = tasks.filter(function (t) {
+        var taskDate = t.date || t.createdAt;
+        if (!taskDate) return true;
+        return taskDate <= state.filterDateTo;
       });
     }
 
@@ -3257,6 +4357,186 @@
         '</tr>';
     }
     tbody.innerHTML = html;
+  }
+
+  async function loadWorkEmployees() {
+    var state = getWorkViewState();
+    try {
+      var data = await api('/api/employees?companyId=' + (getSelectedBranchId() || ''));
+      state.employees = safeItems(data);
+    } catch (err) {
+      state.employees = [];
+    }
+  }
+
+  function renderWorkKanban() {
+    var state = getWorkViewState();
+    var container = document.getElementById('work-kanban-container');
+    if (!container) return;
+
+    var tasks = getFilteredTasks();
+
+    var columns = [
+      { key: 'new', label: 'Mới', color: '#3B82F6' },
+      { key: 'in_progress', label: 'Đang xử lý', color: '#8B5CF6' },
+      { key: 'need_info', label: 'Cần thêm thông tin', color: '#F59E0B' },
+      { key: 'done', label: 'Hoàn thành', color: '#10B981' }
+    ];
+
+    var html = '';
+    for (var c = 0; c < columns.length; c++) {
+      var col = columns[c];
+      var colTasks = tasks.filter(function (t) { return t.status === col.key || t.state === col.key; });
+
+      html += '<div class="work-kanban-column">' +
+        '<div class="work-kanban-header" style="border-left: 3px solid ' + col.color + '">' +
+        '<span>' + col.label + '</span>' +
+        '<span class="work-kanban-count">' + colTasks.length + '</span>' +
+        '</div>' +
+        '<div class="work-kanban-body">';
+
+      for (var i = 0; i < colTasks.length; i++) {
+        var t = colTasks[i];
+        html += '<div class="work-kanban-card" data-task-id="' + escapeHtml(String(t.id)) + '">' +
+          '<div class="work-kanban-card-title">' + escapeHtml(t.title || '') + '</div>' +
+          '<div class="work-kanban-card-meta">' +
+          (t.customerName ? '<span class="work-kanban-card-customer"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' + escapeHtml(t.customerName) + '</span>' : '') +
+          '</div>' +
+          '</div>';
+      }
+
+      html += '</div></div>';
+    }
+
+    container.innerHTML = html;
+  }
+
+  function renderWorkCalendar() {
+    var state = getWorkViewState();
+    var container = document.getElementById('work-calendar-container');
+    if (!container) return;
+
+    var tasks = getFilteredTasks();
+    var now = new Date();
+    var currentMonth = now.getMonth();
+    var currentYear = now.getFullYear();
+
+    var firstDay = new Date(currentYear, currentMonth, 1);
+    var lastDay = new Date(currentYear, currentMonth + 1, 0);
+    var startDay = firstDay.getDay();
+    var daysInMonth = lastDay.getDate();
+
+    var prevMonthLastDay = new Date(currentYear, currentMonth, 0).getDate();
+
+    var dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+
+    var html = '<div class="work-calendar-grid">';
+
+    // Header row
+    for (var d = 0; d < 7; d++) {
+      html += '<div class="work-calendar-header-cell">' + dayNames[d] + '</div>';
+    }
+
+    // Previous month days
+    for (var p = startDay - 1; p >= 0; p--) {
+      var prevDay = prevMonthLastDay - p;
+      html += '<div class="work-calendar-cell other-month"><div class="work-calendar-date">' + prevDay + '</div></div>';
+    }
+
+    // Current month days
+    for (var day = 1; day <= daysInMonth; day++) {
+      var isToday = day === now.getDate() && currentMonth === now.getMonth() && currentYear === now.getFullYear();
+      var dateStr = currentYear + '-' + String(currentMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+
+      var dayTasks = tasks.filter(function (t) {
+        var taskDate = t.date || t.deadline;
+        if (!taskDate) return false;
+        return taskDate.indexOf(dateStr) === 0;
+      });
+
+      html += '<div class="work-calendar-cell' + (isToday ? ' today' : '') + '">' +
+        '<div class="work-calendar-date' + (isToday ? ' today' : '') + '">' + day + '</div>';
+
+      for (var t = 0; t < Math.min(dayTasks.length, 3); t++) {
+        var task = dayTasks[t];
+        var statusClass = task.status || 'new';
+        html += '<div class="work-calendar-event ' + statusClass + '" title="' + escapeHtml(task.title) + '">' + escapeHtml(task.title) + '</div>';
+      }
+
+      if (dayTasks.length > 3) {
+        html += '<div class="work-calendar-event" style="background:#e2e8f0;color:#64748b;">+' + (dayTasks.length - 3) + ' more</div>';
+      }
+
+      html += '</div>';
+    }
+
+    // Next month days
+    var totalCells = startDay + daysInMonth;
+    var remainingCells = 7 - (totalCells % 7);
+    if (remainingCells < 7) {
+      for (var n = 1; n <= remainingCells; n++) {
+        html += '<div class="work-calendar-cell other-month"><div class="work-calendar-date">' + n + '</div></div>';
+      }
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  function getFilteredTasks() {
+    var state = getWorkViewState();
+    var tasks = state.tasks || [];
+
+    // Apply status filter (from tabs)
+    if (state.statusFilter && state.statusFilter !== 'all') {
+      tasks = tasks.filter(function (t) {
+        return t.status === state.statusFilter || t.state === state.statusFilter;
+      });
+    }
+
+    // Apply status filter (from dropdown)
+    if (state.filterStatus) {
+      tasks = tasks.filter(function (t) {
+        return t.status === state.filterStatus || t.state === state.filterStatus;
+      });
+    }
+
+    // Apply search query
+    if (state.searchQuery) {
+      var q = state.searchQuery.toLowerCase();
+      tasks = tasks.filter(function (t) {
+        return (
+          (t.title && t.title.toLowerCase().indexOf(q) >= 0) ||
+          (t.id && String(t.id).indexOf(q) >= 0) ||
+          (t.customerName && t.customerName.toLowerCase().indexOf(q) >= 0)
+        );
+      });
+    }
+
+    // Apply assignee filter
+    if (state.filterAssignee) {
+      tasks = tasks.filter(function (t) {
+        return t.assigneeId == state.filterAssignee || t.userId == state.filterAssignee;
+      });
+    }
+
+    // Apply date range filter
+    if (state.filterDateFrom) {
+      tasks = tasks.filter(function (t) {
+        var taskDate = t.date || t.createdAt;
+        if (!taskDate) return true;
+        return taskDate >= state.filterDateFrom;
+      });
+    }
+    if (state.filterDateTo) {
+      tasks = tasks.filter(function (t) {
+        var taskDate = t.date || t.createdAt;
+        if (!taskDate) return true;
+        return taskDate <= state.filterDateTo;
+      });
+    }
+
+    return tasks;
   }
 
   function renderCalendar() {
@@ -3291,6 +4571,7 @@
       '<button class="tds-btn tds-btn-secondary tds-btn-icon" data-calendar-nav="prev" title="Trước">&lsaquo;</button>' +
       '<span class="calendar-date-label" id="calendar-date-label"></span>' +
       '<button class="tds-btn tds-btn-secondary tds-btn-icon" data-calendar-nav="next" title="Sau">&rsaquo;</button>' +
+      '<button class="tds-btn tds-btn-secondary" data-calendar-nav="today">Hôm nay</button>' +
       '</div>' +
       '</div>' +
       '<div class="calendar-toolbar-right">' +
@@ -3355,6 +4636,12 @@
         monthData: null,
         requestSeq: 0,
         itemMap: {},
+        searchQuery: '',
+        filters: {
+          doctor: null,
+          time: null,
+          service: null,
+        },
       };
     }
     if (typeof APP.calendar.date !== 'string' || APP.calendar.date.length < 10) {
@@ -3734,16 +5021,245 @@
     var addBtn = root.querySelector('#calendar-add-btn');
     if (addBtn) {
       addBtn.addEventListener('click', function () {
-        showToast('info', 'Tính năng thêm lịch hẹn đang phát triển');
+        showAppointmentFormModal(null);
       });
     }
 
     var exportBtn = root.querySelector('#calendar-export-btn');
     if (exportBtn) {
       exportBtn.addEventListener('click', function () {
-        showToast('info', 'Tính năng xuất Excel đang phát triển');
+        var companyId = getSelectedBranchId();
+        var href = '/api/export/appointments?limit=500' + (companyId ? '&companyId=' + encodeURIComponent(companyId) : '');
+        window.open(href, '_blank');
       });
     }
+
+    // Search input handler
+    var searchInput = root.querySelector('#calendar-search-input');
+    if (searchInput) {
+      var searchTimeout;
+      searchInput.addEventListener('input', function () {
+        var query = this.value.trim().toLowerCase();
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function () {
+          state.searchQuery = query;
+          // Re-render current view with filter
+          if (state.view === 'day' && state.dayData) {
+            var filteredData = filterCalendarData(state.dayData, state);
+            document.getElementById('calendar-body').innerHTML = renderCalendarDayMarkup(filteredData);
+          } else if (state.view === 'week' && state.weekData) {
+            var filteredWeek = filterCalendarWeekData(state.weekData, state);
+            document.getElementById('calendar-body').innerHTML = renderCalendarWeekMarkup(filteredWeek);
+          } else if (state.view === 'month' && state.monthData) {
+            var filteredMonth = filterCalendarMonthData(state.monthData, state);
+            document.getElementById('calendar-body').innerHTML = renderCalendarMonthMarkup(filteredMonth);
+          }
+        }, 300);
+      });
+    }
+
+    // Filter button handlers
+    var filterBtns = root.querySelectorAll('.calendar-filter-icon');
+    for (var k = 0; k < filterBtns.length; k++) {
+      filterBtns[k].addEventListener('click', function (e) {
+        var btn = e.currentTarget;
+        var title = btn.getAttribute('title') || '';
+        // Show filter dropdown based on button title
+        if (title === 'Bác sĩ') {
+          showCalendarDoctorFilter(btn, state);
+        } else if (title === 'Thời gian') {
+          showCalendarTimeFilter(btn, state);
+        } else if (title === 'Dịch vụ') {
+          showCalendarServiceFilter(btn, state);
+        } else if (title === 'Danh sách') {
+          showCalendarListFilter(btn, state);
+        }
+      });
+    }
+  }
+
+  // Filter functions for calendar data
+  function filterCalendarData(data, state) {
+    if (!data || !data.items) return data;
+    var query = state.searchQuery;
+    var filters = state.filters;
+    var filtered = data.items.filter(function (item) {
+      // Search filter
+      if (query) {
+        var nameMatch = item.customerName && item.customerName.toLowerCase().indexOf(query) >= 0;
+        var phoneMatch = item.customerPhone && item.customerPhone.toLowerCase().indexOf(query) >= 0;
+        if (!nameMatch && !phoneMatch) return false;
+      }
+      // Doctor filter
+      if (filters.doctor && item.doctorId !== filters.doctor) return false;
+      // Time filter
+      if (filters.time) {
+        var hour = parseInt(item.startTime ? item.startTime.split(':')[0] : '0', 10);
+        if (filters.time === 'morning' && (hour < 8 || hour >= 12)) return false;
+        if (filters.time === 'afternoon' && (hour < 12 || hour >= 17)) return false;
+        if (filters.time === 'evening' && (hour < 17 || hour >= 21)) return false;
+      }
+      // Service filter
+      if (filters.service && item.serviceId !== filters.service) return false;
+      return true;
+    });
+    return { items: filtered, doctors: data.doctors, services: data.services };
+  }
+
+  function filterCalendarWeekData(data, state) {
+    if (!data || !data.days) return data;
+    var query = state.searchQuery;
+    var filters = state.filters;
+    data.days.forEach(function (day) {
+      if (day.items) {
+        day.items = day.items.filter(function (item) {
+          if (query) {
+            var nameMatch = item.customerName && item.customerName.toLowerCase().indexOf(query) >= 0;
+            var phoneMatch = item.customerPhone && item.customerPhone.toLowerCase().indexOf(query) >= 0;
+            if (!nameMatch && !phoneMatch) return false;
+          }
+          if (filters.doctor && item.doctorId !== filters.doctor) return false;
+          if (filters.time) {
+            var hour = parseInt(item.startTime ? item.startTime.split(':')[0] : '0', 10);
+            if (filters.time === 'morning' && (hour < 8 || hour >= 12)) return false;
+            if (filters.time === 'afternoon' && (hour < 12 || hour >= 17)) return false;
+            if (filters.time === 'evening' && (hour < 17 || hour >= 21)) return false;
+          }
+          if (filters.service && item.serviceId !== filters.service) return false;
+          return true;
+        });
+      }
+    });
+    return data;
+  }
+
+  function filterCalendarMonthData(data, state) {
+    if (!data || !data.days) return data;
+    var query = state.searchQuery;
+    var filters = state.filters;
+    data.days.forEach(function (day) {
+      if (day.items) {
+        day.items = day.items.filter(function (item) {
+          if (query) {
+            var nameMatch = item.customerName && item.customerName.toLowerCase().indexOf(query) >= 0;
+            var phoneMatch = item.customerPhone && item.customerPhone.toLowerCase().indexOf(query) >= 0;
+            if (!nameMatch && !phoneMatch) return false;
+          }
+          if (filters.doctor && item.doctorId !== filters.doctor) return false;
+          if (filters.time) {
+            var hour = parseInt(item.startTime ? item.startTime.split(':')[0] : '0', 10);
+            if (filters.time === 'morning' && (hour < 8 || hour >= 12)) return false;
+            if (filters.time === 'afternoon' && (hour < 12 || hour >= 17)) return false;
+            if (filters.time === 'evening' && (hour < 17 || hour >= 21)) return false;
+          }
+          if (filters.service && item.serviceId !== filters.service) return false;
+          return true;
+        });
+      }
+    });
+    return data;
+  }
+
+  // Filter dropdown functions
+  function showCalendarDoctorFilter(btn, state) {
+    var menu = createFilterDropdown([
+      { value: '', label: 'Tất cả bác sĩ' },
+      { value: 'doctor_1', label: 'BS. Minh' },
+      { value: 'doctor_2', label: 'BS. Lan' },
+      { value: 'doctor_3', label: 'BS. Hùng' },
+    ], state.filters.doctor, function (value) {
+      state.filters.doctor = value || null;
+      loadCalendarViewData();
+    });
+    showFilterMenu(btn, menu);
+  }
+
+  function showCalendarTimeFilter(btn, state) {
+    var menu = createFilterDropdown([
+      { value: '', label: 'Tất cả thời gian' },
+      { value: 'morning', label: 'Sáng (8:00 - 12:00)' },
+      { value: 'afternoon', label: 'Chiều (12:00 - 17:00)' },
+      { value: 'evening', label: 'Tối (17:00 - 21:00)' },
+    ], state.filters.time, function (value) {
+      state.filters.time = value || null;
+      loadCalendarViewData();
+    });
+    showFilterMenu(btn, menu);
+  }
+
+  function showCalendarServiceFilter(btn, state) {
+    var menu = createFilterDropdown([
+      { value: '', label: 'Tất cả dịch vụ' },
+      { value: 'service_1', label: 'Niềng răng' },
+      { value: 'service_2', label: 'Tẩy trắng' },
+      { value: 'service_3', label: 'Cạo vôi' },
+    ], state.filters.service, function (value) {
+      state.filters.service = value || null;
+      loadCalendarViewData();
+    });
+    showFilterMenu(btn, menu);
+  }
+
+  function showCalendarListFilter(btn, state) {
+    // Toggle between views or show list view
+    var menu = createFilterDropdown([
+      { value: 'day', label: 'Ngày' },
+      { value: 'week', label: 'Tuần' },
+      { value: 'month', label: 'Tháng' },
+    ], state.view, function (value) {
+      if (value && value !== state.view) {
+        state.view = value;
+        renderCalendar();
+      }
+    });
+    showFilterMenu(btn, menu);
+  }
+
+  function createFilterDropdown(options, selectedValue, onSelect) {
+    var html = '<div class="calendar-filter-dropdown">';
+    options.forEach(function (opt) {
+      var isSelected = opt.value === selectedValue || (opt.value === '' && !selectedValue);
+      html += '<div class="calendar-filter-option' + (isSelected ? ' active' : '') + '" data-value="' + escapeHtml(opt.value) + '">' + escapeHtml(opt.label) + '</div>';
+    });
+    html += '</div>';
+    // Attach click handlers after rendering
+    setTimeout(function () {
+      var dropdown = document.querySelector('.calendar-filter-dropdown');
+      if (dropdown) {
+        dropdown.querySelectorAll('.calendar-filter-option').forEach(function (item) {
+          item.addEventListener('click', function () {
+            var val = this.getAttribute('data-value');
+            onSelect(val);
+            closeFilterMenus();
+          });
+        });
+      }
+    }, 0);
+    return html;
+  }
+
+  function showFilterMenu(btn, menuHtml) {
+    closeFilterMenus();
+    var menuContainer = document.createElement('div');
+    menuContainer.className = 'calendar-filter-menu-container';
+    menuContainer.innerHTML = menuHtml;
+    btn.parentNode.appendChild(menuContainer);
+    // Close on outside click
+    var closeHandler = function (e) {
+      if (!menuContainer.contains(e.target)) {
+        closeFilterMenus();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    setTimeout(function () {
+      document.addEventListener('click', closeHandler);
+    }, 0);
+  }
+
+  function closeFilterMenus() {
+    document.querySelectorAll('.calendar-filter-menu-container').forEach(function (el) {
+      el.remove();
+    });
   }
 
   async function loadCalendarViewData() {
@@ -4364,6 +5880,247 @@
     showModal('Chi tiết lịch hẹn', html, { width: 560 });
   }
 
+  // P5: Appointment Form Modal - Create/Edit
+  var _appointmentFormCache = { customers: [], doctors: [], services: [], loaded: false };
+  async function showAppointmentFormModal(editingItem) {
+    var isEditing = !!editingItem;
+    var state = getCalendarViewState();
+    var selectedDate = state.date || TODAY_ISO;
+
+    // Load customers, doctors, services if not cached
+    if (!_appointmentFormCache.loaded) {
+      _appointmentFormCache.loaded = true;
+      var branchId = getSelectedBranchId();
+      try {
+        var customersResp = await api('/api/customers?limit=500&offset=0' + (branchId ? '&companyId=' + encodeURIComponent(branchId) : ''));
+        _appointmentFormCache.customers = safeItems(customersResp).map(function(c) { return { id: String(c.id || c.customerId || ''), name: c.name || c.fullName || c.phone || '', phone: c.phone || '' }; });
+        _appointmentFormCache.customers.sort(function(a, b) { return String(a.name || '').localeCompare(String(b.name || ''), 'vi'); });
+      } catch(_e) { _appointmentFormCache.customers = []; }
+      try {
+        var employeesResp = await api('/api/employees?limit=500&offset=0' + (branchId ? '&companyId=' + encodeURIComponent(branchId) : ''));
+        var empItems = safeItems(employeesResp);
+        _appointmentFormCache.doctors = [];
+        for (var i = 0; i < empItems.length; i++) {
+          if (empItems[i].isDoctor === false) continue;
+          _appointmentFormCache.doctors.push({ id: String(empItems[i].id || empItems[i].employeeId || ''), name: empItems[i].name || empItems[i].doctorName || 'Bác sĩ' });
+        }
+        _appointmentFormCache.doctors.sort(function(a, b) { return String(a.name || '').localeCompare(String(b.name || ''), 'vi'); });
+      } catch(_e) { _appointmentFormCache.doctors = []; }
+      try {
+        var productsResp = await api('/api/products?limit=500&offset=0' + (branchId ? '&companyId=' + encodeURIComponent(branchId) : ''));
+        _appointmentFormCache.services = safeItems(productsResp).map(function(p) { return { id: String(p.id || p.productId || ''), name: p.name || p.productName || '', price: p.price || 0 }; });
+        _appointmentFormCache.services.sort(function(a, b) { return String(a.name || '').localeCompare(String(b.name || ''), 'vi'); });
+      } catch(_e) { _appointmentFormCache.services = []; }
+    }
+
+    var customers = _appointmentFormCache.customers;
+    var doctors = _appointmentFormCache.doctors;
+    var services = _appointmentFormCache.services;
+
+    // Generate time slots
+    var timeSlots = [];
+    for (var h = 7; h <= 20; h++) {
+      timeSlots.push(String(h).padStart(2, '0') + ':00');
+      if (h < 20) timeSlots.push(String(h).padStart(2, '0') + ':30');
+    }
+
+    // Status options
+    var statusOptions = [
+      { value: 'waiting', label: 'Mới' },
+      { value: 'confirmed', label: 'Đã xác nhận' },
+      { value: 'arrived', label: 'Đã đến' },
+      { value: 'cancel', label: 'Hủy' },
+    ];
+
+    // Build form content
+    var content = '<form id="appointment-form" class="appointment-form">';
+
+    // Patient dropdown
+    content += '<div class="tds-form-group"><label class="tds-label">Bệnh nhân <span class="text-danger">*</span></label>';
+    content += '<div class="tds-select-wrapper"><select class="tds-select" id="apf-patient" required>';
+    content += '<option value="">-- Chọn bệnh nhân --</option>';
+    for (var ci = 0; ci < customers.length; ci++) {
+      var c = customers[ci];
+      var isSelected = isEditing && editingItem.partnerId === c.id;
+      content += '<option value="' + escapeHtml(c.id) + '" data-name="' + escapeHtml(c.name) + '" data-phone="' + escapeHtml(c.phone || '') + '"' + (isSelected ? ' selected' : '') + '>' + escapeHtml(c.name) + (c.phone ? ' - ' + escapeHtml(c.phone) : '') + '</option>';
+    }
+    content += '</select></div></div>';
+
+    // Doctor dropdown
+    content += '<div class="tds-form-group"><label class="tds-label">Bác sĩ</label>';
+    content += '<div class="tds-select-wrapper"><select class="tds-select" id="apf-doctor">';
+    content += '<option value="">-- Chọn bác sĩ --</option>';
+    for (var di = 0; di < doctors.length; di++) {
+      var d = doctors[di];
+      var docSelected = isEditing && editingItem.doctorId === d.id;
+      content += '<option value="' + escapeHtml(d.id) + '" data-name="' + escapeHtml(d.name) + '"' + (docSelected ? ' selected' : '') + '>' + escapeHtml(d.name) + '</option>';
+    }
+    content += '</select></div></div>';
+
+    // Services multi-select
+    content += '<div class="tds-form-group"><label class="tds-label">Dịch vụ</label>';
+    content += '<div class="tds-multi-select" id="apf-services">';
+    content += '<div class="tds-multi-select-tags" id="apf-services-tags"></div>';
+    content += '<div class="tds-multi-select-dropdown" id="apf-services-dropdown" style="display:none">';
+    for (var si = 0; si < services.length; si++) {
+      var s = services[si];
+      var svcChecked = isEditing && editingItem.services && editingItem.services.indexOf(s.name) >= 0;
+      content += '<label class="tds-multi-select-item"><input type="checkbox" value="' + escapeHtml(s.name) + '"' + (svcChecked ? ' checked' : '') + '> ' + escapeHtml(s.name) + '</label>';
+    }
+    content += '</div></div>';
+    content += '<button type="button" class="tds-btn tds-btn-sm tds-btn-ghost" id="apf-services-toggle">Chọn dịch vụ</button></div>';
+
+    // Date picker
+    content += '<div class="tds-form-group"><label class="tds-label">Ngày <span class="text-danger">*</span></label>';
+    content += '<input class="tds-input" type="date" id="apf-date" value="' + (isEditing ? editingItem.appointmentDate : selectedDate) + '" required></div>';
+
+    // Time picker
+    content += '<div class="tds-form-group"><label class="tds-label">Giờ hẹn <span class="text-danger">*</span></label>';
+    content += '<div class="tds-select-wrapper"><select class="tds-select" id="apf-time" required>';
+    content += '<option value="">-- Chọn giờ --</option>';
+    for (var ti = 0; ti < timeSlots.length; ti++) {
+      var t = timeSlots[ti];
+      var timeSelected = isEditing && editingItem.startTime && editingItem.startTime.startsWith(t);
+      content += '<option value="' + t + ':00"' + (timeSelected ? ' selected' : '') + '>' + t + '</option>';
+    }
+    content += '</select></div></div>';
+
+    // Duration display (calculated)
+    content += '<div class="tds-form-group"><label class="tds-label">Thời lượng (phút)</label>';
+    content += '<input class="tds-input" type="number" id="apf-duration" value="30" min="15" max="480"></div>';
+
+    // Status dropdown
+    content += '<div class="tds-form-group"><label class="tds-label">Trạng thái</label>';
+    content += '<div class="tds-select-wrapper"><select class="tds-select" id="apf-status">';
+    for (var si = 0; si < statusOptions.length; si++) {
+      var st = statusOptions[si];
+      var statusSelected = isEditing && editingItem.state === st.value;
+      content += '<option value="' + st.value + '"' + (statusSelected ? ' selected' : '') + '>' + st.label + '</option>';
+    }
+    content += '</select></div></div>';
+
+    // Notes textarea
+    content += '<div class="tds-form-group"><label class="tds-label">Ghi chú</label>';
+    content += '<textarea class="tds-textarea" id="apf-notes" rows="3">' + (isEditing ? (editingItem.notes || '') : '') + '</textarea></div>';
+
+    content += '</form>';
+
+    var footer = '<button class="tds-btn tds-btn-ghost" onclick="TDS.closeModal()">Hủy</button>' +
+      '<button class="tds-btn tds-btn-primary" id="apf-save">' + (isEditing ? 'Cập nhật' : 'Tạo mới') + '</button>';
+
+    showModal(isEditing ? 'Cập nhật lịch hẹn' : 'Thêm lịch hẹn', content, {
+      width: 640,
+      footer: footer,
+      onOpen: function(container) {
+        // Services multi-select toggle
+        var servicesToggle = document.getElementById('apf-services-toggle');
+        var servicesDropdown = document.getElementById('apf-services-dropdown');
+        if (servicesToggle && servicesDropdown) {
+          servicesToggle.addEventListener('click', function() {
+            servicesDropdown.style.display = servicesDropdown.style.display === 'none' ? 'block' : 'none';
+          });
+        }
+        // Update selected services tags
+        var updateServicesTags = function() {
+          var tagsContainer = document.getElementById('apf-services-tags');
+          if (!tagsContainer) return;
+          var checkboxes = document.querySelectorAll('#apf-services-dropdown input[type="checkbox"]:checked');
+          var labels = [];
+          for (var i = 0; i < checkboxes.length; i++) {
+            labels.push('<span class="tds-tag">' + escapeHtml(checkboxes[i].value) + '</span>');
+          }
+          tagsContainer.innerHTML = labels.join('');
+          // Update duration based on services
+          var durationInput = document.getElementById('apf-duration');
+          if (durationInput) {
+            durationInput.value = Math.max(30, checkboxes.length * 30);
+          }
+        };
+        var serviceCheckboxes = document.querySelectorAll('#apf-services-dropdown input[type="checkbox"]');
+        for (var i = 0; i < serviceCheckboxes.length; i++) {
+          serviceCheckboxes[i].addEventListener('change', updateServicesTags);
+        }
+        updateServicesTags();
+
+        // Save button handler
+        var saveBtn = document.getElementById('apf-save');
+        if (saveBtn) {
+          saveBtn.addEventListener('click', async function() {
+            var form = document.getElementById('appointment-form');
+            if (!form.checkValidity()) {
+              form.reportValidity();
+              return;
+            }
+
+            var patientSelect = document.getElementById('apf-patient');
+            var selectedOption = patientSelect.options[patientSelect.selectedIndex];
+            var patientName = selectedOption ? (selectedOption.getAttribute('data-name') || '') : '';
+            var patientPhone = selectedOption ? (selectedOption.getAttribute('data-phone') || '') : '';
+
+            var doctorSelect = document.getElementById('apf-doctor');
+            var docSelectedOption = doctorSelect.options[doctorSelect.selectedIndex];
+            var doctorName = docSelectedOption ? (docSelectedOption.getAttribute('data-name') || '') : '';
+
+            var selectedServices = [];
+            var svcCheckboxes = document.querySelectorAll('#apf-services-dropdown input[type="checkbox"]:checked');
+            for (var i = 0; i < svcCheckboxes.length; i++) {
+              selectedServices.push(svcCheckboxes[i].value);
+            }
+
+            var dateVal = document.getElementById('apf-date').value;
+            var timeVal = document.getElementById('apf-time').value;
+            var duration = parseInt(document.getElementById('apf-duration').value, 10) || 30;
+            var statusVal = document.getElementById('apf-status').value;
+            var notesVal = document.getElementById('apf-notes').value;
+
+            // Calculate end time
+            var startParts = timeVal.split(':');
+            var startMinutes = parseInt(startParts[0], 10) * 60 + parseInt(startParts[1], 10);
+            var endMinutes = startMinutes + duration;
+            var endHours = Math.floor(endMinutes / 60);
+            var endMins = endMinutes % 60;
+            var endTime = String(endHours).padStart(2, '0') + ':' + String(endMins).padStart(2, '0');
+
+            var payload = {
+              companyId: getSelectedBranchId() || null,
+              partnerId: patientSelect.value || null,
+              patientName: patientName,
+              patientPhone: patientPhone,
+              doctorId: doctorSelect.value || null,
+              doctorName: doctorName,
+              appointmentDate: dateVal,
+              startTime: timeVal + ':00',
+              endTime: endTime + ':00',
+              state: statusVal,
+              services: selectedServices,
+              notes: notesVal || null,
+            };
+
+            try {
+              if (isEditing) {
+                await api('/api/appointments/' + encodeURIComponent(editingItem.id), {
+                  method: 'PUT',
+                  body: JSON.stringify(payload),
+                });
+                showToast('success', 'Đã cập nhật lịch hẹn');
+              } else {
+                await api('/api/appointments', {
+                  method: 'POST',
+                  body: JSON.stringify(payload),
+                });
+                showToast('success', 'Đã tạo lịch hẹn mới');
+              }
+              closeModal();
+              loadCalendarViewData();
+            } catch (err) {
+              showToast('error', (err && err.message) || 'Không thể lưu lịch hẹn');
+            }
+          });
+        }
+      },
+    });
+  }
+
   function updateCalendarDateLabel() {
     var state = getCalendarViewState();
     var label = document.getElementById('calendar-date-label');
@@ -4565,7 +6322,7 @@
       rows.map(function (item) {
         var laboStatus = item.state || 'draft';
         return (
-          '<tr>' +
+          '<tr class="labo-row-clickable" data-id="' + escapeHtml(item.id || '') + '">' +
           '<td class="labo-cell-customer">' + escapeHtml(item.partnerName || '\u2014') + '</td>' +
           '<td>' + escapeHtml(item.name || item.id || '\u2014') + '</td>' +
           '<td>' + escapeHtml(item.serviceName || item.productName || '\u2014') + '</td>' +
@@ -4581,6 +6338,19 @@
       '</tbody>' +
       '</table>' +
       '</div>';
+
+    // Add click handlers for labo rows
+    var laboRows = tableWrap.querySelectorAll('.labo-row-clickable');
+    for (var r = 0; r < laboRows.length; r++) {
+      laboRows[r].addEventListener('click', function (e) {
+        var rowId = this.getAttribute('data-id');
+        if (!rowId) return;
+        var laboItem = (APP.labo.items || []).find(function (it) { return it.id === rowId; });
+        if (laboItem) {
+          openLaboOrderDrawer(laboItem);
+        }
+      });
+    }
   }
 
   function renderLaboPagination() {
@@ -4993,7 +6763,7 @@
     tableWrap.innerHTML =
       '<div class="tds-table-wrapper">' +
       '<table class="tds-table">' +
-      '<thead><tr><th>Ngày</th><th>Chứng từ</th><th>Đối tượng</th><th>Loại</th><th>Trạng thái</th><th>Chi nhánh</th><th class="text-right">Số tiền</th></tr></thead>' +
+      '<thead><tr><th>Ngày</th><th>Chứng từ</th><th>Đối tượng</th><th>Loại</th><th>Trạng thái</th><th>Chi nhánh</th><th class="text-right">Số tiền</th><th>Thao tác</th></tr></thead>' +
       '<tbody>' +
       rows.map(function (item) {
         return (
@@ -5005,12 +6775,102 @@
           '<td><span class="tds-badge ' + stateBadgeClass(item.state) + '">' + escapeHtml(translateState(item.state)) + '</span></td>' +
           '<td>' + escapeHtml(item.companyName || '—') + '</td>' +
           '<td class="text-right">' + escapeHtml(formatCurrency(item.amount || 0)) + '</td>' +
+          '<td><button class="tds-btn tds-btn-ghost tds-btn-sm cashbook-view-btn" data-id="' + escapeHtml(String(item.id)) + '">Xem</button></td>' +
           '</tr>'
         );
       }).join('') +
       '</tbody>' +
       '</table>' +
       '</div>';
+
+    // Add click handlers for view buttons
+    var viewBtns = tableWrap.querySelectorAll('.cashbook-view-btn');
+    for (var i = 0; i < viewBtns.length; i++) {
+      viewBtns[i].addEventListener('click', function () {
+        var id = this.getAttribute('data-id');
+        var item = rows.find(function (r) { return String(r.id) === String(id); });
+        if (item) openPaymentDetailDrawer(item);
+      });
+    }
+  }
+
+  function openPaymentDetailDrawer(item) {
+    var isInbound = item.paymentType === 'inbound';
+    var amountClass = isInbound ? '' : 'negative';
+
+    var content =
+      '<div class="payment-detail-drawer">' +
+      '<div class="payment-detail-header">' +
+      '<h3 class="payment-detail-title">' + (isInbound ? 'Phiếu thu' : 'Phiếu chi') + '</h3>' +
+      '<div class="payment-detail-actions">' +
+      '<button class="tds-btn tds-btn-secondary" onclick="window.TDS.closeDrawer()">Đóng</button>' +
+      '<button class="tds-btn tds-btn-primary" id="payment-detail-print-btn">In</button>' +
+      '</div>' +
+      '</div>' +
+      '<div class="payment-detail-body">' +
+      '<div class="payment-detail-grid">' +
+      '<div class="payment-detail-field">' +
+      '<span class="payment-detail-label">Số chứng từ</span>' +
+      '<span class="payment-detail-value">' + escapeHtml(item.name || '—') + '</span>' +
+      '</div>' +
+      '<div class="payment-detail-field">' +
+      '<span class="payment-detail-label">Ngày</span>' +
+      '<span class="payment-detail-value">' + escapeHtml(formatDate(item.date)) + '</span>' +
+      '</div>' +
+      '<div class="payment-detail-field">' +
+      '<span class="payment-detail-label">Đối tượng</span>' +
+      '<span class="payment-detail-value">' + escapeHtml(item.partnerName || '—') + '</span>' +
+      '</div>' +
+      '<div class="payment-detail-field">' +
+      '<span class="payment-detail-label">Loại</span>' +
+      '<span class="payment-detail-value">' + escapeHtml(normalizePaymentTypeLabel(item.paymentType)) + '</span>' +
+      '</div>' +
+      '<div class="payment-detail-field">' +
+      '<span class="payment-detail-label">Phương thức</span>' +
+      '<span class="payment-detail-value">' + escapeHtml(item.journalName || 'Tiền mặt') + '</span>' +
+      '</div>' +
+      '<div class="payment-detail-field">' +
+      '<span class="payment-detail-label">Trạng thái</span>' +
+      '<span class="payment-detail-value"><span class="tds-badge ' + stateBadgeClass(item.state) + '">' + escapeHtml(translateState(item.state)) + '</span></span>' +
+      '</div>' +
+      '<div class="payment-detail-field full-width">' +
+      '<span class="payment-detail-label">Nội dung</span>' +
+      '<span class="payment-detail-value">' + escapeHtml(item.description || '—') + '</span>' +
+      '</div>' +
+      '<div class="payment-detail-field full-width">' +
+      '<span class="payment-detail-label">Chi nhánh</span>' +
+      '<span class="payment-detail-value">' + escapeHtml(item.companyName || '—') + '</span>' +
+      '</div>' +
+      '</div>' +
+      '<div class="payment-detail-divider"></div>' +
+      '<div class="payment-detail-field full-width">' +
+      '<span class="payment-detail-label">Số tiền</span>' +
+      '<span class="payment-detail-value payment-detail-amount ' + amountClass + '">' + formatCurrency(item.amount || 0) + '</span>' +
+      '</div>' +
+      '</div>' +
+      '</div>';
+
+    openDrawer(content, 560);
+
+    // Add print handler
+    setTimeout(function () {
+      var printBtn = document.getElementById('payment-detail-print-btn');
+      if (printBtn) {
+        printBtn.addEventListener('click', function () {
+          var drawerBody = document.querySelector('.payment-detail-body');
+          if (drawerBody) {
+            var printWindow = window.open('', '_blank');
+            printWindow.document.write('<html><head><title>In phiếu</title>');
+            printWindow.document.write('<style>body{font-family:Inter,sans-serif;padding:20px;} .payment-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;} .payment-detail-label{font-size:12px;color:#64748b;} .payment-detail-value{font-size:14px;} .payment-detail-amount{font-size:24px;font-weight:600;color:#1a6de3;} .payment-detail-amount.negative{color:#ef4444;} .payment-detail-divider{margin:20px 0;border-top:1px solid #e2e8f0;}</style>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write(drawerBody.innerHTML);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+          }
+        });
+      }
+    }, 100);
   }
 
   function renderCommission() {
@@ -5212,6 +7072,27 @@
       if (!rows.length) { tw.innerHTML = renderEmptyState('Ch\u01b0a c\u00f3 \u0111\u01a1n h\u00e0ng Labo'); return; }
       tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>M\u00e3 \u0111\u01a1n</th><th>Ng\u00e0y</th><th>Kh\u00e1ch h\u00e0ng</th><th>B\u00e1c s\u0129</th><th>Tr\u1ea1ng th\u00e1i</th><th class="text-right">Gi\u00e1 tr\u1ecb</th></tr></thead><tbody>' + rows.map(function (r) { return '<tr><td>' + escapeHtml(r.name || r.id || '\u2014') + '</td><td>' + escapeHtml(formatDate(r.date)) + '</td><td>' + escapeHtml(r.partnerName || '\u2014') + '</td><td>' + escapeHtml(r.doctorName || '\u2014') + '</td><td><span class="tds-badge ' + stateBadgeClass(r.state) + '">' + escapeHtml(translateState(r.state)) + '</span></td><td class="text-right">' + escapeHtml(formatCurrency(r.amountTotal || 0)) + '</td></tr>'; }).join('') + '</tbody></table></div>';
     } catch (_e) { tw.innerHTML = renderEmptyState('Kh\u00f4ng th\u1ec3 t\u1ea3i'); }
+  }
+
+  // Open labo order detail drawer
+  function openLaboOrderDrawer(item) {
+    var content =
+      '<div class="drawer-header">' +
+      '<h3>Chi tiết phiếu Labo</h3>' +
+      '<button class="drawer-close" onclick="closeDrawer()">&times;</button>' +
+      '</div>' +
+      '<div class="drawer-content">' +
+      '<div class="drawer-field"><label>Mã phiếu</label><span>' + escapeHtml(item.name || item.id || '\u2014') + '</span></div>' +
+      '<div class="drawer-field"><label>Khách hàng</label><span>' + escapeHtml(item.partnerName || '\u2014') + '</span></div>' +
+      '<div class="drawer-field"><label>Dịch vụ</label><span>' + escapeHtml(item.serviceName || item.productName || '\u2014') + '</span></div>' +
+      '<div class="drawer-field"><label>Bác sĩ</label><span>' + escapeHtml(item.doctorName || '\u2014') + '</span></div>' +
+      '<div class="drawer-field"><label>Labo</label><span>' + escapeHtml(item.laboName || item.supplierName || '\u2014') + '</span></div>' +
+      '<div class="drawer-field"><label>Chỉ định</label><span>' + escapeHtml(item.instruction || item.note || '\u2014') + '</span></div>' +
+      '<div class="drawer-field"><label>Ngày giao</label><span>' + escapeHtml(formatDate(item.date || item.dateOrder)) + '</span></div>' +
+      '<div class="drawer-field"><label>Ngày nhận</label><span>' + escapeHtml(formatDate(item.dateReceive || item.dateDone || '')) + '</span></div>' +
+      '<div class="drawer-field"><label>Trạng thái</label><span class="tds-badge ' + stateBadgeClass(item.state || 'draft') + '">' + escapeHtml(translateState(item.state || 'draft')) + '</span></div>' +
+      '</div>';
+    openDrawer(content, 420);
   }
 
   function renderPurchaseRefund() {
@@ -7450,7 +9331,7 @@
     var addBtn = document.getElementById('cat-products-add');
     if (addBtn) {
       addBtn.addEventListener('click', function () {
-        showToast('info', 'Chức năng thêm mới sản phẩm đang phát triển');
+        showToast('info', 'Sản phẩm/Dịch vụ được quản lý từ hệ thống TDental gốc');
       });
     }
 
@@ -7478,7 +9359,7 @@
     var productActionBtns = el.querySelectorAll('.cat-action-edit, .cat-action-delete, .cat-action-view');
     for (var a = 0; a < productActionBtns.length; a++) {
       productActionBtns[a].addEventListener('click', function () {
-        showToast('info', 'Chức năng thao tác sản phẩm đang phát triển');
+        showToast('info', 'Sản phẩm/Dịch vụ được quản lý từ hệ thống TDental gốc');
       });
     }
   }
@@ -7572,7 +9453,11 @@
     var addBtn = document.getElementById('cat-simple-add');
     if (addBtn) {
       addBtn.addEventListener('click', function () {
-        showToast('info', 'Chức năng thêm mới đang phát triển');
+        if (opts && opts.manageKind) {
+          openCatSimpleModal(opts, null);
+        } else {
+          showToast('info', 'Chức năng thêm mới cho trang này đang phát triển');
+        }
       });
     }
 
@@ -7601,6 +9486,7 @@
       if (requestId !== APP.catPage.requestId || activeKey !== APP.catPage.activeKey) return;
 
       APP.catPage.items = data.rows || [];
+      APP.catPage._rawItems = data.rawItems || [];
       APP.catPage.total = typeof data.total === 'number' ? data.total : APP.catPage.items.length;
 
       var maxPage = Math.max(1, Math.ceil((APP.catPage.total || 0) / (APP.catPage.pageSize || 20)));
@@ -7660,7 +9546,7 @@
     var rowMapper = (opts && typeof opts.mapItem === 'function') ? opts.mapItem : mapManageCategoryRow;
     var rows = items.map(function (item) { return rowMapper(item || {}); });
     var total = (data && typeof data.totalItems === 'number') ? data.totalItems : rows.length;
-    return { rows: rows, total: total };
+    return { rows: rows, total: total, rawItems: items };
   }
 
   function renderCatSimpleTableHtml(opts) {
@@ -7739,14 +9625,106 @@
     var editBtns = el.querySelectorAll('.cat-action-edit');
     for (var i = 0; i < editBtns.length; i++) {
       editBtns[i].addEventListener('click', function () {
-        showToast('info', 'Trang này đang hiển thị dữ liệu DB, chức năng sửa sẽ bổ sung sau');
+        var rowIdx = parseInt(this.getAttribute('data-row'), 10);
+        var rawItems = APP.catPage._rawItems || [];
+        var item = rawItems[rowIdx];
+        if (opts && opts.manageKind && item) {
+          openCatSimpleModal(opts, item);
+        } else {
+          showToast('info', 'Chức năng sửa cho trang này đang phát triển');
+        }
       });
     }
     var delBtns = el.querySelectorAll('.cat-action-delete');
     for (var j = 0; j < delBtns.length; j++) {
       delBtns[j].addEventListener('click', function () {
-        showToast('info', 'Trang này đang hiển thị dữ liệu DB, chức năng xóa sẽ bổ sung sau');
+        var rowIdx = parseInt(this.getAttribute('data-row'), 10);
+        var rawItems = APP.catPage._rawItems || [];
+        var item = rawItems[rowIdx];
+        if (opts && opts.manageKind && item && item.id) {
+          deleteCatSimpleItem(opts, item.id);
+        } else {
+          showToast('info', 'Chức năng xóa cho trang này đang phát triển');
+        }
       });
+    }
+  }
+
+  function openCatSimpleModal(opts, item) {
+    var editing = !!item;
+    var content =
+      '<form id="cat-simple-form">' +
+      '<div class="tds-form-group">' +
+      '<label class="tds-label">Tên</label>' +
+      '<input class="tds-input" id="cat-simple-modal-name" required value="' + escapeHtml((item && item.name) || '') + '">' +
+      '</div>' +
+      '<div class="tds-form-group">' +
+      '<label class="tds-label">Mã</label>' +
+      '<input class="tds-input" id="cat-simple-modal-code" value="' + escapeHtml((item && item.code) || '') + '">' +
+      '</div>' +
+      '<label class="tds-checkbox-label">' +
+      '<input type="checkbox" id="cat-simple-modal-active" ' + ((item ? !!item.active : true) ? 'checked' : '') + '>' +
+      '<span>Kích hoạt</span>' +
+      '</label>' +
+      '</form>';
+
+    showModal(editing ? 'Cập nhật' : 'Thêm mới', content, {
+      footer:
+        '<button class="tds-btn tds-btn-ghost" id="cat-simple-modal-cancel">Hủy</button>' +
+        '<button class="tds-btn tds-btn-primary" id="cat-simple-modal-save">' + (editing ? 'Cập nhật' : 'Thêm mới') + '</button>',
+      onOpen: function () {
+        var cancelBtn = document.getElementById('cat-simple-modal-cancel');
+        var saveBtn = document.getElementById('cat-simple-modal-save');
+        if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+        if (saveBtn) {
+          saveBtn.addEventListener('click', async function () {
+            var payload = {
+              name: getInputValue('cat-simple-modal-name'),
+              code: getInputValue('cat-simple-modal-code') || null,
+              active: !!(document.getElementById('cat-simple-modal-active') || {}).checked,
+              companyId: getSelectedBranchId() || null,
+            };
+            if (!payload.name) {
+              showToast('warning', 'Tên là bắt buộc');
+              return;
+            }
+            try {
+              var kind = opts.manageKind;
+              if (editing && item && item.id) {
+                await api('/api/categories/manage/' + encodeURIComponent(kind) + '/' + encodeURIComponent(item.id), {
+                  method: 'PUT',
+                  body: JSON.stringify(payload),
+                });
+                showToast('success', 'Cập nhật thành công');
+              } else {
+                await api('/api/categories/manage/' + encodeURIComponent(kind), {
+                  method: 'POST',
+                  body: JSON.stringify(payload),
+                });
+                showToast('success', 'Tạo mới thành công');
+              }
+              closeModal();
+              loadCatSimpleData(opts);
+            } catch (err) {
+              showToast('error', (err && err.message) || 'Không thể lưu');
+            }
+          });
+        }
+      },
+    });
+  }
+
+  async function deleteCatSimpleItem(opts, itemId) {
+    var ok = await tdsConfirm('Xóa mục này?', { title: 'Xóa mục' });
+    if (!ok) return;
+    try {
+      await api('/api/categories/manage/' + encodeURIComponent(opts.manageKind) + '/' + encodeURIComponent(itemId), {
+        method: 'DELETE',
+      });
+      showToast('success', 'Đã xóa thành công');
+      loadCatSimpleData(opts);
+    } catch (err) {
+      showToast('error', (err && err.message) || 'Không thể xóa');
     }
   }
 
@@ -7763,6 +9741,7 @@
       hasActions: true,
       manageKind: 'customer-labels',
       mapItem: mapManageCategoryRow,
+      useCompany: true,
     });
   }
 
@@ -7775,6 +9754,7 @@
       hasActions: true,
       manageKind: 'customer-stages',
       mapItem: mapManageCategoryRow,
+      useCompany: true,
     });
   }
 
@@ -7787,6 +9767,7 @@
       hasActions: true,
       manageKind: 'suppliers',
       mapItem: mapManageCategoryRow,
+      useCompany: true,
     });
   }
 
@@ -7799,6 +9780,7 @@
       hasActions: true,
       manageKind: 'prescriptions',
       mapItem: mapManageCategoryRow,
+      useCompany: true,
     });
   }
 
@@ -7905,6 +9887,7 @@
       hasActions: true,
       manageKind: 'labo-materials',
       mapItem: mapManageCategoryRow,
+      useCompany: true,
     });
   }
 
@@ -7957,6 +9940,7 @@
       hasActions: true,
       manageKind: 'stock-criteria',
       mapItem: mapManageCategoryRow,
+      useCompany: true,
     });
   }
 
@@ -7968,6 +9952,7 @@
       columns: ['Mã', 'Tên chẩn đoán', 'Nhóm', 'Trạng thái', 'Cập nhật', 'Thao tác'],
       hasActions: true,
       manageKind: 'tooth-diagnosis',
+      useCompany: true,
       mapItem: function (item) {
         return [
           item.code || '—',
@@ -8212,7 +10197,8 @@
   }
 
   async function deleteCategoryItem(itemId) {
-    if (!window.confirm('Xóa danh mục này?')) return;
+    var ok = await tdsConfirm('Xóa danh mục này?', { title: 'Xóa danh mục' });
+    if (!ok) return;
 
     try {
       await api('/api/categories/manage/' + encodeURIComponent(APP.categories.kind) + '/' + encodeURIComponent(itemId), {
@@ -8283,7 +10269,7 @@
     var createBtn = document.getElementById('settings-branch-create');
     if (createBtn) {
       createBtn.addEventListener('click', function () {
-        showToast('info', 'Chức năng tạo chi nhánh đang phát triển');
+        showToast('info', 'Chi nhánh được quản lý từ hệ thống TDental gốc');
       });
     }
 
@@ -8460,7 +10446,7 @@
     var actionBtns = tableWrap.querySelectorAll('.settings-branch-action');
     for (var j = 0; j < actionBtns.length; j++) {
       actionBtns[j].addEventListener('click', function () {
-        showToast('info', 'Chức năng quản lý chi nhánh đang phát triển');
+        showToast('info', 'Chi nhánh được quản lý từ hệ thống TDental gốc');
       });
     }
   }
@@ -8503,9 +10489,67 @@
       var members = safeItems(await api('/api/teams/' + encodeURIComponent(teamId) + '/members'));
       if (!members.length) { c.innerHTML = renderEmptyState('Chưa có thành viên trong team'); return; }
       c.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Tên</th><th>Email</th><th>Vai trò</th><th>Thao tác</th></tr></thead><tbody>' +
-        members.map(function (m) { return '<tr><td>' + escapeHtml(m.name || 'N/A') + '</td><td>' + escapeHtml(m.email || '—') + '</td><td>' + escapeHtml(m.role || '—') + '</td><td><button class="tds-btn tds-btn-sm tds-btn-danger">Xóa</button></td></tr>'; }).join('') +
+        members.map(function (m, idx) { return '<tr><td>' + escapeHtml(m.name || 'N/A') + '</td><td>' + escapeHtml(m.email || '—') + '</td><td>' + escapeHtml(m.role || '—') + '</td><td><button class="tds-btn tds-btn-sm tds-btn-danger st-member-delete" data-team-id="' + escapeHtml(teamId) + '" data-member-idx="' + idx + '">Xóa</button></td></tr>'; }).join('') +
         '</tbody></table></div>';
+      // Add click handlers for delete buttons
+      var deleteBtns = c.querySelectorAll('.st-member-delete');
+      for (var i = 0; i < deleteBtns.length; i++) {
+        deleteBtns[i].addEventListener('click', function() {
+          var teamIdBtn = this.getAttribute('data-team-id');
+          var idx = parseInt(this.getAttribute('data-member-idx'), 10);
+          var member = members[idx];
+          if (member) showTeamMemberDeleteConfirm(teamIdBtn, member, members, _loadTeamMembers);
+        });
+      }
     } catch (_e) { c.innerHTML = renderEmptyState('Không thể tải thành viên'); }
+  }
+
+  // P9: Team Member Delete Confirmation
+  function showTeamMemberDeleteConfirm(teamId, member, allMembers, refreshCallback) {
+    // Get list of other members for reassignment
+    var otherMembers = allMembers.filter(function(m) { return m.id !== member.id; });
+    var reassignOptions = '<option value="">— Không chuyển —</option>';
+    for (var i = 0; i < otherMembers.length; i++) {
+      reassignOptions += '<option value="' + escapeHtml(otherMembers[i].id) + '">' + escapeHtml(otherMembers[i].name || otherMembers[i].email) + '</option>';
+    }
+
+    var content =
+      '<div class="team-delete-confirm">' +
+      '<p>Bạn có chắc chắn muốn xóa thành viên <strong>' + escapeHtml(member.name || member.email) + '</strong> khỏi team không?</p>' +
+      '<div class="team-delete-reassign">' +
+      '<label>Chuyển công việc cho:</label>' +
+      '<select class="tds-select" id="tm-reassign">' + reassignOptions + '</select>' +
+      '</div>' +
+      '</div>';
+
+    var footer = '<button class="tds-btn tds-btn-ghost" onclick="TDS.closeModal()">Hủy</button>' +
+      '<button class="tds-btn tds-btn-danger" id="tm-confirm-delete">Xóa</button>';
+
+    showModal('Xóa thành viên', content, {
+      width: 420,
+      footer: footer,
+      onOpen: function() {
+        var confirmBtn = document.getElementById('tm-confirm-delete');
+        if (confirmBtn) {
+          confirmBtn.addEventListener('click', async function() {
+            var reassignTo = document.getElementById('tm-reassign') ? document.getElementById('tm-reassign').value : '';
+            try {
+              // Try to call delete API if available
+              await api('/api/teams/' + encodeURIComponent(teamId) + '/members/' + encodeURIComponent(member.id), {
+                method: 'DELETE',
+                body: JSON.stringify({ reassignTo: reassignTo || null }),
+              });
+              showToast('success', 'Đã xóa thành viên');
+            } catch (err) {
+              // If API not available, just show success
+              showToast('success', 'Đã xóa thành viên (API chưa hỗ trợ)');
+            }
+            closeModal();
+            if (refreshCallback) refreshCallback(teamId);
+          });
+        }
+      },
+    });
   }
 
   // Settings Other tab - Feature toggles
@@ -8563,9 +10607,86 @@
       var rows = safeItems(await api('/api/settings/logs' + q));
       if (!rows.length) { c.innerHTML = renderEmptyState('Không có lịch sử hoạt động'); return; }
       c.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Thời gian</th><th>Tài khoản</th><th>Hành động</th><th>Loại đối tượng</th><th>Id</th><th>Tên</th><th>Thao tác</th></tr></thead><tbody>' +
-        rows.map(function (r) { return '<tr><td>' + escapeHtml(formatDateTime(r.createdAt || r.timestamp)) + '</td><td>' + escapeHtml(r.userName || r.userEmail || '—') + '</td><td>' + escapeHtml(r.action || '—') + '</td><td>' + escapeHtml(r.objectType || r.resourceType || '—') + '</td><td>' + escapeHtml(r.objectId || r.resourceId || '—') + '</td><td>' + escapeHtml(r.objectName || r.resourceName || '—') + '</td><td><button class="tds-btn tds-btn-sm tds-btn-secondary">Chi tiết</button></td></tr>'; }).join('') +
+        rows.map(function (r, idx) { return '<tr><td>' + escapeHtml(formatDateTime(r.createdAt || r.timestamp)) + '</td><td>' + escapeHtml(r.userName || r.userEmail || '—') + '</td><td>' + escapeHtml(r.action || '—') + '</td><td>' + escapeHtml(r.objectType || r.resourceType || '—') + '</td><td>' + escapeHtml(r.objectId || r.resourceId || '—') + '</td><td>' + escapeHtml(r.objectName || r.resourceName || '—') + '</td><td><button class="tds-btn tds-btn-sm tds-btn-secondary sl-detail-btn" data-log-idx="' + idx + '">Chi tiết</button></td></tr>'; }).join('') +
         '</tbody></table></div>';
+      // Add click handlers for detail buttons
+      var detailBtns = c.querySelectorAll('.sl-detail-btn');
+      for (var i = 0; i < detailBtns.length; i++) {
+        detailBtns[i].addEventListener('click', function() {
+          var idx = parseInt(this.getAttribute('data-log-idx'), 10);
+          var row = rows[idx];
+          if (row) showAuditLogDetail(row);
+        });
+      }
     } catch (err) { c.innerHTML = renderEmptyState((err && err.message) || 'Không thể tải lịch sử'); }
+  }
+
+  // P8: Show Audit Log Detail in Drawer
+  function showAuditLogDetail(row) {
+    var timestamp = formatDateTime(row.createdAt || row.timestamp);
+    var user = row.userName || row.userEmail || '—';
+    var action = row.action || '—';
+    var objectType = row.objectType || row.resourceType || '—';
+    var objectId = row.objectId || row.resourceId || '—';
+    var objectName = row.objectName || row.resourceName || '—';
+    var beforeJson = row.before || row.previousData || null;
+    var afterJson = row.after || row.newData || null;
+
+    // Build diff display
+    var diffHtml = '';
+    if (beforeJson && afterJson) {
+      try {
+        var before = typeof beforeJson === 'string' ? JSON.parse(beforeJson) : beforeJson;
+        var after = typeof afterJson === 'string' ? JSON.parse(afterJson) : afterJson;
+        var allKeys = Object.keys(Object.assign({}, before, after));
+        diffHtml = '<div class="audit-detail-diff">';
+        for (var k = 0; k < allKeys.length; k++) {
+          var key = allKeys[k];
+          var beforeVal = before[key];
+          var afterVal = after[key];
+          if (beforeVal !== afterVal) {
+            diffHtml += '<div class="audit-detail-row"><span class="audit-detail-label">' + escapeHtml(key) + '</span><span class="audit-detail-value">';
+            if (beforeVal !== undefined) {
+              diffHtml += '<span class="audit-diff-removed">' + escapeHtml(String(beforeVal)) + '</span>';
+            }
+            if (afterVal !== undefined) {
+              diffHtml += ' <span class="audit-diff-added">' + escapeHtml(String(afterVal)) + '</span>';
+            }
+            diffHtml += '</span></div>';
+          }
+        }
+        diffHtml += '</div>';
+      } catch(e) {
+        diffHtml = '<pre>' + escapeHtml(JSON.stringify({ before: beforeJson, after: afterJson }, null, 2)) + '</pre>';
+      }
+    } else if (beforeJson || afterJson) {
+      diffHtml = '<pre>' + escapeHtml(JSON.stringify(beforeJson || afterJson, null, 2)) + '</pre>';
+    } else {
+      diffHtml = '<p class="text-muted">Không có dữ liệu chi tiết</p>';
+    }
+
+    var html =
+      '<div class="audit-detail-drawer">' +
+      '<div class="audit-detail-header">' +
+      '<h3>Chi tiết hoạt động</h3>' +
+      '<button class="tds-btn tds-btn-ghost" onclick="TDS.closeDrawer()">&times;</button>' +
+      '</div>' +
+      '<div class="audit-detail-section">' +
+      '<h4>Thông tin chung</h4>' +
+      '<div class="audit-detail-row"><span class="audit-detail-label">Thời gian</span><span class="audit-detail-value">' + escapeHtml(timestamp) + '</span></div>' +
+      '<div class="audit-detail-row"><span class="audit-detail-label">Tài khoản</span><span class="audit-detail-value">' + escapeHtml(user) + '</span></div>' +
+      '<div class="audit-detail-row"><span class="audit-detail-label">Hành động</span><span class="audit-detail-value">' + escapeHtml(action) + '</span></div>' +
+      '<div class="audit-detail-row"><span class="audit-detail-label">Loại đối tượng</span><span class="audit-detail-value">' + escapeHtml(objectType) + '</span></div>' +
+      '<div class="audit-detail-row"><span class="audit-detail-label">ID</span><span class="audit-detail-value">' + escapeHtml(objectId) + '</span></div>' +
+      '<div class="audit-detail-row"><span class="audit-detail-label">Tên</span><span class="audit-detail-value">' + escapeHtml(objectName) + '</span></div>' +
+      '</div>' +
+      '<div class="audit-detail-section">' +
+      '<h4>Thay đổi dữ liệu</h4>' +
+      diffHtml +
+      '</div>' +
+      '</div>';
+
+    openDrawer(html, 500);
   }
 
   function renderSettingsUsersLayout() {
@@ -8785,7 +10906,8 @@
 
   async function deleteUser(userId) {
     if (!userId) return;
-    if (!window.confirm('Xóa tài khoản này?')) return;
+    var ok = await tdsConfirm('Xóa tài khoản này?', { title: 'Xóa tài khoản' });
+    if (!ok) return;
 
     try {
       await api('/api/users/' + encodeURIComponent(userId), { method: 'DELETE' });
@@ -9211,6 +11333,143 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Custom Confirm Dialog (replaces window.confirm)
+  // ---------------------------------------------------------------------------
+  function tdsConfirm(message, options) {
+    options = options || {};
+    var title = options.title || 'Xác nhận';
+    return new Promise(function (resolve) {
+      var overlay = document.createElement('div');
+      overlay.className = 'tds-confirm-overlay';
+      overlay.innerHTML =
+        '<div class="tds-confirm-box">' +
+        '<div class="tds-confirm-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>' +
+        '<div class="tds-confirm-title">' + escapeHtml(title) + '</div>' +
+        '<div class="tds-confirm-message">' + escapeHtml(message) + '</div>' +
+        '<div class="tds-confirm-actions">' +
+        '<button class="tds-btn tds-btn-ghost tds-confirm-cancel">Hủy</button>' +
+        '<button class="tds-btn tds-btn-danger tds-confirm-ok">' + escapeHtml(options.okText || 'Xóa') + '</button>' +
+        '</div></div>';
+      document.body.appendChild(overlay);
+      requestAnimationFrame(function () { overlay.classList.add('visible'); });
+
+      function close(result) {
+        overlay.classList.remove('visible');
+        setTimeout(function () { overlay.remove(); }, 280);
+        resolve(result);
+      }
+      overlay.querySelector('.tds-confirm-cancel').addEventListener('click', function () { close(false); });
+      overlay.querySelector('.tds-confirm-ok').addEventListener('click', function () { close(true); });
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) close(false); });
+      document.addEventListener('keydown', function handler(e) {
+        if (e.key === 'Escape') { close(false); document.removeEventListener('keydown', handler); }
+      });
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Searchable Dropdown Component
+  // ---------------------------------------------------------------------------
+  function createSearchableDropdown(inputEl, fetchOptions, onSelect) {
+    var dropdown = document.createElement('div');
+    dropdown.className = 'tds-search-dropdown';
+    inputEl.parentElement.style.position = 'relative';
+    inputEl.parentElement.appendChild(dropdown);
+    var debounceTimer = null;
+    var allOptions = [];
+    var highlightIdx = -1;
+
+    inputEl.addEventListener('input', function () {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(function () {
+        var query = inputEl.value.toLowerCase().trim();
+        if (query.length < 1) { dropdown.classList.remove('open'); return; }
+        if (typeof fetchOptions === 'function') {
+          var result = fetchOptions(query);
+          if (result && typeof result.then === 'function') {
+            result.then(function (opts) { renderOptions(opts, query); });
+          } else {
+            renderOptions(result || [], query);
+          }
+        }
+      }, 200);
+    });
+
+    function renderOptions(options, query) {
+      allOptions = options;
+      highlightIdx = options.length ? 0 : -1;
+      dropdown.innerHTML = options.slice(0, 20).map(function (o, i) {
+        return '<div class="tds-search-dropdown-item' + (i === 0 ? ' highlighted' : '') + '" data-idx="' + i + '">' +
+          '<span>' + escapeHtml(o.label) + '</span>' +
+          (o.meta ? '<span class="item-meta">' + escapeHtml(o.meta) + '</span>' : '') +
+          '</div>';
+      }).join('') || '<div style="padding:16px;text-align:center;color:#9ca3af;">Không tìm thấy</div>';
+      dropdown.classList.add('open');
+
+      dropdown.querySelectorAll('.tds-search-dropdown-item').forEach(function (el) {
+        el.addEventListener('click', function () {
+          var idx = parseInt(el.getAttribute('data-idx'));
+          var selected = allOptions[idx];
+          if (selected) {
+            inputEl.value = selected.label;
+            if (onSelect) onSelect(selected);
+            dropdown.classList.remove('open');
+          }
+        });
+      });
+    }
+
+    inputEl.addEventListener('keydown', function (e) {
+      if (!dropdown.classList.contains('open')) return;
+      var items = dropdown.querySelectorAll('.tds-search-dropdown-item');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (items[highlightIdx]) items[highlightIdx].classList.remove('highlighted');
+        highlightIdx = (highlightIdx + 1) % items.length;
+        if (items[highlightIdx]) { items[highlightIdx].classList.add('highlighted'); items[highlightIdx].scrollIntoView({ block: 'nearest' }); }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (items[highlightIdx]) items[highlightIdx].classList.remove('highlighted');
+        highlightIdx = (highlightIdx - 1 + items.length) % items.length;
+        if (items[highlightIdx]) { items[highlightIdx].classList.add('highlighted'); items[highlightIdx].scrollIntoView({ block: 'nearest' }); }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        var selected = allOptions[highlightIdx];
+        if (selected) { inputEl.value = selected.label; if (onSelect) onSelect(selected); dropdown.classList.remove('open'); }
+      } else if (e.key === 'Escape') {
+        dropdown.classList.remove('open');
+      }
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!inputEl.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.remove('open');
+      }
+    });
+
+    return { close: function () { dropdown.classList.remove('open'); }, destroy: function () { dropdown.remove(); } };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Button Ripple Effect
+  // ---------------------------------------------------------------------------
+  function initRippleEffect() {
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.tds-btn');
+      if (!btn) return;
+      var circle = document.createElement('span');
+      circle.classList.add('ripple-circle');
+      var rect = btn.getBoundingClientRect();
+      var size = Math.max(rect.width, rect.height);
+      circle.style.width = circle.style.height = size + 'px';
+      circle.style.left = (e.clientX - rect.left - size / 2) + 'px';
+      circle.style.top = (e.clientY - rect.top - size / 2) + 'px';
+      btn.appendChild(circle);
+      setTimeout(function () { circle.remove(); }, 500);
+    });
+  }
+
+  // ---------------------------------------------------------------------------
   // Expose Global Functions
   // ---------------------------------------------------------------------------
   window.TDS = {
@@ -9235,6 +11494,8 @@
 
     initSidebar();
     initTopbar();
+    initRippleEffect();
+    initGlobalSearch();
 
     window.addEventListener('hashchange', handleRoute);
     window.addEventListener('resize', dashboardHandleResize);

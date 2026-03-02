@@ -173,3 +173,32 @@ async def notifications_inbox(
             }
     except RuntimeError:
         raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+@router.post("/{notification_id}/read")
+async def mark_notification_read(
+    notification_id: str,
+    _user: dict = Depends(require_auth),
+):
+    """Mark a notification as read."""
+    try:
+        with get_conn() as conn:
+            ctx = _resolve_notification_context(conn)
+            if not ctx:
+                return {"success": False, "message": "No notification table found"}
+
+            # Try to update is_read column
+            if ctx.get("read_col"):
+                update_sql = f"UPDATE {ctx['table'].qualified_name} SET {quote_ident(ctx['read_col'])} = TRUE WHERE {quote_ident(ctx['id_col'])} = %s"
+            elif ctx.get("state_col"):
+                update_sql = f"UPDATE {ctx['table'].qualified_name} SET {quote_ident(ctx['state_col'])} = 'read' WHERE {quote_ident(ctx['id_col'])} = %s"
+            else:
+                return {"success": False, "message": "No way to mark as read"}
+
+            with conn.cursor() as cur:
+                cur.execute(update_sql, (notification_id,))
+                conn.commit()
+
+            return {"success": True, "message": "Notification marked as read"}
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")

@@ -645,3 +645,153 @@ def _resolve_sale_order_meta(conn) -> dict | None:
         "company_id_col": pick_column(cols, "company_id", "companyid"),
         "company_name_col": pick_column(cols, "company_name", "companyname"),
     }
+
+
+@router.post("/sale-orders")
+async def create_sale_order(
+    name: str | None = None,
+    partnerId: str | None = None,
+    partnerName: str | None = None,
+    doctorId: str | None = None,
+    doctorName: str | None = None,
+    companyId: str | None = None,
+    state: str = "draft",
+    notes: str | None = None,
+    lines: str | None = None,
+    _user: dict = Depends(require_auth),
+):
+    """Create a new sale order/treatment."""
+    import uuid
+    from psycopg2.extras import RealDictCursor
+
+    try:
+        with get_conn() as conn:
+            order_meta = _resolve_sale_order_meta(conn)
+            if not order_meta:
+                raise HTTPException(status_code=400, detail="Sale order table not found")
+
+            table = order_meta["table"]
+            id_col = order_meta["id_col"]
+            name_col = order_meta["name_col"]
+            partner_id_col = order_meta["partner_id_col"]
+            partner_name_col = order_meta["partner_name_col"]
+            doctor_id_col = order_meta["doctor_id_col"]
+            doctor_name_col = order_meta["doctor_name_col"]
+            company_id_col = order_meta["company_id_col"]
+            state_col = order_meta["state_col"]
+
+            # Generate new ID
+            new_id = f"so-{uuid.uuid4().hex[:8]}"
+
+            # Build insert query
+            insert_fields = [id_col]
+            insert_values = ["%s"]
+            params = [new_id]
+
+            if name_col and name:
+                insert_fields.append(name_col)
+                insert_values.append("%s")
+                params.append(name)
+
+            if partner_id_col and partnerId:
+                insert_fields.append(partner_id_col)
+                insert_values.append("%s")
+                params.append(partnerId)
+
+            if partner_name_col and partnerName:
+                insert_fields.append(partner_name_col)
+                insert_values.append("%s")
+                params.append(partnerName)
+
+            if doctor_id_col and doctorId:
+                insert_fields.append(doctor_id_col)
+                insert_values.append("%s")
+                params.append(doctorId)
+
+            if doctor_name_col and doctorName:
+                insert_fields.append(doctor_name_col)
+                insert_values.append("%s")
+                params.append(doctorName)
+
+            if company_id_col and companyId:
+                insert_fields.append(company_id_col)
+                insert_values.append("%s")
+                params.append(companyId)
+
+            if state_col:
+                insert_fields.append(state_col)
+                insert_values.append("%s")
+                params.append(state)
+
+            # Add created_at if exists
+            created_at_col = pick_column(table_columns(conn, table), "created_at", "create_date", "date_created")
+            if created_at_col:
+                insert_fields.append(created_at_col)
+                insert_values.append("NOW()")
+
+            insert_query = f'INSERT INTO {table.qualified_name} ({", ".join(insert_fields)}) VALUES ({", ".join(insert_values)}) RETURNING {id_col}::text AS id'
+
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(insert_query, tuple(params))
+                result = cur.fetchone()
+
+            # Parse and insert lines if provided
+            if lines:
+                import json
+                try:
+                    lines_data = json.loads(lines) if isinstance(lines, str) else lines
+                    if lines_data and len(lines_data) > 0:
+                        # Resolve lines table
+                        lines_table = resolve_table(
+                            conn,
+                            "sale_order_lines",
+                            "saleorderlines",
+                            "sale_order_line",
+                        )
+                        if lines_table:
+                            line_cols = table_columns(conn, lines_table)
+                            line_id_col = pick_column(line_cols, "id")
+                            line_so_col = pick_column(line_cols, "sale_order_id", "saleorder_id", "order_id", "so_id")
+                            line_product_col = pick_column(line_cols, "product_id", "productid", "product_id")
+                            line_product_name_col = pick_column(line_cols, "product_name", "productname", "product_name")
+                            line_qty_col = pick_column(line_cols, "qty", "quantity", "product_uom_qty")
+                            line_price_col = pick_column(line_cols, "price_unit", "unit_price", "price")
+                            line_state_col = pick_column(line_cols, "state", "status")
+                            line_teeth_col = pick_column(line_cols, "teeth", "tooth_number", "teeth")
+
+                            if line_id_col and line_so_col:
+                                for line in lines_data:
+                                    line_fields = [line_id_col, line_so_col]
+                                    line_params = [f"sol-{uuid.uuid4().hex[:8]}", new_id]
+
+                                    if line_product_col and line.get("productId"):
+                                        line_fields.append(line_product_col)
+                                        line_params.append(line["productId"])
+                                        line_fields.append(line_product_col.replace("_id", "_name"))
+                                        line_params.append(line.get("productName", ""))
+
+                                    if line_qty_col:
+                                        line_fields.append(line_qty_col)
+                                        line_params.append(line.get("qty", 1))
+
+                                    if line_price_col:
+                                        line_fields.append(line_price_col)
+                                        line_params.append(line.get("unitPrice", 0))
+
+                                    if line_state_col:
+                                        line_fields.append(line_state_col)
+                                        line_params.append(line.get("state", "draft"))
+
+                                    if line_teeth_col and line.get("teeth"):
+                                        line_fields.append(line_teeth_col)
+                                        line_params.append(",".join(line["teeth"]) if isinstance(line["teeth"], list) else str(line["teeth"]))
+
+                                    line_query = f'INSERT INTO {lines_table.qualified_name} ({", ".join(line_fields)}) VALUES ({", ".join(["%s"] * len(line_params))})'
+                                    cur.execute(line_query, tuple(line_params))
+                except json.JSONDecodeError:
+                    pass  # Skip lines if invalid JSON
+
+            conn.commit()
+            return {"id": new_id, "name": name, "state": state}
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database is unavailable")

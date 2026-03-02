@@ -224,7 +224,11 @@ async function initApp() {
 
     // Redirect if current page is forbidden
     const hash = location.hash.replace('#', '');
-    if (hash && hash !== 'dashboard') {
+    // Check for customer detail route: customer-detail/:id or customer-detail/:id/:tab
+    const cdMatch = hash.match(/^customer-detail\/(\d+)(?:\/(\w+))?$/);
+    if (cdMatch) {
+        navigateCustomerDetail(cdMatch[1], cdMatch[2] || 'overview');
+    } else if (hash && hash !== 'dashboard') {
         if (user.role !== 'admin' && (!user.permissions || !user.permissions[hash])) {
             navigate('dashboard');
         } else {
@@ -234,6 +238,15 @@ async function initApp() {
         navigate('dashboard');
     }
 }
+
+// ── HASHCHANGE HANDLER for customer-detail route ──
+window.addEventListener('hashchange', function () {
+    const hash = location.hash.replace('#', '');
+    const cdMatch = hash.match(/^customer-detail\/(\d+)(?:\/(\w+))?$/);
+    if (cdMatch) {
+        navigateCustomerDetail(cdMatch[1], cdMatch[2] || 'overview');
+    }
+});
 
 // ── MAIN ENTRY POINT ──
 async function init() {
@@ -2274,6 +2287,12 @@ function deleteCustomer(id, name) {
 
 // ── DETAIL PANEL ──
 function showDetail(c) {
+    // Redirect to full-page customer detail view
+    if (c && c.id) {
+        _cdetailCustomer = c; // Pre-load data to avoid extra fetch
+        navigateCustomerDetail(c.id, 'overview');
+        return;
+    }
     document.getElementById('detailOverlay').classList.add('open');
     document.getElementById('detailPanel').classList.add('open');
     document.getElementById('detailBreadcrumbName').textContent = `[${c.ref}] ${c.name}`;
@@ -3649,6 +3668,345 @@ async function deleteUser(userId) {
 function switchUser(userId) {
     // Not supported with real auth
     alert('Chức năng switch user không khả dụng khi dùng database auth. Vui lòng đăng xuất.');
+}
+
+// ══════════════════════════════════════════════════
+// CUSTOMER DETAIL — FULL PAGE VIEW
+// ══════════════════════════════════════════════════
+
+let _cdetailCustomer = null;
+let _cdetailTab = 'overview';
+let _cdetailSaleOrders = [];
+
+function navigateCustomerDetail(customerId, tab) {
+    closeDetail();
+    closeModal();
+    _cdetailTab = tab || 'overview';
+    currentPageView = 'customer-detail';
+
+    // Hide all pages, show customer detail
+    document.querySelectorAll('.page-content').forEach(p => p.style.display = 'none');
+    const target = document.getElementById('page-customer-detail');
+    if (target) target.style.display = 'block';
+
+    // Deactivate sidebar items
+    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+    document.querySelector('[data-page="customers"]')?.classList.add('active');
+
+    // Set hash without triggering reload
+    location.hash = 'customer-detail/' + customerId + '/' + _cdetailTab;
+
+    renderCustomerDetailLoading();
+    loadCustomerDetailData(customerId);
+}
+
+function renderCustomerDetailLoading() {
+    document.getElementById('customerDetailRoot').innerHTML =
+        '<div style="display:flex;align-items:center;justify-content:center;padding:80px 0"><div class="spinner"></div><span style="margin-left:12px;color:var(--text-muted)">Dang tai...</span></div>';
+}
+
+async function loadCustomerDetailData(customerId) {
+    try {
+        const res = await fetch(API + '/api/customers/' + customerId, { headers: authHeaders() });
+        if (!res.ok) throw new Error('Customer not found');
+        _cdetailCustomer = await res.json();
+    } catch (e) {
+        // Fallback: try to use data from customer list
+        _cdetailCustomer = _cdetailCustomer || {
+            id: customerId, name: 'Khach hang #' + customerId, display_name: 'Khach hang #' + customerId,
+            ref: 'KH' + customerId, phone: '---', email: '---', gender_display: '---',
+            amount_treatment_total: 0, amount_residual: 0, total_debit: 0
+        };
+    }
+
+    // Load sale orders
+    try {
+        const soRes = await fetch(API + '/api/sale-orders?partnerId=' + customerId, { headers: authHeaders() });
+        if (soRes.ok) {
+            const soData = await soRes.json();
+            _cdetailSaleOrders = soData.items || soData || [];
+        }
+    } catch (e) { _cdetailSaleOrders = []; }
+
+    renderCustomerDetailFull();
+}
+
+function renderCustomerDetailFull() {
+    const c = _cdetailCustomer;
+    if (!c) return;
+
+    const tabs = [
+        { key: 'overview', label: 'Tong quan' },
+        { key: 'treatments', label: 'Phieu dieu tri' },
+        { key: 'appointments', label: 'Lich hen' },
+        { key: 'payments', label: 'Thanh toan' },
+        { key: 'images', label: 'Hinh anh' },
+        { key: 'debt', label: 'Cong no' },
+        { key: 'prescriptions', label: 'Toa thuoc' },
+        { key: 'notes', label: 'Ghi chu' },
+        { key: 'history', label: 'Lich su' },
+        { key: 'info', label: 'Thong tin' }
+    ];
+
+    const treatTotal = c.amount_treatment_total || 0;
+    const debtTotal = c.total_debit || c.amount_residual || 0;
+    const visitCount = _cdetailSaleOrders.length || 0;
+    const activeTreatments = _cdetailSaleOrders.filter(s => s.state === 'draft' || s.state === 'sale' || (s.treatment_status && s.treatment_status !== 'done')).length || 0;
+
+    const root = document.getElementById('customerDetailRoot');
+    root.innerHTML = `
+        <div class="cdetail-page">
+            <!-- Breadcrumb -->
+            <div class="cdetail-breadcrumb">
+                <a href="#" onclick="navigate('customers');return false" class="cdetail-back-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M15 18l-6-6 6-6"/></svg>
+                    Khach hang
+                </a>
+                <span class="cdetail-breadcrumb-sep">&gt;</span>
+                <span class="cdetail-breadcrumb-current">${esc(c.display_name || c.name)}</span>
+            </div>
+
+            <!-- Header -->
+            <div class="cdetail-header">
+                <div class="cdetail-header-left">
+                    <div class="cdetail-avatar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="36" height="36"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <div class="cdetail-header-info">
+                        <h2 class="cdetail-name">[${esc(c.ref || '')}] ${esc(c.display_name || c.name)}</h2>
+                        <div class="cdetail-meta">
+                            ${c.phone ? '<span class="cdetail-meta-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg> ' + esc(c.phone) + '</span>' : ''}
+                            ${c.gender_display ? '<span class="cdetail-meta-item">' + (c.gender_display === 'Nu' || c.gender_display === 'Female' ? '&#9792;' : '&#9794;') + ' ' + esc(c.gender_display) + '</span>' : ''}
+                            ${c.source_name ? '<span class="cdetail-meta-item">' + esc(c.source_name) + '</span>' : ''}
+                            ${c.birth_year ? '<span class="cdetail-meta-item">Sinh: ' + esc(String(c.birth_year)) + '</span>' : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="cdetail-header-actions">
+                    <button class="cdetail-action-btn" onclick="showToast('Tinh nang dang phat trien','info')" title="In ho so">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
+                    </button>
+                    <button class="cdetail-action-btn" onclick="showToast('Tinh nang dang phat trien','info')" title="Dat lich hen">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    </button>
+                    <button class="cdetail-action-btn cdetail-action-primary" onclick="showToast('Tinh nang dang phat trien','info')">+ Them phieu dieu tri</button>
+                </div>
+            </div>
+
+            <!-- Metric Cards -->
+            <div class="cdetail-metrics">
+                <div class="cdetail-metric-card">
+                    <div class="cdetail-metric-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+                    <div class="cdetail-metric-info">
+                        <div class="cdetail-metric-label">Tong tien dieu tri</div>
+                        <div class="cdetail-metric-value">${formatMoney(treatTotal)}</div>
+                    </div>
+                </div>
+                <div class="cdetail-metric-card">
+                    <div class="cdetail-metric-icon orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+                    <div class="cdetail-metric-info">
+                        <div class="cdetail-metric-label">Du kien thu</div>
+                        <div class="cdetail-metric-value">0</div>
+                    </div>
+                </div>
+                <div class="cdetail-metric-card">
+                    <div class="cdetail-metric-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+                    <div class="cdetail-metric-info">
+                        <div class="cdetail-metric-label">Doanh thu</div>
+                        <div class="cdetail-metric-value">${formatMoney(treatTotal)}</div>
+                    </div>
+                </div>
+                <div class="cdetail-metric-card">
+                    <div class="cdetail-metric-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+                    <div class="cdetail-metric-info">
+                        <div class="cdetail-metric-label">Cong no</div>
+                        <div class="cdetail-metric-value">${formatMoney(debtTotal)}</div>
+                    </div>
+                </div>
+                <div class="cdetail-metric-card">
+                    <div class="cdetail-metric-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+                    <div class="cdetail-metric-info">
+                        <div class="cdetail-metric-label">Tam ung</div>
+                        <div class="cdetail-metric-value">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs + Content layout -->
+            <div class="cdetail-body">
+                <div class="cdetail-main">
+                    <!-- Tabs -->
+                    <div class="cdetail-tabs">
+                        ${tabs.map(t => '<button class="cdetail-tab' + (t.key === _cdetailTab ? ' active' : '') + '" onclick="switchCdetailTab(\'' + t.key + '\')">' + t.label + '</button>').join('')}
+                    </div>
+                    <!-- Tab Content -->
+                    <div class="cdetail-tab-content" id="cdetailTabContent">
+                        ${renderCdetailTabContent(_cdetailTab)}
+                    </div>
+                </div>
+                <!-- Right sidebar: activity timeline -->
+                <div class="cdetail-sidebar">
+                    <div class="cdetail-sidebar-tabs">
+                        <button class="cdetail-sidebar-tab active">Lich su</button>
+                        <button class="cdetail-sidebar-tab">Cong viec</button>
+                        <button class="cdetail-sidebar-tab">Ghi chu</button>
+                    </div>
+                    <div class="cdetail-sidebar-filter">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                        Loc
+                    </div>
+                    <div class="cdetail-timeline">
+                        ${renderCdetailTimeline()}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function switchCdetailTab(tab) {
+    _cdetailTab = tab;
+    if (_cdetailCustomer) {
+        location.hash = 'customer-detail/' + _cdetailCustomer.id + '/' + tab;
+    }
+    // Update active tab styling
+    document.querySelectorAll('.cdetail-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    // Re-render content
+    const content = document.getElementById('cdetailTabContent');
+    if (content) content.innerHTML = renderCdetailTabContent(tab);
+}
+
+function renderCdetailTabContent(tab) {
+    const c = _cdetailCustomer;
+    if (!c) return '';
+
+    switch (tab) {
+        case 'overview': return renderCdetailOverview();
+        case 'treatments': return renderCdetailTreatments();
+        case 'info': return renderCdetailInfo();
+        default:
+            return '<div class="cdetail-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><p>Tinh nang <strong>' + tab + '</strong> dang phat trien</p></div>';
+    }
+}
+
+function renderCdetailOverview() {
+    const c = _cdetailCustomer;
+    const sos = _cdetailSaleOrders;
+
+    let treatmentRows = '';
+    if (sos.length > 0) {
+        treatmentRows = sos.slice(0, 10).map(so => {
+            const statusBadge = so.state === 'done' || so.treatment_status === 'done'
+                ? '<span class="badge badge-green">Hoan thanh</span>'
+                : '<span class="badge badge-blue">Dang dieu tri</span>';
+            return '<tr>' +
+                '<td style="padding:10px;font-size:13px">' + (so.date_order ? fmtDate(so.date_order) : '---') + '<br><span style="color:#6b7280;font-size:11px">' + esc(so.name || so.ref || '') + '</span></td>' +
+                '<td style="padding:10px;font-size:13px">' + esc(so.product_name || so.description || 'Dich vu') + '</td>' +
+                '<td style="padding:10px;font-size:13px">' + (so.teeth_numbers || so.quantity || '---') + '</td>' +
+                '<td style="padding:10px;font-size:13px;text-align:right">' + formatMoney(so.amount_total || 0) + '</td>' +
+                '<td style="padding:10px;font-size:13px;text-align:right">' + formatMoney(so.amount_total || 0) + '</td>' +
+                '<td style="padding:10px;font-size:13px;text-align:right">' + formatMoney(so.amount_residual || 0) + '</td>' +
+                '<td style="padding:10px;font-size:13px">' + esc(so.doctor_name || '---') + '</td>' +
+                '<td style="padding:10px;font-size:13px">' + statusBadge + '</td>' +
+                '</tr>';
+        }).join('');
+    } else {
+        treatmentRows = '<tr><td colspan="8" style="padding:30px;text-align:center;color:#9ca3af">Chua co phieu dieu tri</td></tr>';
+    }
+
+    return `
+        <div class="cdetail-section">
+            <div class="cdetail-section-header">
+                <h3>Lich su dieu tri</h3>
+                <div class="cdetail-section-actions">
+                    <button class="cdetail-small-btn active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
+                    <button class="cdetail-small-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
+                    <span style="color:#9ca3af;font-size:12px;margin-left:8px">In ho so dieu tri</span>
+                </div>
+            </div>
+            <div class="cdetail-table-wrap">
+                <table class="cdetail-table">
+                    <thead>
+                        <tr>
+                            <th>Ngay</th>
+                            <th>Dich vu</th>
+                            <th>So luong</th>
+                            <th style="text-align:right">Thanh tien</th>
+                            <th style="text-align:right">Thanh toan</th>
+                            <th style="text-align:right">Con lai</th>
+                            <th>Bac si</th>
+                            <th>Trang thai</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${treatmentRows}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function renderCdetailTreatments() {
+    return renderCdetailOverview(); // Same as overview for now
+}
+
+function renderCdetailInfo() {
+    const c = _cdetailCustomer;
+    return `
+        <div class="cdetail-section">
+            <h3 style="margin-bottom:16px">Thong tin ca nhan</h3>
+            <div class="cdetail-info-grid">
+                <div class="cdetail-info-row"><span class="cdetail-info-label">Ho ten</span><span class="cdetail-info-value">${esc(c.display_name || c.name)}</span></div>
+                <div class="cdetail-info-row"><span class="cdetail-info-label">Ma KH</span><span class="cdetail-info-value">${esc(c.ref || '---')}</span></div>
+                <div class="cdetail-info-row"><span class="cdetail-info-label">Dien thoai</span><span class="cdetail-info-value">${esc(c.phone || '---')}</span></div>
+                <div class="cdetail-info-row"><span class="cdetail-info-label">Email</span><span class="cdetail-info-value">${esc(c.email || '---')}</span></div>
+                <div class="cdetail-info-row"><span class="cdetail-info-label">Gioi tinh</span><span class="cdetail-info-value">${esc(c.gender_display || '---')}</span></div>
+                <div class="cdetail-info-row"><span class="cdetail-info-label">Nam sinh</span><span class="cdetail-info-value">${c.birth_year || '---'}</span></div>
+                <div class="cdetail-info-row"><span class="cdetail-info-label">Dia chi</span><span class="cdetail-info-value">${esc(c.address || c.street || '---')}</span></div>
+                <div class="cdetail-info-row"><span class="cdetail-info-label">Quan/Huyen</span><span class="cdetail-info-value">${esc(c.district_name || '---')}</span></div>
+                <div class="cdetail-info-row"><span class="cdetail-info-label">Thanh pho</span><span class="cdetail-info-value">${esc(c.city_name || '---')}</span></div>
+                <div class="cdetail-info-row"><span class="cdetail-info-label">Chi nhanh</span><span class="cdetail-info-value">${esc(c.company_name || '---')}</span></div>
+                <div class="cdetail-info-row"><span class="cdetail-info-label">Nguon</span><span class="cdetail-info-value">${esc(c.source_name || '---')}</span></div>
+                <div class="cdetail-info-row"><span class="cdetail-info-label">Trang thai</span><span class="cdetail-info-value">${esc(c.treatment_status || '---')}</span></div>
+                <div class="cdetail-info-row"><span class="cdetail-info-label">Ngay tao</span><span class="cdetail-info-value">${c.created_at ? fmtDate(c.created_at) : '---'}</span></div>
+            </div>
+        </div>
+    `;
+}
+
+function renderCdetailTimeline() {
+    const sos = _cdetailSaleOrders;
+    if (!sos || sos.length === 0) {
+        return '<div style="padding:20px;text-align:center;color:#9ca3af;font-size:13px">Chua co hoat dong</div>';
+    }
+
+    const now = new Date();
+    const today = now.toISOString().slice(0, 10);
+
+    let html = '<div class="cdetail-timeline-group"><div class="cdetail-timeline-date">Hom nay</div>';
+    sos.slice(0, 5).forEach(so => {
+        const time = so.date_order ? new Date(so.date_order).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '';
+        html += `
+            <div class="cdetail-timeline-item">
+                <div class="cdetail-timeline-time">${time}</div>
+                <div class="cdetail-timeline-dot"></div>
+                <div class="cdetail-timeline-content">
+                    <div class="cdetail-timeline-type">Dich vu</div>
+                    <div class="cdetail-timeline-desc">Su dung dich vu <strong>${esc(so.product_name || so.description || 'Dich vu')}</strong> - phieu dieu tri ${esc(so.name || so.ref || '')}</div>
+                    <div class="cdetail-timeline-author">Nguoi tao: ${esc(so.doctor_name || '---')}</div>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    return html;
+}
+
+// Wire customer list row clicks to navigate to detail
+function openCustomerDetail(customerId) {
+    navigateCustomerDetail(customerId, 'overview');
 }
 
 // ── START ──
