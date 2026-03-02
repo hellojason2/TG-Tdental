@@ -1,12 +1,13 @@
 """TDental Golden -- FastAPI application entry point."""
 
+import hashlib
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.core.middleware import validate_token
@@ -114,6 +115,36 @@ async def add_security_headers(request: Request, call_next):
 _static_dir = Path(__file__).resolve().parent.parent / "static"
 _login_page = _static_dir / "login.html"
 _app_page = _static_dir / "tdental.html"
+
+
+def _file_hash(path: Path, length: int = 8) -> str:
+    """Return short MD5 hex of file contents for cache-busting."""
+    try:
+        return hashlib.md5(path.read_bytes()).hexdigest()[:length]  # noqa: S324
+    except Exception:
+        return "0"
+
+
+def _cache_busted_html(html_path: Path) -> str:
+    """Read an HTML file and append ?v=<hash> to CSS/JS asset paths."""
+    text = html_path.read_text(encoding="utf-8")
+    # Bust /static/css/tdental.css
+    css_path = _static_dir / "css" / "tdental.css"
+    css_v = _file_hash(css_path)
+    text = text.replace(
+        '/static/css/tdental.css"',
+        f'/static/css/tdental.css?v={css_v}"',
+    )
+    # Bust /static/js/app.js
+    js_path = _static_dir / "js" / "app.js"
+    js_v = _file_hash(js_path)
+    text = text.replace(
+        '/static/js/app.js"',
+        f'/static/js/app.js?v={js_v}"',
+    )
+    return text
+
+
 if _static_dir.is_dir():
     app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 else:
@@ -173,7 +204,7 @@ def root(request: Request):
         )
         return response
 
-    return FileResponse(_app_page)
+    return HTMLResponse(_cache_busted_html(_app_page))
 
 
 @app.get("/login")
