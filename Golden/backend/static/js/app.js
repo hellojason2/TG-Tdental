@@ -149,9 +149,13 @@
     },
     labo: {
       search: '',
+      status: '',
       items: [],
       loading: false,
       requestId: 0,
+      page: 1,
+      pageSize: 20,
+      total: 0,
     },
     purchase: {
       pickingType: '',
@@ -177,6 +181,10 @@
     },
     commission: {
       search: '',
+      tab: 'overview',
+      commissionType: '',
+      dateFrom: RANGE_START_ISO,
+      dateTo: TODAY_ISO,
       items: [],
       loading: false,
       requestId: 0,
@@ -191,6 +199,8 @@
     salary: {
       dateFrom: RANGE_START_ISO,
       dateTo: TODAY_ISO,
+      month: (new Date().getMonth() + 1),
+      year: new Date().getFullYear(),
       data: null,
       loading: false,
       requestId: 0,
@@ -201,6 +211,29 @@
       dataByKind: {},
       loading: false,
       requestId: 0,
+    },
+    catProducts: {
+      tab: 'services',
+      selectedGroup: null,
+      groupSearch: '',
+      rightSearch: '',
+      statusFilter: 'active',
+      items: [],
+      groups: [],
+      loading: false,
+      requestId: 0,
+      page: 1,
+      pageSize: 20,
+      total: 0,
+    },
+    catPage: {
+      search: '',
+      items: [],
+      loading: false,
+      requestId: 0,
+      page: 1,
+      pageSize: 20,
+      total: 0,
     },
     settings: {
       tab: 'users',
@@ -248,7 +281,7 @@
     '#/callcenter': { title: 'Tổng đài', page: 'callcenter', render: renderCallCenter },
     '#/commission': { title: 'Hoa hồng', page: 'commission', render: renderCommission },
     '#/reports': { title: 'Báo cáo', page: 'reports', render: renderReports },
-    '#/categories': { title: 'Danh mục', page: 'categories', render: renderCategories },
+    '#/categories': { title: 'Thông tin KH', page: 'categories', render: renderCatCustomerInfo },
     '#/settings': { title: 'Cài đặt', page: 'settings', render: renderSettings },
     // --- Submenu routes ---
     '#/labo-orders': { title: 'Đặt hàng Labo', page: 'labo', render: renderLaboOrders },
@@ -261,26 +294,26 @@
     '#/account-payment': { title: 'Thanh toán nội bộ', page: 'cashbook', render: renderAccountPayment },
     '#/call-history': { title: 'Lịch sử cuộc gọi', page: 'callcenter', render: renderCallHistory },
     '#/commission-employee': { title: 'Hoa hồng nhân viên', page: 'commission', render: renderCommissionEmployee },
-    '#/report-daily': { title: 'Báo cáo ngày', page: 'reports', render: function () { APP.reports.tab = 'daily'; renderReports(); } },
-    '#/report-revenue': { title: 'Báo cáo doanh thu', page: 'reports', render: function () { APP.reports.tab = 'service'; renderReports(); } },
-    '#/report-services': { title: 'Báo cáo dịch vụ', page: 'reports', render: function () { APP.reports.tab = 'service'; renderReports(); } },
-    '#/report-customers': { title: 'Báo cáo khách hàng', page: 'reports', render: function () { APP.reports.tab = 'customer'; renderReports(); } },
-    '#/report-reception': { title: 'Báo cáo tiếp nhận', page: 'reports', render: function () { APP.reports.tab = 'source'; renderReports(); } },
-    '#/report-supplier-debt': { title: 'Công nợ NCC', page: 'reports', render: function () { APP.reports.tab = 'branch'; renderReports(); } },
-    '#/report-appointments': { title: 'Báo cáo lịch hẹn', page: 'reports', render: function () { APP.reports.tab = 'staff'; renderReports(); } },
-    '#/report-tasks': { title: 'Báo cáo công việc', page: 'reports', render: function () { APP.reports.tab = 'staff'; renderReports(); } },
-    '#/report-insurance': { title: 'Công nợ bảo hiểm', page: 'reports', render: function () { APP.reports.tab = 'branch'; renderReports(); } },
-    '#/customer-stage': { title: 'Trạng thái KH', page: 'categories', render: function () { APP.categories.kind = 'partner-categories'; renderCategories(); } },
-    '#/partner-catalog': { title: 'Đối tác', page: 'categories', render: function () { APP.categories.kind = 'partner-sources'; renderCategories(); } },
-    '#/products': { title: 'Dịch vụ/Vật tư/Thuốc', page: 'categories', render: function () { APP.categories.kind = 'products'; renderCategories(); } },
-    '#/prescriptions': { title: 'Đơn thuốc mẫu', page: 'categories', render: function () { APP.categories.kind = 'services'; renderCategories(); } },
-    '#/price-list': { title: 'Bảng giá', page: 'categories', render: function () { APP.categories.kind = 'services'; renderCategories(); } },
-    '#/commission-table': { title: 'Bảng hoa hồng', page: 'categories', render: function () { APP.categories.kind = 'services'; renderCategories(); } },
-    '#/employees': { title: 'Nhân viên', page: 'categories', render: function () { APP.categories.kind = 'doctors'; renderCategories(); } },
-    '#/labo-params': { title: 'Thông số Labo', page: 'categories', render: function () { APP.categories.kind = 'services'; renderCategories(); } },
-    '#/income-expense-types': { title: 'Loại thu chi', page: 'categories', render: function () { APP.categories.kind = 'card-types'; renderCategories(); } },
-    '#/stock-criteria': { title: 'Tiêu chí kiểm kho', page: 'categories', render: function () { APP.categories.kind = 'products'; renderCategories(); } },
-    '#/tooth-diagnosis': { title: 'Chẩn đoán răng', page: 'categories', render: function () { APP.categories.kind = 'services'; renderCategories(); } },
+    '#/report-daily': { title: 'Báo cáo ngày', page: 'reports', render: renderReportDaily },
+    '#/report-revenue': { title: 'Báo cáo doanh thu', page: 'reports', render: renderReportRevenue },
+    '#/report-services': { title: 'Báo cáo dịch vụ', page: 'reports', render: renderReportServices },
+    '#/report-customers': { title: 'Báo cáo khách hàng', page: 'reports', render: renderReportCustomers },
+    '#/report-reception': { title: 'Báo cáo tiếp nhận', page: 'reports', render: renderReportReception },
+    '#/report-supplier-debt': { title: 'Công nợ NCC', page: 'reports', render: renderReportSupplierDebt },
+    '#/report-appointments': { title: 'Báo cáo lịch hẹn', page: 'reports', render: renderReportAppointments },
+    '#/report-tasks': { title: 'Báo cáo công việc', page: 'reports', render: renderReportTasks },
+    '#/report-insurance': { title: 'Công nợ bảo hiểm', page: 'reports', render: renderReportInsurance },
+    '#/customer-stage': { title: 'Trạng thái KH', page: 'categories', render: renderCatCustomerStage },
+    '#/partner-catalog': { title: 'Đối tác', page: 'categories', render: renderCatPartners },
+    '#/products': { title: 'Dịch vụ/Vật tư/Thuốc', page: 'categories', render: renderCatProducts },
+    '#/prescriptions': { title: 'Đơn thuốc mẫu', page: 'categories', render: renderCatPrescriptions },
+    '#/price-list': { title: 'Bảng giá', page: 'categories', render: renderCatPriceList },
+    '#/commission-table': { title: 'Bảng hoa hồng', page: 'categories', render: renderCatCommissionTable },
+    '#/employees': { title: 'Nhân viên', page: 'categories', render: renderCatEmployees },
+    '#/labo-params': { title: 'Thông số Labo', page: 'categories', render: renderCatLaboParams },
+    '#/income-expense-types': { title: 'Loại thu chi', page: 'categories', render: renderCatIncomeExpense },
+    '#/stock-criteria': { title: 'Tiêu chí kiểm kho', page: 'categories', render: renderCatStockCriteria },
+    '#/tooth-diagnosis': { title: 'Chẩn đoán răng', page: 'categories', render: renderCatToothDiagnosis },
     '#/settings-config': { title: 'Cấu hình chung', page: 'settings', render: function () { APP.settings.tab = 'config'; renderSettings(); } },
     '#/settings-team': { title: 'Cấu hình Team', page: 'settings', render: function () { APP.settings.tab = 'team'; renderSettings(); } },
     '#/settings-other': { title: 'Cấu hình khác', page: 'settings', render: function () { APP.settings.tab = 'other'; renderSettings(); } },
@@ -569,17 +602,48 @@
   // ---------------------------------------------------------------------------
   // Sidebar Logic
   // ---------------------------------------------------------------------------
+  function isSidebarExpanded() {
+    return document.getElementById('sidebar').classList.contains('expanded');
+  }
+
+  function isMobileView() {
+    return window.innerWidth <= 1024;
+  }
+
   function initSidebar() {
     var sidebar = document.getElementById('sidebar');
     var toggleBtn = document.getElementById('sidebar-toggle');
     var backdrop = document.getElementById('sidebar-backdrop');
 
-    // Mobile toggle
+    // Restore expanded state from localStorage (desktop only)
+    if (!isMobileView()) {
+      var savedState = localStorage.getItem('tds-sidebar-expanded');
+      if (savedState === 'true') {
+        sidebar.classList.add('expanded');
+      }
+    }
+
+    // Toggle button click handler
     if (toggleBtn) {
       toggleBtn.addEventListener('click', function () {
-        var isOpen = sidebar.classList.contains('mobile-open');
-        sidebar.classList.toggle('mobile-open', !isOpen);
-        backdrop.style.display = isOpen ? 'none' : 'block';
+        if (isMobileView()) {
+          // Mobile: overlay mode
+          var isOpen = sidebar.classList.contains('mobile-open');
+          sidebar.classList.toggle('mobile-open', !isOpen);
+          backdrop.style.display = isOpen ? 'none' : 'block';
+        } else {
+          // Desktop: toggle expanded/collapsed
+          var isExpanded = sidebar.classList.contains('expanded');
+          sidebar.classList.toggle('expanded', !isExpanded);
+          localStorage.setItem('tds-sidebar-expanded', !isExpanded ? 'true' : 'false');
+          // When collapsing, close all inline submenus
+          if (isExpanded) {
+            var expandedMenus = sidebar.querySelectorAll('.submenu-expanded');
+            for (var k = 0; k < expandedMenus.length; k++) {
+              expandedMenus[k].classList.remove('submenu-expanded');
+            }
+          }
+        }
       });
     }
 
@@ -590,7 +654,7 @@
       });
     }
 
-    // Nav item click handlers (direct links only, not sub-menu items)
+    // Nav item click handlers
     var navItems = document.querySelectorAll('.sidebar-nav-item');
     for (var i = 0; i < navItems.length; i++) {
       (function (item) {
@@ -603,12 +667,14 @@
           });
         }
 
-        // For items WITH sub-menus, hover shows the popup with a delay
+        // For items WITH sub-menus
         if (item.classList.contains('has-submenu')) {
           var showTimer = null;
           var hideTimer = null;
 
           function showSubmenu() {
+            // Only use hover popups in collapsed mode
+            if (isSidebarExpanded() || sidebar.classList.contains('mobile-open')) return;
             clearTimeout(hideTimer);
             showTimer = setTimeout(function () {
               item.classList.add('submenu-open');
@@ -616,6 +682,7 @@
           }
 
           function hideSubmenu() {
+            if (isSidebarExpanded() || sidebar.classList.contains('mobile-open')) return;
             clearTimeout(showTimer);
             hideTimer = setTimeout(function () {
               item.classList.remove('submenu-open');
@@ -625,10 +692,23 @@
           item.addEventListener('mouseenter', showSubmenu);
           item.addEventListener('mouseleave', hideSubmenu);
 
-          // Also clicking the icon navigates to default route
+          // Click on nav item toggles inline submenu in expanded/mobile mode
+          item.addEventListener('click', function (e) {
+            if (isSidebarExpanded() || sidebar.classList.contains('mobile-open')) {
+              e.preventDefault();
+              e.stopPropagation();
+              item.classList.toggle('submenu-expanded');
+            }
+          });
+
+          // Clicking the icon: in collapsed mode navigates, in expanded mode toggles submenu
           item.querySelector('.nav-icon').addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
+            if (isSidebarExpanded() || sidebar.classList.contains('mobile-open')) {
+              item.classList.toggle('submenu-expanded');
+              return;
+            }
             var route = item.getAttribute('data-route');
             if (route) navigateTo(route);
           });
@@ -644,11 +724,30 @@
         e.stopPropagation();
         var route = this.getAttribute('data-route');
         if (route) navigateTo(route);
-        // Close submenu
+        // Close submenu popup (collapsed mode)
         var parent = this.closest('.has-submenu');
         if (parent) parent.classList.remove('submenu-open');
+        // On mobile, also close sidebar
+        if (isMobileView() && sidebar.classList.contains('mobile-open')) {
+          sidebar.classList.remove('mobile-open');
+          backdrop.style.display = 'none';
+        }
       });
     }
+
+    // Handle window resize: clean up states
+    window.addEventListener('resize', function () {
+      if (!isMobileView()) {
+        sidebar.classList.remove('mobile-open');
+        backdrop.style.display = 'none';
+        var saved = localStorage.getItem('tds-sidebar-expanded');
+        if (saved === 'true' && !sidebar.classList.contains('expanded')) {
+          sidebar.classList.add('expanded');
+        }
+      } else {
+        sidebar.classList.remove('expanded');
+      }
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -2900,29 +2999,229 @@
   function renderWork() {
     var el = document.getElementById('page-work');
     if (!el) return;
-    var state = getReceptionViewState();
+    var state = getWorkViewState();
     state.companyId = getSelectedBranchId();
 
+    var now = new Date();
+    var monthStart = String(now.getFullYear()) + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01';
+    var monthEnd = String(now.getFullYear()) + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0');
+    var dateFromDisplay = monthStart.slice(8, 10) + '/' + monthStart.slice(5, 7) + '/' + monthStart.slice(0, 4);
+    var dateToDisplay = monthEnd.slice(8, 10) + '/' + monthEnd.slice(5, 7) + '/' + monthEnd.slice(0, 4);
+
+    var statusTabs = [
+      { key: 'all', label: 'Tất cả' },
+      { key: 'priority', label: 'Ưu tiên' },
+      { key: 'new', label: 'Mới' },
+      { key: 'in_progress', label: 'Đang làm' },
+      { key: 'need_info', label: 'Cần thêm thông tin' },
+      { key: 'done', label: 'Hoàn thành' },
+      { key: 'cancelled', label: 'Hủy' },
+      { key: 'unassigned', label: 'Chưa phân công' }
+    ];
+
+    var tabsHtml = '';
+    for (var i = 0; i < statusTabs.length; i++) {
+      var active = state.statusFilter === statusTabs[i].key ? ' work-tab-active' : '';
+      tabsHtml += '<button class="work-status-tab' + active + '" data-work-status="' + statusTabs[i].key + '">' + statusTabs[i].label + '</button>';
+    }
+
     el.innerHTML =
-      '<section class="tds-card reception-page">' +
-      '<div class="reception-toolbar">' +
-      '<div class="reception-toolbar-main">' +
-      '<h2>Tiếp nhận trong ngày</h2>' +
-      '<p class="text-secondary">Luồng điều phối: Chờ khám → Đang khám → Hoàn thành</p>' +
-      '</div>' +
-      '<div class="reception-toolbar-actions">' +
-      '<button class="tds-btn tds-btn-secondary tds-btn-icon" data-reception-nav="prev" title="Ngày trước">&lsaquo;</button>' +
-      '<button class="tds-btn tds-btn-secondary" data-reception-nav="today">Hôm nay</button>' +
-      '<button class="tds-btn tds-btn-secondary tds-btn-icon" data-reception-nav="next" title="Ngày sau">&rsaquo;</button>' +
-      '<span class="reception-date-label" id="reception-date-label"></span>' +
+      '<section class="work-page">' +
+      '<div class="work-header">' +
+      '<div class="work-header-left">' +
+      '<div class="work-sub-tabs">' +
+      '<button class="work-sub-tab' + (state.subTab === 'tasks' ? ' work-sub-tab-active' : '') + '" data-work-subtab="tasks">Công việc</button>' +
+      '<button class="work-sub-tab' + (state.subTab === 'types' ? ' work-sub-tab-active' : '') + '" data-work-subtab="types">Loại công việc</button>' +
       '</div>' +
       '</div>' +
-      '<div class="reception-summary" id="reception-summary"></div>' +
-      '<div id="reception-board">' + renderLoadingState('Đang tải lịch tiếp nhận...') + '</div>' +
+      '<div class="work-header-right">' +
+      '<div class="work-date-range">' +
+      '<span>' + dateFromDisplay + '</span>' +
+      '<span class="work-date-sep">&ndash;</span>' +
+      '<span>' + dateToDisplay + '</span>' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' +
+      '</div>' +
+      '<div class="work-search-box">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+      '<input type="text" class="work-search-input" id="work-search-input" placeholder="Tìm kiếm theo tiêu đề, #ID, khách hàng" />' +
+      '</div>' +
+      '<button class="tds-btn tds-btn-primary work-create-btn" id="work-create-btn">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+      ' Tạo công việc' +
+      '</button>' +
+      '</div>' +
+      '</div>' +
+      '<div class="work-filters-bar">' +
+      '<div class="work-status-tabs">' + tabsHtml + '</div>' +
+      '<div class="work-filter-actions">' +
+      '<button class="tds-btn tds-btn-ghost tds-btn-icon work-filter-btn" title="Lọc">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>' +
+      '</button>' +
+      '<button class="tds-btn tds-btn-ghost tds-btn-icon work-view-btn" title="Chế độ xem">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>' +
+      '</button>' +
+      '</div>' +
+      '</div>' +
+      '<div class="work-table-wrap">' +
+      '<table class="work-table">' +
+      '<thead>' +
+      '<tr>' +
+      '<th>Tiêu đề</th>' +
+      '<th>Loại công việc</th>' +
+      '<th>Hành động</th>' +
+      '<th>Người phụ trách</th>' +
+      '<th>Người theo dõi</th>' +
+      '<th>Khách hàng</th>' +
+      '<th>Nội dung CV</th>' +
+      '<th>Trạng thái</th>' +
+      '<th>Thao tác</th>' +
+      '</tr>' +
+      '</thead>' +
+      '<tbody id="work-table-body"></tbody>' +
+      '</table>' +
+      '<div id="work-empty-state" class="work-empty-state">' +
+      '<div class="work-empty-illustration">' +
+      '<svg width="120" height="120" viewBox="0 0 120 120" fill="none">' +
+      '<rect x="30" y="20" width="60" height="80" rx="6" fill="#E8EDF2" stroke="#B0BEC5" stroke-width="2"/>' +
+      '<rect x="40" y="35" width="40" height="4" rx="2" fill="#B0BEC5"/>' +
+      '<rect x="40" y="45" width="30" height="4" rx="2" fill="#B0BEC5"/>' +
+      '<rect x="40" y="55" width="35" height="4" rx="2" fill="#B0BEC5"/>' +
+      '<circle cx="80" cy="80" r="18" fill="#fff" stroke="#B0BEC5" stroke-width="2"/>' +
+      '<circle cx="80" cy="80" r="12" fill="#E8EDF2"/>' +
+      '<path d="M75 80 L78 83 L85 76" stroke="#2196F3" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '</svg>' +
+      '</div>' +
+      '<p>Chưa có công việc nào</p>' +
+      '</div>' +
+      '</div>' +
       '</section>';
 
-    bindReceptionInteractions(el);
-    loadReceptionBoardData();
+    bindWorkInteractions(el);
+    loadWorkData();
+  }
+
+  function getWorkViewState() {
+    if (!APP.work) {
+      APP.work = {
+        companyId: getSelectedBranchId(),
+        subTab: 'tasks',
+        statusFilter: 'all',
+        searchQuery: '',
+        tasks: [],
+        requestSeq: 0,
+      };
+    }
+    return APP.work;
+  }
+
+  function bindWorkInteractions(root) {
+    var state = getWorkViewState();
+
+    var subTabBtns = root.querySelectorAll('[data-work-subtab]');
+    for (var i = 0; i < subTabBtns.length; i++) {
+      subTabBtns[i].addEventListener('click', function () {
+        state.subTab = this.getAttribute('data-work-subtab') || 'tasks';
+        renderWork();
+      });
+    }
+
+    var statusBtns = root.querySelectorAll('[data-work-status]');
+    for (var j = 0; j < statusBtns.length; j++) {
+      statusBtns[j].addEventListener('click', function () {
+        state.statusFilter = this.getAttribute('data-work-status') || 'all';
+        renderWork();
+      });
+    }
+
+    var searchInput = root.querySelector('#work-search-input');
+    if (searchInput) {
+      searchInput.value = state.searchQuery || '';
+      var searchTimer = null;
+      searchInput.addEventListener('input', function () {
+        var val = this.value;
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function () {
+          state.searchQuery = val;
+          renderWorkTableBody();
+        }, 300);
+      });
+    }
+
+    var createBtn = root.querySelector('#work-create-btn');
+    if (createBtn) {
+      createBtn.addEventListener('click', function () {
+        showToast('info', 'Tính năng tạo công việc đang phát triển');
+      });
+    }
+  }
+
+  async function loadWorkData() {
+    var state = getWorkViewState();
+    state.companyId = getSelectedBranchId();
+    var requestSeq = ++state.requestSeq;
+
+    try {
+      var data = await api('/api/tasks' + toQueryString({ companyId: state.companyId || '' }));
+      if (requestSeq !== state.requestSeq) return;
+      state.tasks = Array.isArray(data) ? data : (data && data.items ? data.items : []);
+    } catch (_err) {
+      state.tasks = [];
+    }
+
+    renderWorkTableBody();
+  }
+
+  function renderWorkTableBody() {
+    var state = getWorkViewState();
+    var tbody = document.getElementById('work-table-body');
+    var emptyEl = document.getElementById('work-empty-state');
+    if (!tbody || !emptyEl) return;
+
+    var tasks = state.tasks || [];
+
+    if (state.statusFilter && state.statusFilter !== 'all') {
+      tasks = tasks.filter(function (t) {
+        return t.status === state.statusFilter || t.state === state.statusFilter;
+      });
+    }
+
+    if (state.searchQuery) {
+      var q = state.searchQuery.toLowerCase();
+      tasks = tasks.filter(function (t) {
+        return (
+          (t.title && t.title.toLowerCase().indexOf(q) >= 0) ||
+          (t.id && String(t.id).indexOf(q) >= 0) ||
+          (t.customerName && t.customerName.toLowerCase().indexOf(q) >= 0)
+        );
+      });
+    }
+
+    if (!tasks.length) {
+      tbody.innerHTML = '';
+      emptyEl.style.display = '';
+      return;
+    }
+
+    emptyEl.style.display = 'none';
+    var html = '';
+    for (var i = 0; i < tasks.length; i++) {
+      var t = tasks[i];
+      var statusLabel = t.statusLabel || t.status || '';
+      var statusClass = 'work-status-badge work-status-' + (t.status || 'new');
+      html +=
+        '<tr>' +
+        '<td>' + escapeHtml(t.title || '') + '</td>' +
+        '<td>' + escapeHtml(t.type || '') + '</td>' +
+        '<td>' + escapeHtml(t.action || '') + '</td>' +
+        '<td>' + escapeHtml(t.assignee || '') + '</td>' +
+        '<td>' + escapeHtml(t.watcher || '') + '</td>' +
+        '<td>' + escapeHtml(t.customerName || '') + '</td>' +
+        '<td>' + escapeHtml(t.content || '') + '</td>' +
+        '<td><span class="' + statusClass + '">' + escapeHtml(statusLabel) + '</span></td>' +
+        '<td><button class="tds-btn tds-btn-ghost tds-btn-sm">...</button></td>' +
+        '</tr>';
+    }
+    tbody.innerHTML = html;
   }
 
   function renderCalendar() {
@@ -2933,6 +3232,19 @@
 
     el.innerHTML =
       '<section class="tds-card calendar-page">' +
+      '<div class="calendar-title-bar">' +
+      '<h2 class="calendar-page-title">Lịch hẹn</h2>' +
+      '<div class="calendar-title-actions">' +
+      '<button class="tds-btn tds-btn-primary calendar-add-btn" id="calendar-add-btn">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+      ' Thêm mới' +
+      '</button>' +
+      '<button class="tds-btn tds-btn-secondary calendar-export-btn" id="calendar-export-btn">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>' +
+      ' Xuất Excel' +
+      '</button>' +
+      '</div>' +
+      '</div>' +
       '<div class="calendar-toolbar">' +
       '<div class="calendar-toolbar-left">' +
       '<div class="calendar-view-switch">' +
@@ -2940,18 +3252,31 @@
       '<button class="tds-btn tds-btn-sm ' + (state.view === 'week' ? 'tds-btn-primary' : 'tds-btn-secondary') + '" data-calendar-view="week">Tuần</button>' +
       '<button class="tds-btn tds-btn-sm ' + (state.view === 'month' ? 'tds-btn-primary' : 'tds-btn-secondary') + '" data-calendar-view="month">Tháng</button>' +
       '</div>' +
-      '<div class="calendar-segment-switch">' +
-      '<button class="tds-btn tds-btn-sm ' + (state.segment === 'all' ? 'tds-btn-primary' : 'tds-btn-secondary') + '" data-calendar-segment="all">Tất cả</button>' +
-      '<button class="tds-btn tds-btn-sm ' + (state.segment === 'morning' ? 'tds-btn-primary' : 'tds-btn-secondary') + '" data-calendar-segment="morning">Sáng</button>' +
-      '<button class="tds-btn tds-btn-sm ' + (state.segment === 'afternoon' ? 'tds-btn-primary' : 'tds-btn-secondary') + '" data-calendar-segment="afternoon">Chiều</button>' +
-      '<button class="tds-btn tds-btn-sm ' + (state.segment === 'evening' ? 'tds-btn-primary' : 'tds-btn-secondary') + '" data-calendar-segment="evening">Tối</button>' +
-      '</div>' +
-      '</div>' +
-      '<div class="calendar-toolbar-actions">' +
+      '<div class="calendar-nav-group">' +
       '<button class="tds-btn tds-btn-secondary tds-btn-icon" data-calendar-nav="prev" title="Trước">&lsaquo;</button>' +
-      '<button class="tds-btn tds-btn-secondary" data-calendar-nav="today">Hôm nay</button>' +
-      '<button class="tds-btn tds-btn-secondary tds-btn-icon" data-calendar-nav="next" title="Sau">&rsaquo;</button>' +
       '<span class="calendar-date-label" id="calendar-date-label"></span>' +
+      '<button class="tds-btn tds-btn-secondary tds-btn-icon" data-calendar-nav="next" title="Sau">&rsaquo;</button>' +
+      '</div>' +
+      '</div>' +
+      '<div class="calendar-toolbar-right">' +
+      '<div class="calendar-search-box">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+      '<input type="text" class="calendar-search-input" id="calendar-search-input" placeholder="Tìm kiếm theo họ tên, số điện thoại khách hàng" />' +
+      '</div>' +
+      '<div class="calendar-filter-icons">' +
+      '<button class="tds-btn tds-btn-ghost tds-btn-icon calendar-filter-icon" title="Bác sĩ">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
+      '</button>' +
+      '<button class="tds-btn tds-btn-ghost tds-btn-icon calendar-filter-icon" title="Thời gian">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
+      '</button>' +
+      '<button class="tds-btn tds-btn-ghost tds-btn-icon calendar-filter-icon calendar-filter-badge" title="Dịch vụ">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>' +
+      '</button>' +
+      '<button class="tds-btn tds-btn-ghost tds-btn-icon calendar-filter-icon" title="Danh sách">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>' +
+      '</button>' +
+      '</div>' +
       '</div>' +
       '</div>' +
       '<div id="calendar-body">' + renderLoadingState('Đang tải lịch hẹn...') + '</div>' +
@@ -3370,6 +3695,20 @@
         renderCalendar();
       }
     });
+
+    var addBtn = root.querySelector('#calendar-add-btn');
+    if (addBtn) {
+      addBtn.addEventListener('click', function () {
+        showToast('info', 'Tính năng thêm lịch hẹn đang phát triển');
+      });
+    }
+
+    var exportBtn = root.querySelector('#calendar-export-btn');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', function () {
+        showToast('info', 'Tính năng xuất Excel đang phát triển');
+      });
+    }
   }
 
   async function loadCalendarViewData() {
@@ -4074,43 +4413,51 @@
     if (!el) return;
 
     el.innerHTML =
-      '<div class="tds-card labo-shell">' +
-      '<div class="tds-card-header">' +
-      '<h2>Danh sách phiếu điều trị / Labo</h2>' +
-      '<button class="tds-btn tds-btn-secondary" id="labo-export-btn">Xuất Excel</button>' +
+      '<div class="labo-page">' +
+      '<div class="tds-page-title-row">' +
+      '<h2 class="tds-page-title">Quản lý phiếu Labo</h2>' +
       '</div>' +
-      '<div class="tds-table-toolbar">' +
+      '<div class="tds-card labo-shell">' +
+      '<div class="tds-table-toolbar labo-toolbar">' +
       '<div class="toolbar-left">' +
-      '<input class="tds-search-input" id="labo-search" placeholder="Tìm theo mã phiếu, khách hàng, bác sĩ" value="' + escapeHtml(APP.labo.search || '') + '">' +
+      '<input class="tds-search-input" id="labo-search" placeholder="Tìm mã phiếu, khách hàng, bác sĩ..." value="' + escapeHtml(APP.labo.search || '') + '">' +
+      '<select class="tds-select" id="labo-status-filter">' +
+      '<option value="">Tất cả trạng thái</option>' +
+      '<option value="draft"' + (APP.labo.status === 'draft' ? ' selected' : '') + '>Nháp</option>' +
+      '<option value="confirmed"' + (APP.labo.status === 'confirmed' ? ' selected' : '') + '>Đã xác nhận</option>' +
+      '<option value="done"' + (APP.labo.status === 'done' ? ' selected' : '') + '>Hoàn tất</option>' +
+      '<option value="cancel"' + (APP.labo.status === 'cancel' ? ' selected' : '') + '>Đã hủy</option>' +
+      '</select>' +
       '</div>' +
       '<div class="toolbar-right">' +
-      '<button class="tds-btn tds-btn-secondary" id="labo-refresh-btn">Làm mới</button>' +
+      '<button class="tds-btn tds-btn-secondary tds-btn-sm" id="labo-refresh-btn">Làm mới</button>' +
       '</div>' +
       '</div>' +
       '<div id="labo-table"></div>' +
+      '<div id="labo-pagination" class="labo-pagination"></div>' +
+      '</div>' +
       '</div>';
 
     var searchInput = document.getElementById('labo-search');
     if (searchInput) {
       searchInput.addEventListener('input', debounce(function () {
         APP.labo.search = searchInput.value.trim();
+        APP.labo.page = 1;
         loadLaboData();
       }, 250));
     }
 
-    var refreshBtn = document.getElementById('labo-refresh-btn');
-    if (refreshBtn) refreshBtn.addEventListener('click', loadLaboData);
-
-    var exportBtn = document.getElementById('labo-export-btn');
-    if (exportBtn) {
-      exportBtn.addEventListener('click', function () {
-        downloadExcel('sale-orders', {
-          search: APP.labo.search,
-          companyId: getSelectedBranchId(),
-          columns: ['name', 'date', 'state', 'amountTotal', 'partnerName', 'doctorName', 'companyName'],
-        });
+    var statusFilter = document.getElementById('labo-status-filter');
+    if (statusFilter) {
+      statusFilter.addEventListener('change', function () {
+        APP.labo.status = this.value;
+        APP.labo.page = 1;
+        loadLaboData();
       });
     }
+
+    var refreshBtn = document.getElementById('labo-refresh-btn');
+    if (refreshBtn) refreshBtn.addEventListener('click', function () { APP.labo.page = 1; loadLaboData(); });
 
     loadLaboData();
   }
@@ -4124,20 +4471,25 @@
     try {
       var query = toQueryString({
         search: APP.labo.search,
+        state: APP.labo.status,
         companyId: getSelectedBranchId(),
-        limit: 50,
-        offset: 0,
+        limit: APP.labo.pageSize,
+        offset: (APP.labo.page - 1) * APP.labo.pageSize,
       });
       var data = await api('/api/sale-orders' + query);
       if (requestId !== APP.labo.requestId) return;
-      APP.labo.items = safeItems(data);
+      var items = safeItems(data);
+      APP.labo.items = items;
+      APP.labo.total = (data && data.total) ? data.total : items.length;
     } catch (_err) {
       if (requestId !== APP.labo.requestId) return;
       APP.labo.items = [];
+      APP.labo.total = 0;
     } finally {
       if (requestId === APP.labo.requestId) {
         APP.labo.loading = false;
         renderLaboTable();
+        renderLaboPagination();
       }
     }
   }
@@ -4153,30 +4505,105 @@
 
     var rows = APP.labo.items || [];
     if (!rows.length) {
-      tableWrap.innerHTML = renderEmptyState('Chưa có dữ liệu phiếu điều trị');
+      tableWrap.innerHTML = renderEmptyState('Chưa có dữ liệu phiếu Labo');
       return;
     }
 
     tableWrap.innerHTML =
       '<div class="tds-table-wrapper">' +
       '<table class="tds-table">' +
-      '<thead><tr><th>Mã phiếu</th><th>Ngày</th><th>Khách hàng</th><th>Bác sĩ</th><th>Trạng thái</th><th class="text-right">Giá trị</th></tr></thead>' +
+      '<thead><tr>' +
+      '<th>Khách hàng</th>' +
+      '<th>Phiếu điều trị</th>' +
+      '<th>Dịch vụ</th>' +
+      '<th>Bác sĩ</th>' +
+      '<th>Chỉ định</th>' +
+      '<th>Labo</th>' +
+      '<th>Ngày giao</th>' +
+      '<th>Trạng thái</th>' +
+      '<th>Ngày nhận</th>' +
+      '</tr></thead>' +
       '<tbody>' +
       rows.map(function (item) {
+        var laboStatus = item.state || 'draft';
         return (
           '<tr>' +
-          '<td>' + escapeHtml(item.name || item.id || '—') + '</td>' +
-          '<td>' + escapeHtml(formatDate(item.date)) + '</td>' +
-          '<td>' + escapeHtml(item.partnerName || '—') + '</td>' +
-          '<td>' + escapeHtml(item.doctorName || '—') + '</td>' +
-          '<td><span class="tds-badge ' + stateBadgeClass(item.state) + '">' + escapeHtml(translateState(item.state)) + '</span></td>' +
-          '<td class="text-right">' + escapeHtml(formatCurrency(item.amountTotal || 0)) + '</td>' +
+          '<td class="labo-cell-customer">' + escapeHtml(item.partnerName || '\u2014') + '</td>' +
+          '<td>' + escapeHtml(item.name || item.id || '\u2014') + '</td>' +
+          '<td>' + escapeHtml(item.serviceName || item.productName || '\u2014') + '</td>' +
+          '<td>' + escapeHtml(item.doctorName || '\u2014') + '</td>' +
+          '<td>' + escapeHtml(item.instruction || item.note || '\u2014') + '</td>' +
+          '<td>' + escapeHtml(item.laboName || item.supplierName || '\u2014') + '</td>' +
+          '<td>' + escapeHtml(formatDate(item.date || item.dateOrder)) + '</td>' +
+          '<td><span class="tds-badge ' + stateBadgeClass(laboStatus) + '">' + escapeHtml(translateState(laboStatus)) + '</span></td>' +
+          '<td>' + escapeHtml(formatDate(item.dateReceive || item.dateDone || '')) + '</td>' +
           '</tr>'
         );
       }).join('') +
       '</tbody>' +
       '</table>' +
       '</div>';
+  }
+
+  function renderLaboPagination() {
+    var paginationWrap = document.getElementById('labo-pagination');
+    if (!paginationWrap) return;
+
+    var total = APP.labo.total || 0;
+    var pageSize = APP.labo.pageSize;
+    var page = APP.labo.page;
+    var totalPages = Math.max(1, Math.ceil(total / pageSize));
+    var start = Math.min((page - 1) * pageSize + 1, total);
+    var end = Math.min(page * pageSize, total);
+
+    if (total === 0) { paginationWrap.innerHTML = ''; return; }
+
+    var pageButtons = '';
+    var maxVisible = 5;
+    var startPage = Math.max(1, page - Math.floor(maxVisible / 2));
+    var endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
+
+    pageButtons += '<button class="partners-page-btn' + (page <= 1 ? ' disabled' : '') + '" data-page="' + (page - 1) + '">&laquo;</button>';
+    for (var i = startPage; i <= endPage; i++) {
+      pageButtons += '<button class="partners-page-btn' + (i === page ? ' partners-page-active' : '') + '" data-page="' + i + '">' + i + '</button>';
+    }
+    pageButtons += '<button class="partners-page-btn' + (page >= totalPages ? ' disabled' : '') + '" data-page="' + (page + 1) + '">&raquo;</button>';
+
+    paginationWrap.innerHTML =
+      '<div class="partners-pagination-left">' +
+      pageButtons +
+      '<select class="partners-pagesize-select" id="labo-pagesize">' +
+      '<option value="20"' + (pageSize === 20 ? ' selected' : '') + '>20</option>' +
+      '<option value="50"' + (pageSize === 50 ? ' selected' : '') + '>50</option>' +
+      '<option value="100"' + (pageSize === 100 ? ' selected' : '') + '>100</option>' +
+      '</select>' +
+      '<span class="partners-pagesize-label">hàng trên trang</span>' +
+      '</div>' +
+      '<div class="partners-pagination-right">' +
+      '<span>' + start + '-' + end + ' của ' + total + ' dòng</span>' +
+      '</div>';
+
+    var pageBtns = paginationWrap.querySelectorAll('.partners-page-btn');
+    for (var j = 0; j < pageBtns.length; j++) {
+      pageBtns[j].addEventListener('click', function () {
+        if (this.classList.contains('disabled')) return;
+        var p = parseInt(this.getAttribute('data-page'), 10);
+        if (p >= 1 && p <= totalPages) {
+          APP.labo.page = p;
+          loadLaboData();
+        }
+      });
+    }
+
+    var pageSizeSelect = document.getElementById('labo-pagesize');
+    if (pageSizeSelect) {
+      pageSizeSelect.addEventListener('change', function () {
+        APP.labo.pageSize = parseInt(this.value, 10) || 20;
+        APP.labo.page = 1;
+        loadLaboData();
+      });
+    }
   }
 
   function renderPurchase() {
@@ -4552,39 +4979,89 @@
     var el = document.getElementById('page-commission');
     if (!el) return;
 
+    var now = new Date();
+    var firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    var lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    if (!APP.commission.dateFrom || APP.commission.dateFrom === RANGE_START_ISO) {
+      APP.commission.dateFrom = formatDateInput(firstDay);
+    }
+    if (!APP.commission.dateTo || APP.commission.dateTo === TODAY_ISO) {
+      APP.commission.dateTo = formatDateInput(lastDay);
+    }
+
+    var activeTab = APP.commission.tab || 'overview';
+
     el.innerHTML =
-      '<div class="tds-card commission-shell">' +
-      '<div class="tds-card-header">' +
-      '<h2>Quản lý hoa hồng</h2>' +
-      '<button class="tds-btn tds-btn-primary" id="commission-add-btn">Thêm quy tắc</button>' +
+      '<div class="commission-page">' +
+      '<div class="tds-page-title-row">' +
+      '<h2 class="tds-page-title">Hoa hồng người giới thiệu</h2>' +
       '</div>' +
-      '<div class="tds-table-toolbar">' +
+      '<div class="commission-tabs">' +
+      '<button class="commission-tab' + (activeTab === 'overview' ? ' commission-tab-active' : '') + '" data-tab="overview">Tổng quan</button>' +
+      '<button class="commission-tab' + (activeTab === 'detail' ? ' commission-tab-active' : '') + '" data-tab="detail">Chi tiết</button>' +
+      '</div>' +
+      '<div class="tds-card commission-shell">' +
+      '<div class="tds-table-toolbar commission-toolbar">' +
       '<div class="toolbar-left">' +
-      '<input class="tds-search-input" id="commission-search" placeholder="Tìm theo tên quy tắc" value="' + escapeHtml(APP.commission.search || '') + '">' +
+      '<div class="commission-date-range">' +
+      '<input class="tds-input commission-date" id="commission-date-from" type="date" value="' + escapeHtml(APP.commission.dateFrom) + '">' +
+      '<span class="commission-date-sep">\u2013</span>' +
+      '<input class="tds-input commission-date" id="commission-date-to" type="date" value="' + escapeHtml(APP.commission.dateTo) + '">' +
+      '</div>' +
+      '<select class="tds-select" id="commission-type-filter">' +
+      '<option value="">Loại hoa hồng</option>' +
+      '<option value="referral"' + (APP.commission.commissionType === 'referral' ? ' selected' : '') + '>Giới thiệu</option>' +
+      '<option value="service"' + (APP.commission.commissionType === 'service' ? ' selected' : '') + '>Dịch vụ</option>' +
+      '<option value="revenue"' + (APP.commission.commissionType === 'revenue' ? ' selected' : '') + '>Doanh thu</option>' +
+      '</select>' +
       '</div>' +
       '<div class="toolbar-right">' +
-      '<button class="tds-btn tds-btn-secondary" id="commission-refresh-btn">Làm mới</button>' +
+      '<div class="commission-search-wrap">' +
+      '<svg class="commission-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>' +
+      '<input class="tds-search-input" id="commission-search" placeholder="Tìm kiếm theo họ tên" value="' + escapeHtml(APP.commission.search || '') + '">' +
       '</div>' +
+      '</div>' +
+      '</div>' +
+      '<div class="tds-table-wrapper">' +
+      '<table class="tds-table">' +
+      '<thead><tr>' +
+      '<th>Người giới thiệu</th>' +
+      '<th>Phân loại</th>' +
+      '<th>Lợi nhuận tính hoa hồng</th>' +
+      '<th>Tiền hoa hồng</th>' +
+      '</tr></thead>' +
+      '</table>' +
       '</div>' +
       '<div id="commission-table"></div>' +
+      '</div>' +
       '</div>';
 
+    // Tab click handlers
+    var tabBtns = el.querySelectorAll('.commission-tab');
+    for (var t = 0; t < tabBtns.length; t++) {
+      tabBtns[t].addEventListener('click', function () {
+        APP.commission.tab = this.getAttribute('data-tab');
+        renderCommission();
+      });
+    }
+
+    // Date filter handlers
+    var dateFrom = document.getElementById('commission-date-from');
+    var dateTo = document.getElementById('commission-date-to');
+    if (dateFrom) dateFrom.addEventListener('change', function () { APP.commission.dateFrom = this.value; loadCommissionData(); });
+    if (dateTo) dateTo.addEventListener('change', function () { APP.commission.dateTo = this.value; loadCommissionData(); });
+
+    // Type filter
+    var typeFilter = document.getElementById('commission-type-filter');
+    if (typeFilter) typeFilter.addEventListener('change', function () { APP.commission.commissionType = this.value; loadCommissionData(); });
+
+    // Search
     var searchInput = document.getElementById('commission-search');
     if (searchInput) {
       searchInput.addEventListener('input', debounce(function () {
         APP.commission.search = searchInput.value.trim();
         loadCommissionData();
       }, 250));
-    }
-
-    var refreshBtn = document.getElementById('commission-refresh-btn');
-    if (refreshBtn) refreshBtn.addEventListener('click', loadCommissionData);
-
-    var addBtn = document.getElementById('commission-add-btn');
-    if (addBtn) {
-      addBtn.addEventListener('click', function () {
-        openCommissionModal(null);
-      });
     }
 
     loadCommissionData();
@@ -4599,6 +5076,9 @@
     try {
       var query = toQueryString({
         search: APP.commission.search,
+        type: APP.commission.commissionType,
+        dateFrom: APP.commission.dateFrom,
+        dateTo: APP.commission.dateTo,
         companyId: getSelectedBranchId(),
         limit: 80,
         offset: 0,
@@ -4622,141 +5102,48 @@
     if (!tableWrap) return;
 
     if (APP.commission.loading) {
-      tableWrap.innerHTML = renderLoadingState('Đang tải quy tắc hoa hồng...');
+      tableWrap.innerHTML = renderLoadingState('Đang tải hoa hồng...');
       return;
     }
 
     var rows = APP.commission.items || [];
     if (!rows.length) {
-      tableWrap.innerHTML = renderEmptyState('Chưa có quy tắc hoa hồng');
+      tableWrap.innerHTML =
+        '<div class="commission-empty">' +
+        '<div class="commission-empty-icon">' +
+        '<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>' +
+        '<svg class="commission-empty-alert" width="20" height="20" viewBox="0 0 24 24" fill="#f59e0b" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+        '</div>' +
+        '<p class="commission-empty-text">Không có dữ liệu</p>' +
+        '</div>';
       return;
     }
 
     tableWrap.innerHTML =
       '<div class="tds-table-wrapper">' +
       '<table class="tds-table">' +
-      '<thead><tr><th>Tên quy tắc</th><th>Loại</th><th>Trạng thái</th><th>Mô tả</th><th>Cập nhật</th><th></th></tr></thead>' +
+      '<thead><tr>' +
+      '<th>Người giới thiệu</th>' +
+      '<th>Phân loại</th>' +
+      '<th class="text-right">Lợi nhuận tính hoa hồng</th>' +
+      '<th class="text-right">Tiền hoa hồng</th>' +
+      '</tr></thead>' +
       '<tbody>' +
       rows.map(function (item) {
         return (
           '<tr>' +
-          '<td>' + escapeHtml(item.name || 'N/A') + '</td>' +
-          '<td>' + escapeHtml(item.type || '—') + '</td>' +
-          '<td>' + (item.active ? '<span class="tds-badge tds-badge-success">Hoạt động</span>' : '<span class="tds-badge tds-badge-gray">Tạm khóa</span>') + '</td>' +
-          '<td>' + escapeHtml(item.description || '—') + '</td>' +
-          '<td>' + escapeHtml(formatDateTime(item.lastUpdated || item.dateCreated)) + '</td>' +
-          '<td class="text-right">' +
-          '<button class="tds-btn tds-btn-sm tds-btn-secondary commission-edit" data-id="' + escapeHtml(item.id || '') + '">Sửa</button> ' +
-          '<button class="tds-btn tds-btn-sm tds-btn-danger commission-delete" data-id="' + escapeHtml(item.id || '') + '">Xóa</button>' +
-          '</td>' +
+          '<td>' + escapeHtml(item.name || item.partnerName || '\u2014') + '</td>' +
+          '<td>' + escapeHtml(item.type || item.category || '\u2014') + '</td>' +
+          '<td class="text-right">' + escapeHtml(formatCurrency(item.profit || item.revenue || 0)) + '</td>' +
+          '<td class="text-right">' + escapeHtml(formatCurrency(item.commission || item.amount || 0)) + '</td>' +
           '</tr>'
         );
       }).join('') +
       '</tbody>' +
       '</table>' +
       '</div>';
-
-    var editBtns = tableWrap.querySelectorAll('.commission-edit');
-    for (var i = 0; i < editBtns.length; i++) {
-      editBtns[i].addEventListener('click', function () {
-        var id = this.getAttribute('data-id');
-        var row = findItemById(APP.commission.items || [], id);
-        if (!row) return;
-        openCommissionModal(row);
-      });
-    }
-
-    var deleteBtns = tableWrap.querySelectorAll('.commission-delete');
-    for (var j = 0; j < deleteBtns.length; j++) {
-      deleteBtns[j].addEventListener('click', function () {
-        deleteCommissionRule(this.getAttribute('data-id'));
-      });
-    }
   }
 
-  function openCommissionModal(item) {
-    var editing = !!item;
-    var content =
-      '<form id="commission-form">' +
-      '<div class="tds-form-group">' +
-      '<label class="tds-label">Tên quy tắc</label>' +
-      '<input class="tds-input" id="commission-name-input" required value="' + escapeHtml((item && item.name) || '') + '">' +
-      '</div>' +
-      '<div class="tds-form-group">' +
-      '<label class="tds-label">Loại</label>' +
-      '<input class="tds-input" id="commission-type-input" value="' + escapeHtml((item && item.type) || '') + '" placeholder="Ví dụ: doanh_thu / gioi_thieu">' +
-      '</div>' +
-      '<div class="tds-form-group">' +
-      '<label class="tds-label">Mô tả</label>' +
-      '<textarea class="tds-input" id="commission-description-input" rows="3">' + escapeHtml((item && item.description) || '') + '</textarea>' +
-      '</div>' +
-      '<label class="tds-checkbox-label"><input type="checkbox" id="commission-active-input" ' + (((item ? item.active : true) !== false) ? 'checked' : '') + '> Kích hoạt</label>' +
-      '</form>';
-
-    showModal(editing ? 'Cập nhật hoa hồng' : 'Thêm quy tắc hoa hồng', content, {
-      footer:
-        '<button class="tds-btn tds-btn-ghost" id="commission-modal-cancel">Hủy</button>' +
-        '<button class="tds-btn tds-btn-primary" id="commission-modal-save">' + (editing ? 'Cập nhật' : 'Thêm mới') + '</button>',
-      onOpen: function () {
-        var cancelBtn = document.getElementById('commission-modal-cancel');
-        var saveBtn = document.getElementById('commission-modal-save');
-        if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
-        if (!saveBtn) return;
-
-        saveBtn.addEventListener('click', async function () {
-          var name = getInputValue('commission-name-input');
-          if (!name) {
-            showToast('warning', 'Tên quy tắc là bắt buộc');
-            return;
-          }
-
-          var payload = {
-            name: name,
-            type: getInputValue('commission-type-input') || null,
-            description: getInputValue('commission-description-input') || null,
-            active: !!(document.getElementById('commission-active-input') || {}).checked,
-            companyId: getSelectedBranchId() || null,
-          };
-
-          try {
-            if (editing && item && item.id) {
-              await api('/api/commissions/' + encodeURIComponent(item.id), {
-                method: 'PUT',
-                body: JSON.stringify(payload),
-              });
-              showToast('success', 'Đã cập nhật quy tắc hoa hồng');
-            } else {
-              await api('/api/commissions', {
-                method: 'POST',
-                body: JSON.stringify(payload),
-              });
-              showToast('success', 'Đã tạo quy tắc hoa hồng');
-            }
-
-            closeModal();
-            loadCommissionData();
-          } catch (err) {
-            showToast('error', (err && err.message) || 'Không thể lưu quy tắc hoa hồng');
-          }
-        });
-      },
-    });
-  }
-
-  async function deleteCommissionRule(commissionId) {
-    if (!commissionId) return;
-    if (!window.confirm('Xóa quy tắc hoa hồng này?')) return;
-
-    try {
-      await api('/api/commissions/' + encodeURIComponent(commissionId), { method: 'DELETE' });
-      showToast('success', 'Đã xóa quy tắc hoa hồng');
-      loadCommissionData();
-    } catch (err) {
-      showToast('error', (err && err.message) || 'Không thể xóa quy tắc hoa hồng');
-    }
-  }
-
-  // ---------------------------------------------------------------------------
   // Submenu Route Render Functions
   // ---------------------------------------------------------------------------
 
@@ -5070,24 +5457,94 @@
   }
 
   function renderCommissionEmployee() {
-    var el = document.getElementById('page-commission'); if (!el) return;
-    el.innerHTML = '<div class="tds-card commission-shell"><div class="tds-card-header"><h2>Hoa h\u1ed3ng nh\u00e2n vi\u00ean</h2><button class="tds-btn tds-btn-secondary" id="ce-export">Xu\u1ea5t Excel</button></div><div class="tds-table-toolbar"><div class="toolbar-left"><input class="tds-search-input" id="ce-search" placeholder="T\u00ecm theo t\u00ean nh\u00e2n vi\u00ean" value=""></div></div><div id="ce-table"></div></div>';
-    var eb = document.getElementById('ce-export'); if (eb) eb.addEventListener('click', function () { downloadExcel('employees', { companyId: getSelectedBranchId(), columns: ['name', 'hrJob', 'companyName', 'commission'] }); });
-    _ceLoad();
+    var el = document.getElementById('page-commission');
+    if (!el) return;
+
+    var now = new Date();
+    var firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    var lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    el.innerHTML =
+      '<div class="commission-page">' +
+      '<div class="tds-page-title-row">' +
+      '<h2 class="tds-page-title">Hoa hồng nhân viên</h2>' +
+      '</div>' +
+      '<div class="tds-card commission-shell">' +
+      '<div class="tds-table-toolbar commission-toolbar">' +
+      '<div class="toolbar-left">' +
+      '<div class="commission-date-range">' +
+      '<input class="tds-input commission-date" id="ce-date-from" type="date" value="' + escapeHtml(formatDateInput(firstDay)) + '">' +
+      '<span class="commission-date-sep">\u2013</span>' +
+      '<input class="tds-input commission-date" id="ce-date-to" type="date" value="' + escapeHtml(formatDateInput(lastDay)) + '">' +
+      '</div>' +
+      '</div>' +
+      '<div class="toolbar-right">' +
+      '<div class="commission-search-wrap">' +
+      '<svg class="commission-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>' +
+      '<input class="tds-search-input" id="ce-search" placeholder="Tìm kiếm theo tên nhân viên" value="">' +
+      '</div>' +
+      '</div>' +
+      '</div>' +
+      '<div id="ce-table"></div>' +
+      '</div>' +
+      '</div>';
+
+    var si = document.getElementById('ce-search');
+    if (si) si.addEventListener('input', debounce(function () { _ceLoad(si.value.trim()); }, 250));
+    _ceLoad('');
   }
-  async function _ceLoad() {
-    var tw = document.getElementById('ce-table'); if (!tw) return;
-    tw.innerHTML = renderLoadingState('\u0110ang t\u1ea3i hoa h\u1ed3ng nh\u00e2n vi\u00ean...');
+
+  async function _ceLoad(search) {
+    var tw = document.getElementById('ce-table');
+    if (!tw) return;
+    tw.innerHTML = renderLoadingState('Đang tải hoa hồng nhân viên...');
     try {
       var data = await api('/api/hr/salary' + toQueryString({ companyId: getSelectedBranchId() }));
       var emps = (data && data.employees) ? data.employees : safeItems(data);
-      var s = (getInputValue('ce-search') || '').toLowerCase();
-      if (s) emps = emps.filter(function (e) { return (e.name || '').toLowerCase().indexOf(s) !== -1; });
-      if (!emps.length) { tw.innerHTML = renderEmptyState('Ch\u01b0a c\u00f3 d\u1eef li\u1ec7u hoa h\u1ed3ng'); return; }
-      tw.innerHTML = '<div class="tds-table-wrapper"><table class="tds-table"><thead><tr><th>Nh\u00e2n vi\u00ean</th><th>Ch\u1ee9c v\u1ee5</th><th>Chi nh\u00e1nh</th><th class="text-right">Hoa h\u1ed3ng</th></tr></thead><tbody>' + emps.map(function (e) { return '<tr><td>' + escapeHtml(e.name || '\u2014') + '</td><td>' + escapeHtml(e.hrJob || e.jobTitle || '\u2014') + '</td><td>' + escapeHtml(e.companyName || '\u2014') + '</td><td class="text-right">' + escapeHtml(formatCurrency(e.commission || 0)) + '</td></tr>'; }).join('') + '</tbody></table></div>';
-    } catch (_e) { tw.innerHTML = renderEmptyState('Kh\u00f4ng th\u1ec3 t\u1ea3i hoa h\u1ed3ng nh\u00e2n vi\u00ean'); }
+      if (search) {
+        var s = search.toLowerCase();
+        emps = emps.filter(function (e) { return (e.name || '').toLowerCase().indexOf(s) !== -1; });
+      }
+      if (!emps.length) {
+        tw.innerHTML =
+          '<div class="commission-empty">' +
+          '<div class="commission-empty-icon">' +
+          '<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>' +
+          '<svg class="commission-empty-alert" width="20" height="20" viewBox="0 0 24 24" fill="#f59e0b" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+          '</div>' +
+          '<p class="commission-empty-text">Không có dữ liệu</p>' +
+          '</div>';
+        return;
+      }
+      tw.innerHTML =
+        '<div class="tds-table-wrapper"><table class="tds-table">' +
+        '<thead><tr>' +
+        '<th>Nhân viên</th>' +
+        '<th>Dịch vụ</th>' +
+        '<th class="text-right">Doanh thu</th>' +
+        '<th class="text-right">Tỷ lệ HH</th>' +
+        '<th class="text-right">Tiền hoa hồng</th>' +
+        '</tr></thead><tbody>' +
+        emps.map(function (e) {
+          return '<tr>' +
+            '<td>' + escapeHtml(e.name || '\u2014') + '</td>' +
+            '<td>' + escapeHtml(e.hrJob || e.jobTitle || '\u2014') + '</td>' +
+            '<td class="text-right">' + escapeHtml(formatCurrency(e.revenue || e.monthlySalary || 0)) + '</td>' +
+            '<td class="text-right">' + escapeHtml(e.commissionRate ? (e.commissionRate + '%') : '\u2014') + '</td>' +
+            '<td class="text-right">' + escapeHtml(formatCurrency(e.commission || 0)) + '</td>' +
+            '</tr>';
+        }).join('') +
+        '</tbody></table></div>';
+    } catch (_e) {
+      tw.innerHTML =
+        '<div class="commission-empty">' +
+        '<div class="commission-empty-icon">' +
+        '<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>' +
+        '</div>' +
+        '<p class="commission-empty-text">Không thể tải hoa hồng nhân viên</p>' +
+        '</div>';
+    }
   }
-
 
   function normalizePickingTypeLabel(value) {
     var text = String(value || '').trim().toLowerCase();
@@ -5109,45 +5566,29 @@
     var el = document.getElementById('page-salary');
     if (!el) return;
 
+    var monthVal = String(APP.salary.month).padStart(2, '0') + '/' + APP.salary.year;
+    var monthInputVal = APP.salary.year + '-' + String(APP.salary.month).padStart(2, '0');
+
     el.innerHTML =
-      '<div class="tds-card salary-shell">' +
-      '<div class="tds-card-header">' +
-      '<h2>Quản lý lương & nhân sự</h2>' +
-      '<div class="salary-actions">' +
-      '<button class="tds-btn tds-btn-secondary" id="salary-export-btn">Xuất Excel</button>' +
+      '<div class="salary-page">' +
+      '<div class="tds-page-title-row">' +
+      '<h2 class="tds-page-title">Bảng lương nhân viên</h2>' +
+      '<div class="salary-month-picker">' +
+      '<input type="month" class="tds-input salary-month-input" id="salary-month" value="' + escapeHtml(monthInputVal) + '">' +
       '</div>' +
       '</div>' +
-      '<div class="tds-table-toolbar">' +
-      '<div class="toolbar-left">' +
-      '<input class="tds-input salary-date" id="salary-date-from" type="date" value="' + escapeHtml(APP.salary.dateFrom) + '">' +
-      '<input class="tds-input salary-date" id="salary-date-to" type="date" value="' + escapeHtml(APP.salary.dateTo) + '">' +
-      '<button class="tds-btn tds-btn-primary" id="salary-apply-btn">Áp dụng</button>' +
-      '</div>' +
-      '</div>' +
-      '<div id="salary-content"></div>' +
+      '<div id="salary-content" class="salary-content-area"></div>' +
       '</div>';
 
-    var applyBtn = document.getElementById('salary-apply-btn');
-    var exportBtn = document.getElementById('salary-export-btn');
-
-    if (applyBtn) {
-      applyBtn.addEventListener('click', function () {
-        var fromInput = document.getElementById('salary-date-from');
-        var toInput = document.getElementById('salary-date-to');
-        APP.salary.dateFrom = fromInput && fromInput.value ? fromInput.value : APP.salary.dateFrom;
-        APP.salary.dateTo = toInput && toInput.value ? toInput.value : APP.salary.dateTo;
-        loadSalaryData();
-      });
-    }
-
-    if (exportBtn) {
-      exportBtn.addEventListener('click', function () {
-        downloadExcel('employees', {
-          dateFrom: APP.salary.dateFrom,
-          dateTo: APP.salary.dateTo,
-          companyId: getSelectedBranchId(),
-          columns: ['name', 'hrJob', 'companyName', 'monthlySalary', 'allowance', 'commission'],
-        });
+    var monthInput = document.getElementById('salary-month');
+    if (monthInput) {
+      monthInput.addEventListener('change', function () {
+        var parts = this.value.split('-');
+        if (parts.length === 2) {
+          APP.salary.year = parseInt(parts[0], 10);
+          APP.salary.month = parseInt(parts[1], 10);
+          loadSalaryData();
+        }
       });
     }
 
@@ -5161,9 +5602,15 @@
 
     renderSalaryContentLoading();
 
+    var m = APP.salary.month;
+    var y = APP.salary.year;
+    var dateFrom = y + '-' + String(m).padStart(2, '0') + '-01';
+    var lastDay = new Date(y, m, 0).getDate();
+    var dateTo = y + '-' + String(m).padStart(2, '0') + '-' + String(lastDay).padStart(2, '0');
+
     var query = toQueryString({
-      dateFrom: APP.salary.dateFrom,
-      dateTo: APP.salary.dateTo,
+      dateFrom: dateFrom,
+      dateTo: dateTo,
       companyId: getSelectedBranchId(),
     });
 
@@ -5177,7 +5624,7 @@
       if (requestId !== APP.salary.requestId) return;
       APP.salary.loading = false;
       APP.salary.data = null;
-      renderSalaryError(err);
+      renderSalaryEmpty();
     }
   }
 
@@ -5188,13 +5635,39 @@
       '<div class="tds-loading"><div class="tds-spinner"></div><span>Đang tải dữ liệu lương...</span></div>';
   }
 
-  function renderSalaryError(err) {
+  function renderSalaryEmpty() {
     var content = document.getElementById('salary-content');
     if (!content) return;
+    var monthLabel = String(APP.salary.month).padStart(2, '0') + '/' + APP.salary.year;
     content.innerHTML =
-      '<div class="tds-empty">' +
-      '<p>' + escapeHtml((err && err.message) || 'Không thể tải dữ liệu lương') + '</p>' +
+      '<div class="tds-card salary-empty-card">' +
+      '<div class="salary-empty-illustration">' +
+      '<svg width="180" height="140" viewBox="0 0 180 140" fill="none">' +
+      '<rect x="40" y="30" width="100" height="80" rx="8" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1.5"/>' +
+      '<rect x="55" y="45" width="30" height="20" rx="4" fill="#3B82F6"/>' +
+      '<circle cx="120" cy="90" r="15" fill="#FCD34D"/>' +
+      '<circle cx="110" cy="100" r="10" fill="#FCD34D" opacity="0.7"/>' +
+      '<circle cx="130" cy="95" r="8" fill="#FCD34D" opacity="0.5"/>' +
+      '<path d="M60 80h25" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/>' +
+      '<path d="M60 88h15" stroke="#93C5FD" stroke-width="2" stroke-linecap="round"/>' +
+      '<rect x="50" y="20" width="20" height="20" rx="4" fill="#EF4444" opacity="0.8"/>' +
+      '<path d="M56 28l8 4-8 4z" fill="#fff"/>' +
+      '<rect x="100" y="25" width="30" height="15" rx="3" fill="#3B82F6" opacity="0.6"/>' +
+      '<path d="M110 30l5 5 5-5" stroke="#fff" stroke-width="1.5" fill="none"/>' +
+      '</svg>' +
+      '</div>' +
+      '<h3 class="salary-empty-title">Bảng Lương</h3>' +
+      '<p class="salary-empty-desc">Bảng lương tháng ' + escapeHtml(monthLabel) + ' chưa có. Vui lòng bấm nút "Tính Lương" bên dưới để khởi tạo.</p>' +
+      '<button class="tds-btn tds-btn-primary" id="salary-calc-btn">Tính lương</button>' +
       '</div>';
+
+    var calcBtn = document.getElementById('salary-calc-btn');
+    if (calcBtn) {
+      calcBtn.addEventListener('click', function () {
+        showToast('info', 'Đang tính lương tháng ' + monthLabel + '...');
+        loadSalaryData();
+      });
+    }
   }
 
   function renderSalaryContent() {
@@ -5203,67 +5676,48 @@
 
     var data = APP.salary.data || {};
     var employees = safeItems(data.employees || []);
-    var timekeeping = safeItems(data.timekeeping || []);
-    var advances = safeItems(data.advances || []);
 
-    if (!data.hasData) {
-      content.innerHTML =
-        '<div class="tds-empty salary-empty">' +
-        '<p>Chưa có dữ liệu</p>' +
-        '<p class="text-secondary mt-sm">Dữ liệu HR trong bản dump hiện chưa khả dụng.</p>' +
-        '</div>';
+    if (!data.hasData || !employees.length) {
+      renderSalaryEmpty();
       return;
     }
 
     content.innerHTML =
-      '<div class="salary-block">' +
-      '<h3>Nhân sự</h3>' +
-      renderSimpleTable(
-        ['Tên', 'Chức danh', 'Chi nhánh', 'Lương cơ bản', 'Phụ cấp', 'Hoa hồng'],
-        employees.map(function (item) {
-          return [
-            escapeHtml(item.name || 'N/A'),
-            escapeHtml(item.jobTitle || item.hrJob || '—'),
-            escapeHtml(item.companyName || '—'),
-            '<span class="text-right d-block">' + escapeHtml(formatCurrency(item.monthlySalary)) + '</span>',
-            '<span class="text-right d-block">' + escapeHtml(formatCurrency(item.allowance)) + '</span>',
-            '<span class="text-right d-block">' + escapeHtml(formatNumber(item.commission || 0)) + '</span>',
-          ];
-        }),
-        'Chưa có nhân sự'
-      ) +
+      '<div class="tds-card">' +
+      '<div class="tds-table-wrapper">' +
+      '<table class="tds-table">' +
+      '<thead><tr>' +
+      '<th>STT</th>' +
+      '<th>Nhân viên</th>' +
+      '<th>Chức vụ</th>' +
+      '<th class="text-right">Ngày công</th>' +
+      '<th class="text-right">Lương cơ bản</th>' +
+      '<th class="text-right">Phụ cấp</th>' +
+      '<th class="text-right">Khấu trừ</th>' +
+      '<th class="text-right">Thực lĩnh</th>' +
+      '</tr></thead>' +
+      '<tbody>' +
+      employees.map(function (item, idx) {
+        var baseSalary = item.monthlySalary || 0;
+        var allowance = item.allowance || 0;
+        var deduction = item.deduction || 0;
+        var netPay = baseSalary + allowance - deduction + (item.commission || 0);
+        return (
+          '<tr>' +
+          '<td>' + (idx + 1) + '</td>' +
+          '<td>' + escapeHtml(item.name || '\u2014') + '</td>' +
+          '<td>' + escapeHtml(item.jobTitle || item.hrJob || '\u2014') + '</td>' +
+          '<td class="text-right">' + escapeHtml(formatNumber(item.workDays || 0)) + '</td>' +
+          '<td class="text-right">' + escapeHtml(formatCurrency(baseSalary)) + '</td>' +
+          '<td class="text-right">' + escapeHtml(formatCurrency(allowance)) + '</td>' +
+          '<td class="text-right">' + escapeHtml(formatCurrency(deduction)) + '</td>' +
+          '<td class="text-right font-semibold">' + escapeHtml(formatCurrency(netPay)) + '</td>' +
+          '</tr>'
+        );
+      }).join('') +
+      '</tbody>' +
+      '</table>' +
       '</div>' +
-      '<div class="salary-block">' +
-      '<h3>Chấm công</h3>' +
-      renderSimpleTable(
-        ['Ngày', 'Nhân viên', 'Giờ làm', 'Tăng ca', 'Trạng thái'],
-        timekeeping.map(function (item) {
-          return [
-            escapeHtml(formatDate(item.date)),
-            escapeHtml(item.employeeName || 'N/A'),
-            '<span class="text-right d-block">' + escapeHtml(formatNumber(item.hours || 0)) + '</span>',
-            '<span class="text-right d-block">' + escapeHtml(formatNumber(item.overtime || 0)) + '</span>',
-            '<span class="tds-badge ' + stateBadgeClass(item.state) + '">' + escapeHtml(translateState(item.state)) + '</span>',
-          ];
-        }),
-        'Không có dữ liệu chấm công trong kỳ lọc'
-      ) +
-      '</div>' +
-      '<div class="salary-block">' +
-      '<h3>Tạm ứng</h3>' +
-      renderSimpleTable(
-        ['Ngày', 'Nhân viên', 'Số tiền', 'Lý do', 'Trạng thái'],
-        advances.map(function (item) {
-          return [
-            escapeHtml(formatDate(item.date)),
-            escapeHtml(item.employeeName || 'N/A'),
-            '<span class="text-right d-block">' + escapeHtml(formatCurrency(item.amount || 0)) + '</span>',
-            escapeHtml(item.reason || '—'),
-            '<span class="tds-badge ' + stateBadgeClass(item.state) + '">' + escapeHtml(translateState(item.state)) + '</span>',
-          ];
-        }),
-        'Không có dữ liệu tạm ứng trong kỳ lọc'
-      ) +
       '</div>';
   }
 
@@ -6313,6 +6767,781 @@
       '<tbody>' + bodyHtml + '</tbody>' +
       '</table>' +
       '</div>';
+  }
+
+  // ---------------------------------------------------------------------------
+  // Sub-Report Pages (9 dedicated report pages)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Generic sub-report page builder. Creates a page with:
+   * - Title bar with branch filter
+   * - Date range filter
+   * - Data table (fetched from API) or empty state
+   */
+  function renderSubReportPage(options) {
+    var el = document.getElementById('page-reports');
+    if (!el) return;
+
+    var title = options.title || 'Báo cáo';
+    var endpoint = options.endpoint || '';
+    var columns = options.columns || [];
+    var stateKey = options.stateKey || 'sub';
+    var dateMode = options.dateMode || 'range'; // 'range' or 'month'
+
+    // Initialise sub-report state if needed
+    if (!APP.reports[stateKey]) {
+      APP.reports[stateKey] = {
+        dateFrom: APP.reports.dateFrom || RANGE_START_ISO,
+        dateTo: APP.reports.dateTo || TODAY_ISO,
+        items: [],
+        loading: false,
+        requestId: 0,
+      };
+    }
+    var st = APP.reports[stateKey];
+
+    el.innerHTML =
+      '<div class="rpt-shell rpt-sub-page">' +
+      '<div class="rpt-page-header">' +
+      '<h2>' + escapeHtml(title) + '</h2>' +
+      '</div>' +
+
+      // Filters bar
+      '<div class="rpt-date-bar">' +
+      '<div class="rpt-date-range">' +
+      '<input class="tds-input tds-input-sm" id="subrpt-date-from" type="date" value="' + escapeHtml(st.dateFrom) + '">' +
+      '<span class="rpt-date-sep">&ndash;</span>' +
+      '<input class="tds-input tds-input-sm" id="subrpt-date-to" type="date" value="' + escapeHtml(st.dateTo) + '">' +
+      '<button class="tds-btn tds-btn-sm tds-btn-primary" id="subrpt-apply"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Lọc</button>' +
+      '</div>' +
+      '</div>' +
+
+      // Table container
+      '<div class="rpt-sub-content" id="subrpt-table">' +
+      renderLoadingState('Đang tải dữ liệu...') +
+      '</div>' +
+      '</div>';
+
+    // Bind filter
+    var applyBtn = document.getElementById('subrpt-apply');
+    if (applyBtn) {
+      applyBtn.addEventListener('click', function () {
+        var f = document.getElementById('subrpt-date-from');
+        var t = document.getElementById('subrpt-date-to');
+        if (f && f.value) st.dateFrom = f.value;
+        if (t && t.value) st.dateTo = t.value;
+        loadSubReportData(endpoint, columns, st);
+      });
+    }
+
+    // Initial load
+    loadSubReportData(endpoint, columns, st);
+  }
+
+  async function loadSubReportData(endpoint, columns, st) {
+    var container = document.getElementById('subrpt-table');
+    if (!container) return;
+
+    st.loading = true;
+    var rId = ++st.requestId;
+    container.innerHTML = renderLoadingState('Đang tải dữ liệu báo cáo...');
+
+    try {
+      var query = toQueryString({
+        dateFrom: st.dateFrom,
+        dateTo: st.dateTo,
+        companyId: getSelectedBranchId(),
+        limit: 200,
+        offset: 0,
+      });
+      var data = await api(endpoint + query);
+      if (rId !== st.requestId) return;
+      st.items = safeItems(data);
+      st.loading = false;
+      renderSubReportTable(container, columns, st.items);
+    } catch (err) {
+      if (rId !== st.requestId) return;
+      st.loading = false;
+      container.innerHTML = '<div class="tds-empty"><p>' + escapeHtml((err && err.message) || 'Không thể tải báo cáo') + '</p></div>';
+    }
+  }
+
+  function renderSubReportTable(container, columns, rows) {
+    if (!rows || !rows.length) {
+      container.innerHTML = renderEmptyState('Không có dữ liệu');
+      return;
+    }
+
+    var headerHtml = '<tr>' + columns.map(function (col) {
+      return '<th>' + escapeHtml(col.label) + '</th>';
+    }).join('') + '</tr>';
+
+    var bodyHtml = rows.map(function (row) {
+      var cells = columns.map(function (col) {
+        return '<td>' + renderTypedValue(row[col.key], col.type) + '</td>';
+      }).join('');
+      return '<tr>' + cells + '</tr>';
+    }).join('');
+
+    container.innerHTML =
+      '<div class="tds-table-wrapper">' +
+      '<table class="tds-table reports-table">' +
+      '<thead>' + headerHtml + '</thead>' +
+      '<tbody>' + bodyHtml + '</tbody>' +
+      '</table>' +
+      '</div>';
+  }
+
+  // --- 1. Báo cáo ngày ---
+  function renderReportDaily() {
+    renderSubReportPage({
+      title: 'Báo cáo ngày',
+      endpoint: '/api/reports/daily',
+      stateKey: 'rptDaily',
+      columns: [
+        { key: 'reportDate', label: 'Ngày', type: 'date' },
+        { key: 'totalAmount', label: 'Doanh thu', type: 'currency' },
+        { key: 'income', label: 'Thu', type: 'currency' },
+        { key: 'expense', label: 'Chi', type: 'currency' },
+        { key: 'balance', label: 'Tồn quỹ', type: 'currency' },
+      ],
+    });
+  }
+
+  // --- 2. Báo cáo doanh thu ---
+  function renderReportRevenue() {
+    renderSubReportPage({
+      title: 'Báo cáo doanh thu',
+      endpoint: '/api/reports/services',
+      stateKey: 'rptRevenue',
+      columns: [
+        { key: 'serviceName', label: 'Dịch vụ', type: 'text' },
+        { key: 'quantity', label: 'Số lượng', type: 'number' },
+        { key: 'totalAmount', label: 'Doanh thu', type: 'currency' },
+        { key: 'ratio', label: 'Tỷ lệ', type: 'text' },
+      ],
+    });
+  }
+
+  // --- 3. Báo cáo dịch vụ ---
+  function renderReportServices() {
+    renderSubReportPage({
+      title: 'Báo cáo dịch vụ',
+      endpoint: '/api/reports/services',
+      stateKey: 'rptServices',
+      columns: [
+        { key: 'serviceName', label: 'Dịch vụ', type: 'text' },
+        { key: 'quantity', label: 'Số lượng', type: 'number' },
+        { key: 'totalAmount', label: 'Doanh thu', type: 'currency' },
+      ],
+    });
+  }
+
+  // --- 4. Báo cáo khách hàng ---
+  function renderReportCustomers() {
+    renderSubReportPage({
+      title: 'Báo cáo khách hàng',
+      endpoint: '/api/reports/customers',
+      stateKey: 'rptCustomers',
+      columns: [
+        { key: 'customerName', label: 'Khách hàng', type: 'text' },
+        { key: 'paymentCount', label: 'Số lần khám', type: 'number' },
+        { key: 'totalAmount', label: 'Tổng chi tiêu', type: 'currency' },
+      ],
+    });
+  }
+
+  // --- 5. Báo cáo tiếp nhận ---
+  function renderReportReception() {
+    renderSubReportPage({
+      title: 'Báo cáo tiếp nhận',
+      endpoint: '/api/reports/reception',
+      stateKey: 'rptReception',
+      columns: [
+        { key: 'hour', label: 'Giờ', type: 'text' },
+        { key: 'count', label: 'Tổng tiếp nhận', type: 'number' },
+        { key: 'newCount', label: 'Mới', type: 'number' },
+        { key: 'returnCount', label: 'Tái khám', type: 'number' },
+      ],
+    });
+  }
+
+  // --- 6. Công nợ NCC ---
+  function renderReportSupplierDebt() {
+    renderSubReportPage({
+      title: 'Công nợ NCC',
+      endpoint: '/api/reports/supplier-debt',
+      stateKey: 'rptSupplierDebt',
+      columns: [
+        { key: 'supplierName', label: 'NCC', type: 'text' },
+        { key: 'openingDebt', label: 'Nợ đầu kỳ', type: 'currency' },
+        { key: 'incurred', label: 'Phát sinh', type: 'currency' },
+        { key: 'paid', label: 'Đã trả', type: 'currency' },
+        { key: 'closingDebt', label: 'Nợ cuối kỳ', type: 'currency' },
+      ],
+    });
+  }
+
+  // --- 7. Báo cáo lịch hẹn ---
+  function renderReportAppointments() {
+    renderSubReportPage({
+      title: 'Báo cáo lịch hẹn',
+      endpoint: '/api/reports/appointments',
+      stateKey: 'rptAppointments',
+      columns: [
+        { key: 'state', label: 'Trạng thái', type: 'text' },
+        { key: 'count', label: 'Tổng hẹn', type: 'number' },
+      ],
+    });
+  }
+
+  // --- 8. Báo cáo công việc ---
+  function renderReportTasks() {
+    renderSubReportPage({
+      title: 'Báo cáo công việc',
+      endpoint: '/api/reports/staff',
+      stateKey: 'rptTasks',
+      columns: [
+        { key: 'staffName', label: 'Nhân viên', type: 'text' },
+        { key: 'orderCount', label: 'Tổng CV', type: 'number' },
+        { key: 'totalAmount', label: 'Doanh thu', type: 'currency' },
+      ],
+    });
+  }
+
+  // --- 9. Công nợ bảo hiểm ---
+  function renderReportInsurance() {
+    renderSubReportPage({
+      title: 'Công nợ bảo hiểm',
+      endpoint: '/api/reports/insurance-debt',
+      stateKey: 'rptInsurance',
+      columns: [
+        { key: 'insuranceName', label: 'Bảo hiểm', type: 'text' },
+        { key: 'openingDebt', label: 'Nợ đầu kỳ', type: 'currency' },
+        { key: 'incurred', label: 'Phát sinh', type: 'currency' },
+        { key: 'collected', label: 'Đã thu', type: 'currency' },
+        { key: 'closingDebt', label: 'Nợ cuối kỳ', type: 'currency' },
+      ],
+    });
+  }
+
+
+  // ---------------------------------------------------------------------------
+  // 12 Category Pages — Dedicated Render Functions
+  // ---------------------------------------------------------------------------
+
+  var PRODUCT_GROUPS = [
+    'BỌC LÒ', 'Bọc sứ', 'Dán sứ', 'Điều trị tổng quát', 'Implant',
+    'KHÍ CỤ TWINBLOCK', 'MÀI CHỈNH', 'Máy tầm nước', 'Nhổ răng',
+    'Niềng răng', 'Phẫu thuật và điều trị', 'Phục hình'
+  ];
+
+  var SAMPLE_PRODUCTS = [
+    { name: 'CHỈNH DÂY FIX', code: 'SP0299', group: 'Niềng răng' },
+    { name: 'Abutment', code: 'DV0034', group: 'Implant' },
+    { name: 'Band', code: 'SP0305', group: 'Niềng răng' },
+    { name: 'Bộ Mắc Cài Kim Loại Tiêu Chuẩn', code: 'SP0292', group: 'Niềng răng' },
+    { name: 'Bộ mắc cài kim loại tự đóng', code: 'SP0293', group: 'Niềng răng' },
+    { name: 'Bộ mắc cài sứ tiêu chuẩn', code: 'SP0294', group: 'Niềng răng' },
+    { name: 'Bộ mắc cài sứ tự đóng', code: 'SP0295', group: 'Niềng răng' },
+    { name: 'BỌC LÒ', code: 'SP0296', group: 'BỌC LÒ' },
+    { name: 'Cắm 4 vít', code: 'SP0258', group: 'Niềng răng' },
+    { name: 'Cắm chốt', code: 'SP0288', group: 'Bọc sứ' },
+    { name: 'Cắt cầu răng', code: 'SP0237', group: 'Điều trị tổng quát' },
+    { name: 'Cắt Chỉ', code: 'SP0201', group: 'Điều trị tổng quát' },
+    { name: 'Cắt dây cung', code: 'SP0282', group: 'Niềng răng' },
+    { name: 'cắt tủi', code: 'SP0283', group: 'Phẫu thuật và điều trị' },
+    { name: 'Châm cứu', code: 'SP0310', group: 'Điều trị tổng quát' },
+    { name: 'Chụp X-quang', code: 'SP0200', group: 'Điều trị tổng quát' },
+    { name: 'Dán sứ Veneer', code: 'SP0250', group: 'Dán sứ' },
+    { name: 'Điều trị nha chu', code: 'SP0240', group: 'Điều trị tổng quát' },
+    { name: 'Hàn răng', code: 'SP0210', group: 'Điều trị tổng quát' },
+    { name: 'Implant Hàn Quốc', code: 'SP0260', group: 'Implant' },
+  ];
+
+  // ---- Products page (#/products) — Split-panel layout ----
+  function renderCatProducts() {
+    var el = document.getElementById('page-categories');
+    if (!el) return;
+
+    var st = APP.catProducts;
+    var filteredGroups = PRODUCT_GROUPS.filter(function (g) {
+      if (!st.groupSearch) return true;
+      return g.toLowerCase().indexOf(st.groupSearch.toLowerCase()) >= 0;
+    });
+
+    var filteredItems = SAMPLE_PRODUCTS.filter(function (item) {
+      if (st.selectedGroup && item.group !== st.selectedGroup) return false;
+      if (st.rightSearch && item.name.toLowerCase().indexOf(st.rightSearch.toLowerCase()) < 0 &&
+          item.code.toLowerCase().indexOf(st.rightSearch.toLowerCase()) < 0) return false;
+      return true;
+    });
+
+    var total = filteredItems.length;
+    var startIdx = (st.page - 1) * st.pageSize;
+    var pageItems = filteredItems.slice(startIdx, startIdx + st.pageSize);
+    var totalPages = Math.max(1, Math.ceil(total / st.pageSize));
+
+    el.innerHTML =
+      '<div style="padding:16px 16px 0">' +
+        '<h2 style="margin:0 0 12px;font-size:18px;font-weight:600">Thông tin sản phẩm</h2>' +
+      '</div>' +
+      '<div class="catalog-split">' +
+        '<div class="catalog-left">' +
+          '<div class="catalog-left-header">Nhóm dịch vụ</div>' +
+          '<div class="catalog-left-search">' +
+            '<input type="text" id="cat-group-search" placeholder="Tìm kiếm nhóm dịch vụ" value="' + escapeHtml(st.groupSearch) + '">' +
+          '</div>' +
+          '<div class="catalog-left-header" style="font-size:12px;color:#94a3b8;padding:10px 16px 6px;border-bottom:none">Tên nhóm dịch vụ</div>' +
+          '<ul class="catalog-group-list">' +
+            filteredGroups.map(function (g) {
+              var activeClass = st.selectedGroup === g ? ' active' : '';
+              return '<li class="catalog-group-item' + activeClass + '" data-group="' + escapeHtml(g) + '">' + escapeHtml(g) + '</li>';
+            }).join('') +
+          '</ul>' +
+        '</div>' +
+        '<div class="catalog-right">' +
+          '<div class="catalog-right-header">' +
+            '<div class="catalog-right-tabs">' +
+              '<button class="cat-tab' + (st.tab === 'services' ? ' active' : '') + '" data-tab="services">Dịch vụ</button>' +
+              '<button class="cat-tab' + (st.tab === 'materials' ? ' active' : '') + '" data-tab="materials">Vật tư</button>' +
+              '<button class="cat-tab' + (st.tab === 'medicine' ? ' active' : '') + '" data-tab="medicine">Thuốc</button>' +
+            '</div>' +
+            '<div class="catalog-right-toolbar">' +
+              '<button class="tds-btn tds-btn-primary tds-btn-sm" id="cat-products-add"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Thêm mới</button>' +
+              '<select class="catalog-filter-select" id="cat-products-filter">' +
+                '<option value="active"' + (st.statusFilter === 'active' ? ' selected' : '') + '>Đang sử dụng</option>' +
+                '<option value="inactive"' + (st.statusFilter === 'inactive' ? ' selected' : '') + '>Ngưng sử dụng</option>' +
+                '<option value="all"' + (st.statusFilter === 'all' ? ' selected' : '') + '>Tất cả</option>' +
+              '</select>' +
+              '<input class="catalog-search-input" id="cat-products-search" placeholder="Tìm kiếm theo mã hoặc tên" value="' + escapeHtml(st.rightSearch) + '">' +
+              '<button class="catalog-more-btn" title="Thêm thao tác">&#8943;</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="catalog-right-content">' +
+            '<table class="tds-table">' +
+              '<thead><tr>' +
+                '<th><input type="checkbox"></th>' +
+                '<th>Tên dịch vụ</th>' +
+                '<th>Nhóm dịch vụ</th>' +
+                '<th>Thao tác</th>' +
+              '</tr></thead>' +
+              '<tbody>' +
+                (pageItems.length ? pageItems.map(function (item) {
+                  return '<tr>' +
+                    '<td><input type="checkbox"></td>' +
+                    '<td><div style="font-weight:500">' + escapeHtml(item.name) + '</div><div style="font-size:12px;color:#94a3b8">' + escapeHtml(item.code) + '</div></td>' +
+                    '<td>' + escapeHtml(item.group) + '</td>' +
+                    '<td><div class="catalog-action-icons">' +
+                      '<button class="cat-action-edit" title="Sửa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
+                      '<button class="cat-action-copy" title="Sao chép"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>' +
+                      '<button class="cat-action-delete" title="Xóa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' +
+                    '</div></td>' +
+                  '</tr>';
+                }).join('') : '<tr><td colspan="4" style="text-align:center;padding:40px;color:#94a3b8">Chưa có dữ liệu</td></tr>') +
+              '</tbody>' +
+            '</table>' +
+          '</div>' +
+          '<div class="catalog-right-footer">' +
+            '<div class="catalog-pagination">' +
+              renderCatPagination(st.page, totalPages) +
+            '</div>' +
+            '<div>' + (total > 0 ? ((startIdx + 1) + '-' + Math.min(startIdx + st.pageSize, total) + ' của ' + total + ' dòng') : '0 dòng') + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    // Event: group search
+    var groupSearchInput = document.getElementById('cat-group-search');
+    if (groupSearchInput) {
+      groupSearchInput.addEventListener('input', debounce(function () {
+        APP.catProducts.groupSearch = groupSearchInput.value.trim();
+        renderCatProducts();
+      }, 200));
+    }
+
+    // Event: group click
+    var groupItems = el.querySelectorAll('.catalog-group-item[data-group]');
+    for (var i = 0; i < groupItems.length; i++) {
+      groupItems[i].addEventListener('click', function () {
+        var g = this.getAttribute('data-group');
+        APP.catProducts.selectedGroup = (APP.catProducts.selectedGroup === g) ? null : g;
+        APP.catProducts.page = 1;
+        renderCatProducts();
+      });
+    }
+
+    // Event: tabs
+    var tabBtns = el.querySelectorAll('.cat-tab');
+    for (var t = 0; t < tabBtns.length; t++) {
+      tabBtns[t].addEventListener('click', function () {
+        APP.catProducts.tab = this.getAttribute('data-tab');
+        APP.catProducts.page = 1;
+        renderCatProducts();
+      });
+    }
+
+    // Event: right search
+    var rightSearchInput = document.getElementById('cat-products-search');
+    if (rightSearchInput) {
+      rightSearchInput.addEventListener('input', debounce(function () {
+        APP.catProducts.rightSearch = rightSearchInput.value.trim();
+        APP.catProducts.page = 1;
+        renderCatProducts();
+      }, 200));
+    }
+
+    // Event: status filter
+    var filterSelect = document.getElementById('cat-products-filter');
+    if (filterSelect) {
+      filterSelect.addEventListener('change', function () {
+        APP.catProducts.statusFilter = filterSelect.value;
+        APP.catProducts.page = 1;
+        renderCatProducts();
+      });
+    }
+
+    // Event: add button
+    var addBtn = document.getElementById('cat-products-add');
+    if (addBtn) {
+      addBtn.addEventListener('click', function () {
+        showToast('info', 'Chức năng thêm sản phẩm đang phát triển');
+      });
+    }
+
+    // Event: pagination
+    var pagBtns = el.querySelectorAll('.catalog-pagination button[data-page]');
+    for (var p = 0; p < pagBtns.length; p++) {
+      pagBtns[p].addEventListener('click', function () {
+        var pg = parseInt(this.getAttribute('data-page'), 10);
+        if (pg >= 1 && pg <= totalPages) {
+          APP.catProducts.page = pg;
+          renderCatProducts();
+        }
+      });
+    }
+  }
+
+  function renderCatPagination(currentPage, totalPages) {
+    if (totalPages <= 1) return '<button class="active" data-page="1">1</button>';
+    var buttons = [];
+    var start = Math.max(1, currentPage - 2);
+    var end = Math.min(totalPages, currentPage + 2);
+    if (currentPage > 1) {
+      buttons.push('<button data-page="' + (currentPage - 1) + '">&lsaquo;</button>');
+    }
+    for (var i = start; i <= end; i++) {
+      buttons.push('<button data-page="' + i + '"' + (i === currentPage ? ' class="active"' : '') + '>' + i + '</button>');
+    }
+    if (end < totalPages) {
+      buttons.push('<span style="padding:0 4px">...</span>');
+      buttons.push('<button data-page="' + totalPages + '">' + totalPages + '</button>');
+    }
+    if (currentPage < totalPages) {
+      buttons.push('<button data-page="' + (currentPage + 1) + '">&rsaquo;</button>');
+    }
+    return buttons.join('');
+  }
+
+  // ---- Generic helper: render a simple category page with table ----
+  function renderCatSimplePage(opts) {
+    var el = document.getElementById('page-categories');
+    if (!el) return;
+
+    var search = APP.catPage.search || '';
+
+    el.innerHTML =
+      '<div class="tds-card categories-shell">' +
+        '<div class="cat-page-header">' +
+          '<h2>' + escapeHtml(opts.title) + '</h2>' +
+          '<div class="cat-page-toolbar">' +
+            '<input class="tds-search-input" id="cat-simple-search" placeholder="Tìm kiếm..." value="' + escapeHtml(search) + '">' +
+            '<button class="tds-btn tds-btn-primary" id="cat-simple-add"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Thêm mới</button>' +
+          '</div>' +
+        '</div>' +
+        '<div id="cat-simple-content">' +
+          renderCatSimpleTableHtml(opts, search) +
+        '</div>' +
+      '</div>';
+
+    var searchInput = document.getElementById('cat-simple-search');
+    if (searchInput) {
+      searchInput.addEventListener('input', debounce(function () {
+        APP.catPage.search = searchInput.value.trim();
+        var content = document.getElementById('cat-simple-content');
+        if (content) content.innerHTML = renderCatSimpleTableHtml(opts, APP.catPage.search);
+        bindCatSimpleEvents(el);
+      }, 200));
+    }
+
+    var addBtn = document.getElementById('cat-simple-add');
+    if (addBtn) {
+      addBtn.addEventListener('click', function () {
+        showToast('info', 'Chức năng thêm mới đang phát triển');
+      });
+    }
+
+    bindCatSimpleEvents(el);
+  }
+
+  function renderCatSimpleTableHtml(opts, search) {
+    var rows = opts.sampleData || [];
+    if (search) {
+      var q = search.toLowerCase();
+      rows = rows.filter(function (row) {
+        return row.some(function (cell) {
+          return String(cell).toLowerCase().indexOf(q) >= 0;
+        });
+      });
+    }
+
+    if (!rows.length) {
+      return '<div class="tds-empty"><p>Chưa có dữ liệu cho danh mục này.</p></div>';
+    }
+
+    return (
+      '<div class="tds-table-wrapper">' +
+      '<table class="tds-table">' +
+      '<thead><tr>' + opts.columns.map(function (col) { return '<th>' + escapeHtml(col) + '</th>'; }).join('') + '</tr></thead>' +
+      '<tbody>' + rows.map(function (row, rowIdx) {
+        return '<tr>' + row.map(function (cell, cellIdx) {
+          if (cellIdx === row.length - 1 && opts.hasActions) {
+            return '<td><div class="catalog-action-icons">' +
+              '<button class="cat-action-edit" data-row="' + rowIdx + '" title="Sửa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
+              '<button class="cat-action-delete" data-row="' + rowIdx + '" title="Xóa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' +
+            '</div></td>';
+          }
+          if (String(cell).indexOf('<span') === 0) {
+            return '<td>' + cell + '</td>';
+          }
+          return '<td>' + escapeHtml(String(cell)) + '</td>';
+        }).join('') + '</tr>';
+      }).join('') +
+      '</tbody>' +
+      '</table>' +
+      '</div>'
+    );
+  }
+
+  function bindCatSimpleEvents(el) {
+    var editBtns = el.querySelectorAll('.cat-action-edit');
+    for (var i = 0; i < editBtns.length; i++) {
+      editBtns[i].addEventListener('click', function () {
+        showToast('info', 'Chức năng sửa đang phát triển');
+      });
+    }
+    var delBtns = el.querySelectorAll('.cat-action-delete');
+    for (var j = 0; j < delBtns.length; j++) {
+      delBtns[j].addEventListener('click', function () {
+        showToast('info', 'Chức năng xóa đang phát triển');
+      });
+    }
+  }
+
+  // ---- #/categories — Thông tin KH (Customer info fields) ----
+  function renderCatCustomerInfo() {
+    APP.catPage.search = '';
+    renderCatSimplePage({
+      title: 'Thông tin khách hàng',
+      columns: ['Tên trường', 'Loại', 'Bắt buộc', 'Thao tác'],
+      hasActions: true,
+      sampleData: [
+        ['Họ và tên', 'Văn bản', 'Có', ''],
+        ['Số điện thoại', 'Số điện thoại', 'Có', ''],
+        ['Email', 'Email', 'Không', ''],
+        ['Ngày sinh', 'Ngày tháng', 'Không', ''],
+        ['Giới tính', 'Lựa chọn', 'Không', ''],
+        ['Địa chỉ', 'Văn bản dài', 'Không', ''],
+        ['CMND/CCCD', 'Văn bản', 'Không', ''],
+        ['Nguồn khách', 'Lựa chọn', 'Không', ''],
+        ['Nhóm khách hàng', 'Lựa chọn', 'Không', ''],
+        ['Ghi chú', 'Văn bản dài', 'Không', ''],
+      ],
+    });
+  }
+
+  // ---- #/customer-stage — Trạng thái KH ----
+  function renderCatCustomerStage() {
+    APP.catPage.search = '';
+    renderCatSimplePage({
+      title: 'Trạng thái khách hàng',
+      columns: ['Tên trạng thái', 'Màu', 'Mô tả', 'Thao tác'],
+      hasActions: true,
+      sampleData: [
+        ['Khách mới', '<span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#3b82f6"></span>', 'Khách hàng mới đăng ký', ''],
+        ['Đang điều trị', '<span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#f59e0b"></span>', 'Khách đang trong quá trình điều trị', ''],
+        ['Hoàn thành', '<span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#10b981"></span>', 'Đã hoàn thành điều trị', ''],
+        ['Tái khám', '<span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#8b5cf6"></span>', 'Khách cần tái khám', ''],
+        ['Hủy', '<span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#ef4444"></span>', 'Khách hủy điều trị', ''],
+      ],
+    });
+  }
+
+  // ---- #/partner-catalog — Đối tác ----
+  function renderCatPartners() {
+    APP.catPage.search = '';
+    renderCatSimplePage({
+      title: 'Đối tác',
+      columns: ['Tên', 'Loại', 'SĐT', 'Email', 'Thao tác'],
+      hasActions: true,
+      sampleData: [
+        ['Labo Thành Công', 'Labo', '0901234567', 'lab@thanhcong.vn', ''],
+        ['NCC Vật tư ABC', 'Nhà cung cấp', '0912345678', 'contact@abc.vn', ''],
+        ['Bảo hiểm Bảo Việt', 'Bảo hiểm', '1900545454', 'baoviet@bh.vn', ''],
+        ['NCC Thuốc Pharma', 'Nhà cung cấp', '0923456789', 'pharma@ncc.vn', ''],
+        ['Labo Sài Gòn', 'Labo', '0934567890', 'info@labosg.vn', ''],
+      ],
+    });
+  }
+
+  // ---- #/prescriptions — Đơn thuốc mẫu ----
+  function renderCatPrescriptions() {
+    APP.catPage.search = '';
+    renderCatSimplePage({
+      title: 'Đơn thuốc mẫu',
+      columns: ['Tên đơn thuốc', 'Số thuốc', 'Ghi chú', 'Thao tác'],
+      hasActions: true,
+      sampleData: [
+        ['Đơn thuốc sau nhổ răng', '4', 'Kháng sinh + giảm đau', ''],
+        ['Đơn thuốc sau trám răng', '2', 'Giảm đau nhẹ', ''],
+        ['Đơn thuốc viêm nha chu', '5', 'Kháng sinh + súc miệng', ''],
+        ['Đơn thuốc sau phẫu thuật', '6', 'Kháng sinh mạnh + giảm đau', ''],
+        ['Đơn thuốc sau cạo vôi', '2', 'Súc miệng + giảm ê buốt', ''],
+      ],
+    });
+  }
+
+  // ---- #/price-list — Bảng giá ----
+  function renderCatPriceList() {
+    APP.catPage.search = '';
+    renderCatSimplePage({
+      title: 'Bảng giá',
+      columns: ['Dịch vụ', 'Giá niêm yết', 'Giá ưu đãi', 'Thao tác'],
+      hasActions: true,
+      sampleData: [
+        ['Nhổ răng khôn', '2,500,000', '2,000,000', ''],
+        ['Trám răng composite', '500,000', '400,000', ''],
+        ['Bọc sứ Cercon', '4,500,000', '3,800,000', ''],
+        ['Cấy ghép Implant', '18,000,000', '15,000,000', ''],
+        ['Niềng răng mắc cài kim loại', '25,000,000', '22,000,000', ''],
+        ['Tẩy trắng răng', '3,000,000', '2,500,000', ''],
+        ['Cạo vôi răng', '300,000', '250,000', ''],
+        ['Chụp X-quang', '150,000', '150,000', ''],
+      ],
+    });
+  }
+
+  // ---- #/commission-table — Bảng hoa hồng ----
+  function renderCatCommissionTable() {
+    APP.catPage.search = '';
+    renderCatSimplePage({
+      title: 'Bảng hoa hồng',
+      columns: ['Dịch vụ', 'Tỷ lệ HH', 'Loại', 'Thao tác'],
+      hasActions: true,
+      sampleData: [
+        ['Nhổ răng khôn', '10%', 'Theo doanh thu', ''],
+        ['Trám răng composite', '8%', 'Theo doanh thu', ''],
+        ['Bọc sứ Cercon', '12%', 'Theo doanh thu', ''],
+        ['Cấy ghép Implant', '15%', 'Theo doanh thu', ''],
+        ['Niềng răng', '10%', 'Theo doanh thu', ''],
+        ['Tẩy trắng răng', '8%', 'Cố định', ''],
+      ],
+    });
+  }
+
+  // ---- #/employees — Nhân viên ----
+  function renderCatEmployees() {
+    APP.catPage.search = '';
+    renderCatSimplePage({
+      title: 'Nhân viên',
+      columns: ['Tên', 'Chức vụ', 'SĐT', 'Email', 'Trạng thái', 'Thao tác'],
+      hasActions: true,
+      sampleData: [
+        ['BS. Nguyễn Văn A', 'Bác sĩ', '0901111222', 'bsa@clinic.vn', '<span class="tds-badge tds-badge-success">Đang làm</span>', ''],
+        ['BS. Trần Thị B', 'Bác sĩ', '0902222333', 'bsb@clinic.vn', '<span class="tds-badge tds-badge-success">Đang làm</span>', ''],
+        ['Lê Văn C', 'Phụ tá', '0903333444', 'phtc@clinic.vn', '<span class="tds-badge tds-badge-success">Đang làm</span>', ''],
+        ['Phạm Thị D', 'Lễ tân', '0904444555', 'ltd@clinic.vn', '<span class="tds-badge tds-badge-success">Đang làm</span>', ''],
+        ['Hoàng Văn E', 'Kỹ thuật viên', '0905555666', 'ktve@clinic.vn', '<span class="tds-badge tds-badge-gray">Nghỉ việc</span>', ''],
+        ['Ngô Thị F', 'Quản lý', '0906666777', 'qlf@clinic.vn', '<span class="tds-badge tds-badge-success">Đang làm</span>', ''],
+      ],
+    });
+  }
+
+  // ---- #/labo-params — Thông số Labo ----
+  function renderCatLaboParams() {
+    APP.catPage.search = '';
+    renderCatSimplePage({
+      title: 'Thông số Labo',
+      columns: ['Tên thông số', 'Loại', 'Giá trị', 'Thao tác'],
+      hasActions: true,
+      sampleData: [
+        ['Màu răng', 'Lựa chọn', 'A1, A2, A3, B1, B2, C1, C2, D2', ''],
+        ['Chất liệu', 'Lựa chọn', 'Sứ, Zirconia, Cercon, E.max', ''],
+        ['Số lượng răng', 'Số', '1-32', ''],
+        ['Vị trí răng', 'Văn bản', 'Theo sơ đồ FDI', ''],
+        ['Ngày giao', 'Ngày tháng', '—', ''],
+        ['Ghi chú kỹ thuật', 'Văn bản dài', '—', ''],
+      ],
+    });
+  }
+
+  // ---- #/income-expense-types — Loại thu chi ----
+  function renderCatIncomeExpense() {
+    APP.catPage.search = '';
+    renderCatSimplePage({
+      title: 'Loại thu chi',
+      columns: ['Tên loại', 'Nhóm (Thu/Chi)', 'Mô tả', 'Thao tác'],
+      hasActions: true,
+      sampleData: [
+        ['Thu dịch vụ', 'Thu', 'Thu tiền khám chữa bệnh', ''],
+        ['Thu bảo hiểm', 'Thu', 'Thu từ bảo hiểm y tế', ''],
+        ['Chi lương', 'Chi', 'Chi lương nhân viên', ''],
+        ['Chi vật tư', 'Chi', 'Mua vật tư y tế', ''],
+        ['Chi thuê mặt bằng', 'Chi', 'Tiền thuê phòng khám', ''],
+        ['Chi điện nước', 'Chi', 'Hóa đơn điện nước', ''],
+        ['Thu khác', 'Thu', 'Các khoản thu khác', ''],
+        ['Chi khác', 'Chi', 'Các khoản chi khác', ''],
+      ],
+    });
+  }
+
+  // ---- #/stock-criteria — Tiêu chí kiểm kho ----
+  function renderCatStockCriteria() {
+    APP.catPage.search = '';
+    renderCatSimplePage({
+      title: 'Tiêu chí kiểm kho',
+      columns: ['Tên tiêu chí', 'Mô tả', 'Thao tác'],
+      hasActions: true,
+      sampleData: [
+        ['Hạn sử dụng', 'Kiểm tra sản phẩm hết hạn hoặc sắp hết hạn', ''],
+        ['Số lượng tồn', 'Kiểm tra số lượng tồn kho tối thiểu', ''],
+        ['Chất lượng bảo quản', 'Kiểm tra điều kiện bảo quản (nhiệt độ, độ ẩm)', ''],
+        ['Mã lô sản xuất', 'Đối chiếu mã lô với phiếu nhập', ''],
+        ['Tình trạng bao bì', 'Kiểm tra bao bì nguyên vẹn, không hư hỏng', ''],
+      ],
+    });
+  }
+
+  // ---- #/tooth-diagnosis — Chẩn đoán răng ----
+  function renderCatToothDiagnosis() {
+    APP.catPage.search = '';
+    renderCatSimplePage({
+      title: 'Chẩn đoán răng',
+      columns: ['Mã', 'Tên chẩn đoán', 'Nhóm', 'Thao tác'],
+      hasActions: true,
+      sampleData: [
+        ['K02.0', 'Sâu răng giai đoạn đầu', 'Sâu răng', ''],
+        ['K02.1', 'Sâu răng ngà', 'Sâu răng', ''],
+        ['K04.0', 'Viêm tủy răng', 'Bệnh tủy', ''],
+        ['K04.1', 'Hoại tử tủy', 'Bệnh tủy', ''],
+        ['K05.0', 'Viêm nướu cấp', 'Bệnh nha chu', ''],
+        ['K05.1', 'Viêm nha chu mãn tính', 'Bệnh nha chu', ''],
+        ['K08.1', 'Mất răng do tai nạn', 'Mất răng', ''],
+        ['K00.6', 'Răng mọc lệch', 'Bất thường', ''],
+        ['K07.3', 'Sai khớp cắn', 'Chỉnh nha', ''],
+      ],
+    });
   }
 
   function renderCategories() {

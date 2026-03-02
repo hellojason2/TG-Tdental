@@ -1199,3 +1199,49 @@ async def reports_fund_summary(
             }
     except RuntimeError:
         raise HTTPException(status_code=503, detail="Database is unavailable")
+
+
+# ---------------------------------------------------------------------------
+# GET /api/reports/supplier-debt  (Công nợ NCC)
+# ---------------------------------------------------------------------------
+
+@router.get("/supplier-debt")
+async def report_supplier_debt(
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=0, le=500),
+    offset: int | None = Query(default=None, ge=0),
+    limit: int | None = Query(default=None, ge=0, le=5000),
+    dateFrom: date | None = Query(default=None),
+    dateTo: date | None = Query(default=None),
+    companyId: str | None = Query(default=None),
+    _user: dict = Depends(require_auth),
+):
+    """Supplier debt report -- returns empty items (placeholder)."""
+    resolved_offset, resolved_limit = page_window(
+        page=page, per_page=per_page, offset=offset, limit=limit, default_limit=20,
+    )
+    # Placeholder: real implementation would query purchase orders / account_move_line
+    return empty_page(resolved_offset, resolved_limit)
+
+
+# ---------------------------------------------------------------------------
+# GET /api/reports/insurance-debt  (Công nợ bảo hiểm)
+# ---------------------------------------------------------------------------
+
+@router.get("/insurance-debt")
+async def report_insurance_debt(
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=0, le=500),
+    offset: int | None = Query(default=None, ge=0),
+    limit: int | None = Query(default=None, ge=0, le=5000),
+    dateFrom: date | None = Query(default=None),
+    dateTo: date | None = Query(default=None),
+    companyId: str | None = Query(default=None),
+    _user: dict = Depends(require_auth),
+):
+    """Insurance debt report -- returns empty items (placeholder)."""
+    resolved_offset, resolved_limit = page_window(
+        page=page, per_page=per_page, offset=offset, limit=limit, default_limit=20,
+    )
+    # Placeholder: real implementation would query insurance claims
+    return empty_page(resolved_offset, resolved_limit)
