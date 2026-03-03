@@ -1,0 +1,50 @@
+# Progress - TDental Golden 100% Parity Recovery
+# Auto-updated by each Ralph iteration
+# -----------------------------------------------------------
+
+Iteration 0: Scope reset to true 100% parity.
+- Replaced stale completion assumptions in scope documents.
+- Added dual-loop execution model:
+  - `ralph_data.sh` for source-vs-replica data/API parity.
+  - `ralph_uiux.sh` for UI/UX pixel and interaction parity.
+  - `ralph.sh` as master hard-gate closer.
+- Known unresolved blockers at reset:
+  - `dbo.accountpayments` row-count mismatch (+3 rows in Postgres).
+  - Missing FK signatures in 7 source `dbo` tables.
+  - Unresolved visual/interaction parity differences on shell and modules.
+
+Next iteration target:
+- Run `files/audit_data_parity.py` and baseline `REWORK/PASS` report in `files/evidence/data/report.json`.
+
+Iteration 0.1: First live data reconciliation applied.
+- Deleted 3 replica-only draft rows from `dbo.accountpayments` in Postgres:
+  - `37c0109f-9821-4221-addc-7521c2175c85`
+  - `94f34269-bb80-49c7-824b-d660aa12cc23`
+  - `d8a89301-ed25-45d9-9c8a-7daafccee327`
+- Re-ran data parity audit:
+  - row-count mismatches: `0`
+  - key ID mismatches: `0`
+  - company-bucket mismatches: `0`
+  - remaining blockers: FK signature mismatches (`7` dbo tables).
+
+UI/UX Iteration U0.1: Baseline visual + interaction mismatch report captured.
+- Ran all 4 audit gates:
+  - branch_matrix: PASS (336/336 cells, 8 branches, 42 branch-aware routes)
+  - phase_3_4_modules: REWORK (task 3.2 customers fails — audit selector mismatch, not a real UI bug)
+  - visual_parity: PASS (14/14 routes under threshold, 0 REVIEW, 0 MISSING)
+  - pytest: PASS (41/41)
+- Identified visual mismatches by severity:
+  HIGH:
+  - Customers table columns differ from original (different column set entirely)
+  - Customers default sort order differs (alphabetical vs recent activity)
+  MEDIUM:
+  - Dashboard has 4 stat cards not present in original
+  - Customers tab labels include counts; original does not
+  - Branch selector defaults to "Tất cả chi nhánh" vs specific branch
+  LOW:
+  - Customer avatar style (two-letter vs single-letter initials)
+  - Minor sidebar icon ordering differences
+- Identified interaction mismatches:
+  - audit_phase3_4.py checks wrong selector for customer detail page (.customer-detail-page vs .cdetail-page)
+- Evidence: files/evidence/U0.1/baseline_mismatch_report.json
+- Next: U0.2 — Prioritize defects by user-facing severity.

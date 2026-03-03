@@ -1,0 +1,155 @@
+{
+  "task": "U0.1",
+  "description": "Baseline visual + interaction mismatch report for shell + high-impact pages",
+  "timestamp": "2026-03-03",
+  "status": "CAPTURED",
+
+  "audit_results": {
+    "branch_matrix": {
+      "status": "PASS",
+      "cells": 336,
+      "pass": 336,
+      "branches": 8,
+      "branch_aware_routes": 42,
+      "non_branch_routes": 8,
+      "all_checks_green": true
+    },
+    "phase_3_4_modules": {
+      "status": "REWORK",
+      "failing_tasks": {
+        "3.2_customers": {
+          "functional": false,
+          "interaction": false,
+          "root_cause": "Audit selector mismatch: audit checks for '.customer-detail-page, .customer-detail-drawer, #cdetail-panels' but page uses '.cdetail-page'. Detail page renders correctly.",
+          "fix_type": "audit_selector_update"
+        }
+      },
+      "passing_tasks": ["3.1", "3.3", "3.4", "3.5", "3.6", "3.7", "3.8", "3.9", "4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", "4.8", "4.9", "4.10"]
+    },
+    "visual_parity": {
+      "status": "PASS",
+      "review_count": 0,
+      "missing_count": 0,
+      "branch_dropdown_check": "PASS",
+      "thresholds": {
+        "overall": 22.0,
+        "topbar": 12.0
+      },
+      "route_diffs": {
+        "01-dashboard": {"overall": 4.68, "topbar": 7.47},
+        "02-customers": {"overall": 8.67, "topbar": 8.33},
+        "03-work": {"overall": 5.44, "topbar": 9.18},
+        "04-calendar": {"overall": 2.67, "topbar": 7.81},
+        "05-labo": {"overall": 6.71, "topbar": 8.16},
+        "06-purchase": {"overall": 6.95, "topbar": 6.91},
+        "07-warehouse": {"overall": 3.49, "topbar": 6.36},
+        "08-catalog": {"overall": 4.52, "topbar": 6.87},
+        "09-commission": {"overall": 6.50, "topbar": 8.36},
+        "10-salary": {"overall": 6.20, "topbar": 8.30},
+        "11-cashbook": {"overall": 7.46, "topbar": 6.91},
+        "12-callcenter": {"overall": 5.91, "topbar": 6.91},
+        "13-reports": {"overall": 7.35, "topbar": 7.66},
+        "14-settings": {"overall": 7.15, "topbar": 8.66}
+      }
+    },
+    "pytest": {
+      "status": "PASS",
+      "passed": 41,
+      "failed": 0
+    }
+  },
+
+  "visual_mismatches": {
+    "severity_high": [
+      {
+        "area": "Customers table columns",
+        "original": "Họ và tên, Ngày sinh, Ngày hẹn gần nhất, Ngày hẹn sắp tới, Ngày điều trị gần nhất, Tình trạng điều trị",
+        "replica": "STT, THÔNG TIN KHÁCH HÀNG, NGÀY SINH, SỐ ĐIỆN THOẠI, EMAIL, NGÀY TẠO, THAO TÁC",
+        "diff_pct": 8.67,
+        "impact": "Different column set — user sees different data fields"
+      },
+      {
+        "area": "Customers table sorting",
+        "original": "Sorted by most recent (Ngày hẹn gần nhất descending), customer codes like T160333 +43",
+        "replica": "Sorted alphabetically Z-A, customer codes like (T3306)",
+        "impact": "Different default sort order and code format"
+      }
+    ],
+    "severity_medium": [
+      {
+        "area": "Topbar user display",
+        "original": "Shows 'dataconnect' with profile image avatar",
+        "replica": "Shows 'Admin' with letter 'A' avatar",
+        "impact": "Different user identity display (data-dependent, not a bug)"
+      },
+      {
+        "area": "Topbar branch selector style",
+        "original": "Outlined pill with location pin, specific branch pre-selected (Nha khoa Tấm Dentist)",
+        "replica": "Outlined pill with location pin, 'Tất cả chi nhánh' as default",
+        "impact": "Different default branch selection"
+      },
+      {
+        "area": "Dashboard stat cards",
+        "original": "No stat cards at top, goes directly to TIẾP NHẬN KHÁCH HÀNG",
+        "replica": "Has 4 stat cards (Khách hàng, Lịch hẹn, Doanh thu, Công việc) above main content",
+        "impact": "Extra UI element not in original"
+      },
+      {
+        "area": "Customers tab labels",
+        "original": "Khách hàng | Đang điều trị | Hoàn thành | Chưa phát sinh (no counts in tabs)",
+        "replica": "Tất cả 200 | Đang điều trị 0 | Hoàn thành 0 | Chưa phát sinh 200 (counts in tabs)",
+        "impact": "Different tab naming and count display style"
+      }
+    ],
+    "severity_low": [
+      {
+        "area": "Sidebar icon ordering",
+        "original": "Icons have slightly different arrangement order after Kho",
+        "replica": "Icons match general structure but some sub-items differ",
+        "impact": "Minor navigation difference"
+      },
+      {
+        "area": "Customer avatar initials",
+        "original": "Single colored circle with first initial + icon indicator",
+        "replica": "Colored circle with two-letter initials + gender icon",
+        "impact": "Minor visual style difference"
+      }
+    ]
+  },
+
+  "interaction_mismatches": {
+    "severity_high": [
+      {
+        "area": "Customer detail page audit selector",
+        "detail": "Audit expects '.customer-detail-page, .customer-detail-drawer, #cdetail-panels' but page uses '.cdetail-page'. Page actually works — audit needs fixing.",
+        "blocks_gate": true
+      }
+    ],
+    "severity_medium": [],
+    "severity_low": []
+  },
+
+  "shell_mismatches": {
+    "topbar": {
+      "overall_structure": "MATCH — hamburger, search, reception button, timer, branch selector, notifications, user, logout",
+      "differences": [
+        "Branch selector defaults to 'Tất cả chi nhánh' vs specific branch in original",
+        "User avatar/name differs (data-dependent)"
+      ]
+    },
+    "sidebar": {
+      "overall_structure": "MATCH — dark sidebar with icon navigation, collapsed by default",
+      "differences": [
+        "Help button at bottom present in both"
+      ]
+    }
+  },
+
+  "next_steps": [
+    "U0.2: Prioritize these defects by severity",
+    "Fix audit_phase3_4.py selector for customer detail page to unblock 3.2",
+    "Address customers table column parity (high severity)",
+    "Address dashboard stat cards parity",
+    "Address customers sort order and tab labels"
+  ]
+}
