@@ -571,6 +571,11 @@ ol {
 #sidebar.expanded .sidebar-nav-item[data-label]::after {
   display: none !important;
 }
+/* Hide tooltips when submenu popup is open (collapsed mode) */
+.sidebar-nav-item.submenu-open[data-label]::before,
+.sidebar-nav-item.submenu-open[data-label]::after {
+  display: none !important;
+}
 
 /* Tooltip for collapsed sidebar */
 .sidebar-nav-item[data-label] {

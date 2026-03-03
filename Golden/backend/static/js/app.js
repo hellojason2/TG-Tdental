@@ -1134,7 +1134,8 @@
   function navigateToGlobalSearchResult(type, id) {
     closeGlobalSearch();
     if (type === 'customer') {
-      navigateTo('#/partners/customers/' + id);
+      // Keep canonical customer-detail hash shape aligned with tasks.md.
+      navigateTo('#/partners/customers/' + id + '/overview');
     } else if (type === 'appointment') {
       navigateTo('#/calendar');
     } else if (type === 'task') {
@@ -1278,11 +1279,31 @@
       (function (item) {
         // For items WITHOUT sub-menus, click navigates directly
         if (!item.classList.contains('has-submenu')) {
+          var isHelpItem = item.id === 'sidebar-help-btn';
+          if (isHelpItem) {
+            item.setAttribute('role', 'button');
+            item.setAttribute('tabindex', '0');
+            item.setAttribute('aria-label', 'Hỗ trợ');
+          }
           item.addEventListener('click', function (e) {
             e.preventDefault();
             var route = this.getAttribute('data-route');
-            if (route) navigateTo(route);
+            if (route) {
+              navigateTo(route);
+              return;
+            }
+            if (isHelpItem) {
+              showToast('info', 'Trung tâm hỗ trợ: vui lòng liên hệ quản trị hệ thống.');
+            }
           });
+          if (isHelpItem) {
+            item.addEventListener('keydown', function (e) {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                showToast('info', 'Trung tâm hỗ trợ: vui lòng liên hệ quản trị hệ thống.');
+              }
+            });
+          }
         }
 
         // For items WITH sub-menus
@@ -1358,6 +1379,38 @@
         }
       });
     }
+
+    // Logo click → navigate to dashboard (original behavior)
+    var logoEl = document.getElementById('sidebar-logo');
+    if (logoEl) {
+      logoEl.addEventListener('click', function () {
+        navigateTo('#/dashboard');
+      });
+      logoEl.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          navigateTo('#/dashboard');
+        }
+      });
+    }
+
+    // ESC key closes mobile sidebar overlay
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && isMobileView() && sidebar.classList.contains('mobile-open')) {
+        sidebar.classList.remove('mobile-open');
+        backdrop.style.display = 'none';
+      }
+    });
+
+    // Click outside sidebar closes submenu popups in collapsed mode
+    document.addEventListener('click', function (e) {
+      if (!sidebar.contains(e.target)) {
+        var openMenus = sidebar.querySelectorAll('.submenu-open');
+        for (var m = 0; m < openMenus.length; m++) {
+          openMenus[m].classList.remove('submenu-open');
+        }
+      }
+    });
 
     // Handle window resize: clean up states
     window.addEventListener('resize', function () {
@@ -3075,7 +3128,7 @@
           '<td><div class="partners-name-cell">' +
           '<span class="partners-avatar-sm" style="background:' + avatarColor + '">' + escapeHtml(initials) + '</span>' +
           '<div class="partners-info-wrap">' +
-          '<a href="#/partners/customers/' + encodeURIComponent(item.id || '') + '" class="partners-name-link">' + nameWithRef + '</a>' +
+          '<a href="#/partners/customers/' + encodeURIComponent(item.id || '') + '/overview" class="partners-name-link">' + nameWithRef + '</a>' +
           '<div class="partners-badges">' + genderIcon + badges + '</div>' +
           '</div></div></td>' +
           '<td>' + escapeHtml(formatDate(item.dateOfBirth)) + '</td>' +
@@ -3116,7 +3169,7 @@
         }
         if (e.target.closest('.partners-action-view')) {
           var viewId = e.target.closest('button').getAttribute('data-id');
-          if (viewId) navigateTo('#/partners/customers/' + encodeURIComponent(viewId));
+          if (viewId) navigateTo('#/partners/customers/' + encodeURIComponent(viewId) + '/overview');
           return;
         }
         if (e.target.closest('.partners-action-delete')) {
@@ -3129,7 +3182,7 @@
           return;
         }
         var id = this.getAttribute('data-id');
-        if (id) navigateTo('#/partners/customers/' + encodeURIComponent(id));
+        if (id) navigateTo('#/partners/customers/' + encodeURIComponent(id) + '/overview');
       });
     }
   }
@@ -10090,7 +10143,7 @@
               name: getInputValue('cat-simple-modal-name'),
               code: getInputValue('cat-simple-modal-code') || null,
               active: !!(document.getElementById('cat-simple-modal-active') || {}).checked,
-              companyId: getSelectedBranchId() || null,
+              companyId: (opts && opts.useCompany) ? (getSelectedBranchId() || null) : null,
             };
             if (!payload.name) {
               showToast('warning', 'Tên là bắt buộc');
@@ -10169,7 +10222,7 @@
               name: getInputValue('cat-generic-name'),
               code: getInputValue('cat-generic-code') || null,
               active: !!(document.getElementById('cat-generic-active') || {}).checked,
-              companyId: getSelectedBranchId() || null,
+              companyId: (opts && opts.useCompany) ? (getSelectedBranchId() || null) : null,
             };
             if (!payload.name) {
               showToast('warning', 'Tên là bắt buộc');
@@ -10282,7 +10335,7 @@
       columns: ['Dịch vụ/Vật tư', 'Mã', 'Giá niêm yết', 'Giá vốn', 'Trạng thái', 'Thao tác'],
       hasActions: true,
       endpoint: '/api/products',
-      useCompany: true,
+      useCompany: false,
       mapItem: function (item) {
         return [
           item.name || item.displayName || '—',
@@ -10303,12 +10356,12 @@
       title: 'Bảng hoa hồng',
       columns: ['Tên cấu hình', 'Loại', 'Chi nhánh', 'Trạng thái', 'Cập nhật', 'Thao tác'],
       hasActions: true,
+      useCompany: false,
       loader: async function (params) {
         var query = toQueryString({
           search: params.search,
           limit: params.limit,
           offset: params.offset,
-          companyId: params.companyId,
         });
         var commissionData = await api('/api/commissions' + query);
         var commissions = safeItems(commissionData);
@@ -10388,12 +10441,12 @@
       title: 'Loại thu chi',
       columns: ['Tên loại', 'Nhóm', 'Mã', 'Trạng thái', 'Cập nhật', 'Thao tác'],
       hasActions: true,
+      useCompany: false,
       loader: async function (params) {
         var query = toQueryString({
           search: params.search,
           limit: 300,
           offset: 0,
-          companyId: params.companyId,
         });
         var incomeData = null;
         var expenseData = null;

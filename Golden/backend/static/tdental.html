@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TDental - Quản lý nha khoa</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/tdental.css">
 </head>
 <body>
@@ -12,7 +13,7 @@
   <div id="app">
     <!-- Sidebar (icon-only, 56px) -->
     <aside id="sidebar">
-      <div class="sidebar-logo">
+      <div class="sidebar-logo" id="sidebar-logo" role="button" tabindex="0" style="cursor:pointer" title="Tổng quan">
         <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
           <path d="M16 2C11.5 2 8 4.5 8 8c0 2.5 1 4 2 6.5C11.5 18 12 22 12 26c0 2 1.5 4 4 4s4-2 4-4c0-4 .5-8 2-11.5C23 12 24 10.5 24 8c0-3.5-3.5-6-8-6z" fill="#4FC3F7"/>
           <path d="M16 2C13 2 10.5 3.5 9.5 5.5c1.5-.5 3.5-1 6.5-1s5 .5 6.5 1C21.5 3.5 19 2 16 2z" fill="#81D4FA"/>
@@ -183,14 +184,14 @@
           </div>
         </div>
         <!-- Settings (has sub-menu) -->
-        <div class="sidebar-nav-item has-submenu" data-route="#/settings" data-label="Cài đặt">
+        <div class="sidebar-nav-item has-submenu" data-route="#/settings" data-label="Cấu hình">
           <span class="nav-icon">
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </span>
-          <span class="nav-label">Cài đặt</span>
+          <span class="nav-label">Cấu hình</span>
           <span class="nav-chevron"><svg viewBox="0 0 24 24" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg></span>
           <div class="sidebar-submenu">
-            <div class="submenu-title">Cài đặt</div>
+            <div class="submenu-title">Cấu hình</div>
             <a class="submenu-item" data-route="#/settings" href="#/settings">Chi nhánh</a>
             <a class="submenu-item" data-route="#/settings-config" href="#/settings-config">Cấu hình chung</a>
             <a class="submenu-item" data-route="#/settings-team" href="#/settings-team">Cấu hình Team</a>

@@ -66,6 +66,27 @@ UI/UX Iteration U0.2: Prioritized defects by user-facing severity.
 - Evidence: files/evidence/U0.2/prioritized_defects.json
 - Next: U1.1 — Fix sidebar/topbar shell pixel parity.
 
+UI/UX Iteration U0.3: Removed AP-code patient labels from appointment-driven screens.
+- Root cause:
+  - `backend/app/api/appointments.py` returned `appointments.name` directly as `patientName`.
+  - In migrated data, `appointments.name` frequently stores `AP...` codes instead of customer names.
+- Permanent remediation:
+  - Added safe source aliasing in dynamic appointment SQL to support joins without ambiguous columns.
+  - Added partner join fallback (`dbo.partners`) and patient label normalization:
+    - if source patient label is blank or matches `^AP[0-9]+$`, use partner name/displayname.
+    - otherwise keep source patient label.
+  - Applied same resolved patient expression to search filtering so behavior remains consistent.
+- Validation:
+  - `cd backend && python3 -m pytest tests -q` => PASS (`43 passed`).
+  - Added regression tests in `backend/tests/test_appointments_sql.py` for:
+    - AP-code to partner-name fallback path.
+    - no-partner-table fallback path.
+  - Re-ran live parity gate:
+    - `id_style`: fixed (`original_id_ratio: 0.0`, `replica_id_ratio: 0.0`)
+    - `text_overlap`: still REWORK (`0.04`) due remaining source-data/content mismatch vs live original.
+- Evidence:
+  - files/evidence/live-parity/report.json
+
 UI/UX Iteration U1.1: Sidebar/topbar shell pixel parity (sizes, spacing, iconography, typography, colors).
 - Compared original screenshots + scraped INTERACTIONS.md icon class names against replica.
 - Fixed sidebar background color: #0C1014 → #181C22 (matches original #181C22).
@@ -88,3 +109,21 @@ UI/UX Iteration U1.1: Sidebar/topbar shell pixel parity (sizes, spacing, iconogr
   - live_parity: REWORK (pre-existing D10 — dashboard IDs not names, scoped to U3.1)
 - Evidence: files/evidence/U1.1/replica-after-icons-fix.png, files/evidence/U1.1/replica-expanded-sidebar.png
 - Next: U1.2 — Fix sidebar collapsed/expanded/mobile interaction parity.
+
+UI/UX Iteration U1.2: Sidebar collapsed/expanded/mobile interaction parity (hover, tooltip, focus, overlay close behavior).
+- Compared replica sidebar interactions against original INTERACTIONS.md spec.
+- Fixed 5 interaction gaps:
+  1. Converted "Công việc" from has-submenu to direct link (original has no submenu on item #2).
+  2. Made logo clickable → navigates to #/dashboard (original behavior per INTERACTIONS.md).
+  3. Added ESC key handler to close mobile sidebar overlay.
+  4. Added CSS rule to suppress tooltip when submenu popup is open (collapsed mode collision fix).
+  5. Added outside-click handler to close submenu popups in collapsed mode.
+- Noted remaining structural difference: replica has submenus for Lương, Sổ quỹ, Báo cáo, Danh mục, Cấu hình
+  where original uses direct links. These contain real sub-routes needed for navigation; defer to later task.
+- Gate results:
+  - branch_matrix: PASS (336/336)
+  - phase_3_4_modules: PASS
+  - visual_parity: PASS (14/14, 0 REVIEW, 0 MISSING)
+  - pytest: PASS (43/43)
+  - live_parity: REWORK (pre-existing D10 — dashboard customer data mismatch, scoped to U3.1)
+- Next: U1.3 — Fix global search UX parity.
