@@ -2487,13 +2487,15 @@
     }
     return (
       '<div class="db-rcard" data-state="' + escapeHtml(bucket) + '" data-name="' + escapeHtml(name.toLowerCase()) + '" data-phone="' + escapeHtml((item.patientPhone || '').toLowerCase()) + '">' +
-      '<span class="db-rcard-status ' + cls + '">' + escapeHtml(label) + '</span>' +
+      '<div class="db-rcard-head">' +
+      '<span class="db-rcard-status ' + cls + '">' + escapeHtml(label) + '<span class="db-rcard-caret">▼</span></span>' +
+      '</div>' +
       '<div class="db-rcard-info">' +
       '<img class="db-rcard-avatar" src="data:image/svg+xml,' + encodeURIComponent('<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%2394A3B8\'><circle cx=\'12\' cy=\'8\' r=\'4\'/><path d=\'M20 21a8 8 0 1 0-16 0\'/></svg>') + '">' +
-      '<a href="#/partners/customers/' + escapeHtml(patientId) + '/overview">' + escapeHtml(name) + '</a>' +
+      '<a class="db-rcard-name" href="#/partners/customers/' + escapeHtml(patientId) + '/overview">' + escapeHtml(name) + '</a>' +
       '</div>' +
-      '<span class="db-rcard-doctor">' + DB_SVG.doctor + ' ' + escapeHtml(doctor) + '</span>' +
-      '<span class="db-rcard-time">' + DB_SVG.clock + ' ' + escapeHtml(time) + '</span>' +
+      '<span class="db-rcard-doctor db-rcard-meta-item">' + DB_SVG.doctor + ' ' + escapeHtml(doctor) + '</span>' +
+      '<span class="db-rcard-time db-rcard-meta-item">' + DB_SVG.clock + ' ' + escapeHtml(time) + '</span>' +
       '</div>'
     );
   }
@@ -2544,11 +2546,13 @@
       '<button class="db-icon-btn db-acard-delete" title="Xóa" data-id="' + escapeHtml(item.id || '') + '">' + DB_SVG.trash + '</button>' +
       '</div>' +
       '</div>' +
-      '<div class="db-acard-meta">' +
+      '<div class="db-acard-body ' + escapeHtml(stateClass) + '">' +
       '<div class="db-acard-meta-left">' +
       '<span class="db-acard-meta-item">' + DB_SVG.doctor + ' ' + escapeHtml(doctor) + '</span>' +
+      '<div class="db-acard-meta-row">' +
       '<span class="db-acard-meta-item">' + DB_SVG.clock + ' ' + escapeHtml(time) + '</span>' +
       (phone ? '<span class="db-acard-meta-item">' + DB_SVG.phone + ' ' + escapeHtml(phone) + '</span>' : '') +
+      '</div>' +
       '</div>' +
       '<button class="db-acard-state-btn ' + stateClass + '">' + escapeHtml(stateLabel) + '</button>' +
       '</div>' +

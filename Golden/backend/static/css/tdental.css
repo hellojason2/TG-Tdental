@@ -1376,32 +1376,52 @@ ol {
 
 .db-reception-panel .db-card-list {
   max-height: 420px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  align-content: start;
 }
 
 .db-rcard {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-  padding: 8px 10px;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #dce5f3;
+  background: #ffffff;
+  min-height: 122px;
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
 }
 
 .db-rcard:hover {
-  background: var(--tds-gray-50);
+  background: #f8fbff;
+  border-color: #9fc3ff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+}
+
+.db-rcard-head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 22px;
 }
 
 .db-rcard-status {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.db-rcard-caret {
+  font-size: 9px;
+  line-height: 1;
 }
 
 .db-rcard-status.waiting {
@@ -1446,19 +1466,21 @@ ol {
 .db-rcard-info {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
 .db-rcard-info .db-rcard-avatar {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-.db-rcard-info a {
+.db-rcard-info a,
+.db-rcard-name {
   font-size: 13px;
+  line-height: 1.25;
   font-weight: 500;
   color: var(--tds-db-blue);
   text-decoration: none;
@@ -1472,12 +1494,13 @@ ol {
 }
 
 .db-rcard-doctor,
-.db-rcard-time {
+.db-rcard-time,
+.db-rcard-meta-item {
   display: flex;
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: var(--tds-text-secondary);
+  color: #334155;
   white-space: nowrap;
 }
 
@@ -1496,17 +1519,22 @@ ol {
 /* Appointment cards (right panel) */
 .db-appt-panel .db-card-list {
   max-height: 480px;
+  gap: 10px;
 }
 
 .db-acard {
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid #dce5f3;
+  background: #ffffff;
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
 }
 
 .db-acard:hover {
-  background: var(--tds-gray-50);
+  background: #f8fbff;
+  border-color: #9fc3ff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
 }
 
 .db-acard-top {
@@ -1578,17 +1606,41 @@ ol {
   stroke-linejoin: round;
 }
 
-.db-acard-meta {
+.db-acard-body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 6px;
+  margin-top: 8px;
+  border-radius: 10px;
+  padding: 10px 12px;
+  gap: 10px;
+}
+
+.db-acard-body.scheduled {
+  background: #dbeafe;
+}
+
+.db-acard-body.arrived {
+  background: #f5d7e5;
+}
+
+.db-acard-body.cancelled {
+  background: #fee2e2;
 }
 
 .db-acard-meta-left {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 12px;
+  min-width: 0;
+}
+
+.db-acard-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
 .db-acard-meta-item {
@@ -1596,7 +1648,7 @@ ol {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: var(--tds-text-secondary);
+  color: #334155;
 }
 
 .db-acard-meta-item svg {
@@ -1618,6 +1670,7 @@ ol {
   border: none;
   cursor: pointer;
   font-family: inherit;
+  white-space: nowrap;
 }
 
 .db-acard-state-btn.scheduled {
