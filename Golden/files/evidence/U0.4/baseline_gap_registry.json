@@ -1,0 +1,52 @@
+{
+  "task": "U0.4",
+  "description": "Exhaustive full-function baseline gap registry",
+  "audit_scope": {
+    "routes": 50,
+    "branches_sampled": 3,
+    "cells_total": 134,
+    "cells_passed": 131,
+    "cells_failed": 3,
+    "actions_total": 477,
+    "actions_failed": 3
+  },
+  "registered_gaps": [
+    {
+      "id": "GAP-CAL-01",
+      "severity": "P1",
+      "route": "#/calendar",
+      "description": "Console JS errors: Cannot read properties of undefined (doctor/time/service)",
+      "affected_branches": "ALL (3/3 tested)",
+      "root_cause": "Calendar appointment rendering accesses undefined properties on malformed appointment data",
+      "scoped_to": "U3.4"
+    },
+    {
+      "id": "GAP-PROD-01",
+      "severity": "P2",
+      "route": "#/products",
+      "description": "companyId assertion failed - no API request with companyId for 2 branches",
+      "affected_branches": [
+        "Tấm Dentist Quận 10",
+        "Tấm Dentist Quận 7"
+      ],
+      "root_cause": "Products API call may be cached or not parameterized by branch for some branches",
+      "scoped_to": "U2.2"
+    },
+    {
+      "id": "GAP-DASH-01",
+      "severity": "P1",
+      "route": "#/dashboard",
+      "description": "Live parity text_overlap REWORK - dashboard content differs from original",
+      "affected_branches": "ALL",
+      "root_cause": "Dashboard widgets show different data than original (source data vs live data divergence)",
+      "scoped_to": "U3.1"
+    }
+  ],
+  "non_blocking_notes": [
+    "All 477 actions (controls, searches, tab populations) passed except 3 calendar console errors",
+    "Global search overlay input exclusion fix applied to audit harness (was false positive)",
+    "Branch matrix 334/336 cells pass (2 products failures are pre-existing)",
+    "Visual parity 14/14 routes under threshold",
+    "pytest 43/43 pass"
+  ]
+}

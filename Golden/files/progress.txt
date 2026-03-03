@@ -175,3 +175,24 @@ UI/UX Iteration U2.1: Branch selector parity (label, dropdown states, persistenc
   - pytest: PASS (43/43)
   - live_parity: REWORK (pre-existing D10 — dashboard customer data mismatch, scoped to U3.1)
 - Next: U2.2 — Ensure branch switches refresh all branch-aware routes correctly.
+
+UI/UX Iteration U0.4: Exhaustive full-function baseline and gap registry.
+- Ran full-function audit across 50 routes × 3 branches (134 cells, 477 actions).
+- Fixed audit harness false positive: excluded #global-search-input from page-level search tests
+  (hidden overlay input was timing out; global search already validated in U1.3).
+- Results: 131/134 cells PASS, 3 cells FAIL (all #/calendar console errors).
+- Registered 3 baseline gaps:
+  GAP-CAL-01 (P1): Calendar console JS errors — undefined properties (doctor/time/service)
+    → Scoped to U3.4
+  GAP-PROD-01 (P2): Products #/products companyId assertion fails for 2 branches (Q10, Q7)
+    → Scoped to U2.2
+  GAP-DASH-01 (P1): Dashboard live parity text_overlap still REWORK
+    → Scoped to U3.1
+- Gate results:
+  - full_function: REWORK (3/134 cells — all calendar, pre-existing)
+  - branch_matrix: REWORK (334/336 — 2 products companyId, pre-existing)
+  - visual_parity: PASS (14/14, 0 REVIEW, 0 MISSING)
+  - pytest: PASS (43/43)
+  - live_parity: REWORK (pre-existing D10 — dashboard data, scoped to U3.1)
+- Evidence: files/evidence/U0.4/baseline_gap_registry.json, files/evidence/full-function/report.json
+- Next: U2.2 — Ensure branch switches refresh all branch-aware routes correctly.
