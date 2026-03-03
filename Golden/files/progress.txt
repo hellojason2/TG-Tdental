@@ -281,3 +281,42 @@ UI/UX Iteration U3.1: Dashboard parity across all locations.
   - files/evidence/U3.1/replica-dashboard-no-stat-cards.png
   - files/evidence/U3.1/replica-dashboard-thu-duc.png
 - Next: U3.2 — Fix customers parity across all locations.
+
+UI/UX Iteration U3.2: Customers parity across all locations.
+- Compared replica against original screenshots (original-customers.png, tdental-02-customers.png).
+- Fixed 7 parity gaps:
+  1. Tabs: Removed count badges from tab labels (original has no counts).
+  2. Table columns: Replaced STT/Số điện thoại/Email/Ngày tạo with
+     checkbox/Ngày hẹn gần nhất/Ngày hẹn sắp tới/Ngày điều trị gần nhất.
+     Renamed "Thông tin khách hàng" → "Họ và tên".
+  3. Avatar: Changed from colored 2-letter initials to gray silhouette person icon.
+  4. Name display: Name on first line, ref code on second line (was inline with parentheses).
+  5. Default sort: Changed from ID ascending to datecreated descending (newest first),
+     matching original's ref-descending appearance.
+  6. Actions: Replaced "Xem" (view) button with "Ẩn" (hide) to match original's
+     edit/delete/hide icon set.
+  7. Pagination text: Changed "Hiển thị X-Y / Z" → "X-Y của Z dòng" to match original.
+- Backend changes (customers.py):
+  - Added LATERAL JOIN subquery to aggregate appointment dates per customer
+    (lastAppointmentDate from MAX(date) <= today, nextAppointmentDate from MIN(date) > today).
+  - Added lastTreatmentDate from partners.lasttreatmentcompletedate column.
+  - Changed default sort column from id to datecreated DESC.
+- Frontend changes (app.js):
+  - Removed tab count span elements.
+  - Rewrote renderPartnersTable() with new columns and gray avatar SVG.
+  - Added checkbox column and hide action handler.
+  - Updated pagination text format.
+- CSS changes (tdental.css):
+  - Added .partners-avatar-silhouette class with #E5E7EB background.
+  - Adjusted avatar size to 32px.
+- Gate results:
+  - pytest: PASS (43/43)
+  - visual_parity: PASS (14/14, 0 REVIEW, 0 MISSING)
+  - branch_matrix: PASS (336/336)
+  - phase_3_4: REWORK (only 3.9 calendar_nested_popup — pre-existing GAP-CAL-01, scoped to U3.4)
+  - live_parity: PASS (all checks green)
+  - full_function: Pre-existing calendar failures only (GAP-CAL-01, scoped to U3.4)
+  - Console errors: 0 on partners page
+- Evidence:
+  - files/evidence/U3.2/replica-customers-parity.png
+- Next: U3.3 — Fix work/tasks parity across all locations.

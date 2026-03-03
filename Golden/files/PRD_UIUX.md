@@ -14,7 +14,7 @@ This loop closes visual and behavioral parity gaps so the replica renders and be
 - [x] U2.1 Ensure branch selector parity (label, dropdown states, persistence, keyboard).
 - [x] U2.2 Ensure branch switches refresh all branch-aware routes correctly for all locations.
 - [x] U3.1 Fix dashboard parity across all locations.
-- [ ] U3.2 Fix customers parity across all locations.
+- [x] U3.2 Fix customers parity across all locations.
 - [ ] U3.3 Fix work/tasks parity across all locations.
 - [ ] U3.4 Fix calendar parity across all locations.
 - [ ] U3.5 Fix reports + cashbook parity across all locations.

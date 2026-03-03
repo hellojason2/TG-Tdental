@@ -6960,14 +6960,17 @@ ol {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   color: #fff;
   font-size: 11px;
   font-weight: 700;
   flex-shrink: 0;
   line-height: 1;
+}
+.partners-avatar-silhouette {
+  background: #E5E7EB;
 }
 
 /* Info wrapper for name and badges */

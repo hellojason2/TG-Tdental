@@ -357,6 +357,12 @@ def _build_customer_aliases(item: dict[str, Any]) -> dict[str, Any]:
     )
     row["amountRevenueTotal"] = _first_non_empty(row, "amountrevenuetotal", "amount_revenue_total")
     row["companyId"] = _first_non_empty(row, "companyid", "company_id")
+    # Appointment and treatment date aggregates
+    row["lastAppointmentDate"] = row.pop("__last_appt", None)
+    row["nextAppointmentDate"] = row.pop("__next_appt", None)
+    row["lastTreatmentDate"] = row.pop("__last_treatment", None) or _first_non_empty(
+        row, "lasttreatmentcompletedate"
+    )
     return row
 
 
@@ -651,7 +657,11 @@ def list_customers(
                     [{"field": "sort", "message": "Sort column is not valid for customer table"}]
                 )
             if sort_col is None:
-                sort_col = customer_id_col
+                sort_col = (
+                    _resolve_sort_column(customer_meta, "datecreated")
+                    or _resolve_sort_column(customer_meta, "ref")
+                    or customer_id_col
+                )
 
             sort_expr = f"p.{_q(sort_col)}"
             if _is_text_column(customer_meta, sort_col):
@@ -663,10 +673,35 @@ def list_customers(
                     sort_expr = _sql_fold_expr(sort_expr)
 
             count_sql = f"SELECT COUNT(*) AS total FROM {_qt(customer_meta)} p{company_join_sql}{where_sql}"
+
+            # Appointment date aggregation subqueries
+            appt_meta = _resolve_table(snapshot, APPOINTMENT_TABLE_CANDIDATES)
+            appt_join_sql = ""
+            appt_select_sql = ""
+            if appt_meta:
+                appt_pid = _find_column(appt_meta, "partnerid", "partner_id")
+                appt_date = _find_column(appt_meta, "date")
+                if appt_pid and appt_date:
+                    appt_join_sql = (
+                        f" LEFT JOIN LATERAL ("
+                        f"SELECT MAX(a.{_q(appt_date)}) FILTER (WHERE a.{_q(appt_date)} <= CURRENT_DATE) AS __last_appt,"
+                        f" MIN(a.{_q(appt_date)}) FILTER (WHERE a.{_q(appt_date)} > CURRENT_DATE) AS __next_appt"
+                        f" FROM {_qt(appt_meta)} a WHERE a.{_q(appt_pid)} = p.{_q(customer_id_col)}"
+                        f") appt_agg ON TRUE"
+                    )
+                    appt_select_sql = ", appt_agg.__last_appt, appt_agg.__next_appt"
+
+            # Treatment date from partners table
+            treatment_col = _find_column(customer_meta, "lasttreatmentcompletedate")
+            treatment_select = ""
+            if treatment_col:
+                treatment_select = f", p.{_q(treatment_col)} AS __last_treatment"
+
             list_sql = (
-                f"SELECT p.*{company_select_sql} "
+                f"SELECT p.*{company_select_sql}{appt_select_sql}{treatment_select} "
                 f"FROM {_qt(customer_meta)} p"
                 f"{company_join_sql}"
+                f"{appt_join_sql}"
                 f"{where_sql} "
                 f"ORDER BY {sort_expr} {normalized_order.upper()} "
                 f"LIMIT %s OFFSET %s"

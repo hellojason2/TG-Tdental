@@ -3009,7 +3009,7 @@
     tabsWrap.innerHTML = tabs.map(function (t) {
       var active = APP.partners.filterTab === t.key ? ' partners-tab-active' : '';
       return '<button class="partners-tab' + active + '" data-tab="' + t.key + '">' +
-        escapeHtml(t.label) + ' <span class="partners-tab-count">' + t.count + '</span></button>';
+        escapeHtml(t.label) + '</button>';
     }).join('');
 
     var btns = tabsWrap.querySelectorAll('.partners-tab');
@@ -3072,60 +3072,45 @@
     var end = Math.min(start + pageSize, filtered.length);
     var rows = filtered.slice(start, end);
 
-    // Calculate index for STT column based on current page
-    var startIndex = start;
-
     tableWrap.innerHTML =
       '<div class="tds-table-wrapper">' +
       '<table class="tds-table partners-table">' +
       '<thead><tr>' +
-      '<th style="width:40px">STT</th>' +
-      '<th>Thông tin khách hàng</th>' +
-      '<th style="width:90px">Ngày sinh</th>' +
-      '<th style="width:110px">Số điện thoại</th>' +
-      '<th style="width:180px">Email</th>' +
-      '<th style="width:100px">Ngày tạo</th>' +
-      '<th style="width:80px">Thao tác</th>' +
+      '<th style="width:36px"><input type="checkbox" class="partners-check-all" id="partners-check-all"></th>' +
+      '<th>Họ và tên</th>' +
+      '<th style="width:110px">Ngày sinh</th>' +
+      '<th style="width:140px">Ngày hẹn gần nhất</th>' +
+      '<th style="width:130px">Ngày hẹn sắp tới</th>' +
+      '<th style="width:160px">Ngày điều trị gần nhất</th>' +
+      '<th style="width:90px">Thao tác</th>' +
       '</tr></thead>' +
       '<tbody>' +
-      rows.map(function (item, idx) {
-        var status = getPartnerStatus(item);
-        var statusLabel = getPartnerStatusLabel(status);
-        var statusClass = getPartnerStatusClass(status);
+      rows.map(function (item) {
         var nameDisplay = item.name || item.displayName || 'N/A';
-        var initials = getUserInitials(nameDisplay);
-        var avatarColor = item.gender === 'male' ? '#1A6DE3' : item.gender === 'female' ? '#EC4899' : '#94A3B8';
         var ref = item.ref || item.code || '';
-        var nameWithRef = ref ? nameDisplay + ' <span class="partners-cell-ref">(' + escapeHtml(ref) + ')</span>' : escapeHtml(nameDisplay);
-        var genderIcon = item.gender === 'male' ? '<svg class="gender-icon gender-male" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' : item.gender === 'female' ? '<svg class="gender-icon gender-female" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' : '';
-        var hasMemberCard = item.memberCard && item.memberCard !== '—';
-        var hasCategory = item.categories && item.categories !== '—';
-        var memberBadge = hasMemberCard ? '<span class="partners-badge partners-badge-blue">THẺ TV</span>' : '';
-        var categoryBadge = hasCategory ? '<span class="partners-badge partners-badge-pink">Nhãn KH</span>' : '';
-        var badges = [memberBadge, categoryBadge].filter(Boolean).join(' ');
         return (
           '<tr class="partners-row" data-id="' + escapeHtml(item.id || '') + '">' +
-          '<td class="text-center">' + (startIndex + idx + 1) + '</td>' +
+          '<td class="text-center" onclick="event.stopPropagation()"><input type="checkbox" class="partners-row-check" data-id="' + escapeHtml(item.id || '') + '"></td>' +
           '<td><div class="partners-name-cell">' +
-          '<span class="partners-avatar-sm" style="background:' + avatarColor + '">' + escapeHtml(initials) + '</span>' +
+          '<span class="partners-avatar-sm partners-avatar-silhouette"><svg width="16" height="16" viewBox="0 0 24 24" fill="#9CA3AF"><path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v2h20v-2c0-3.33-6.67-5-10-5z"/></svg></span>' +
           '<div class="partners-info-wrap">' +
-          '<a href="#/partners/customers/' + encodeURIComponent(item.id || '') + '/overview" class="partners-name-link">' + nameWithRef + '</a>' +
-          '<div class="partners-badges">' + genderIcon + badges + '</div>' +
+          '<a href="#/partners/customers/' + encodeURIComponent(item.id || '') + '/overview" class="partners-name-link">' + escapeHtml(nameDisplay) + '</a>' +
+          (ref ? '<div class="partners-cell-ref">' + escapeHtml(ref) + '</div>' : '') +
           '</div></div></td>' +
           '<td>' + escapeHtml(formatDate(item.dateOfBirth)) + '</td>' +
-          '<td>' + escapeHtml(item.phone || item.mobile || '—') + '</td>' +
-          '<td>' + escapeHtml(item.email || '—') + '</td>' +
-          '<td>' + escapeHtml(formatDate(item.createdAt || item.createDate)) + '</td>' +
+          '<td>' + escapeHtml(formatDate(item.lastAppointmentDate)) + '</td>' +
+          '<td>' + escapeHtml(formatDate(item.nextAppointmentDate)) + '</td>' +
+          '<td>' + escapeHtml(formatDate(item.lastTreatmentDate)) + '</td>' +
           '<td onclick="event.stopPropagation()">' +
           '<div class="partners-actions">' +
           '<button class="db-icon-btn partners-action-edit" data-id="' + escapeHtml(item.id || '') + '" title="Sửa">' +
           '<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
           '</button>' +
-          '<button class="db-icon-btn partners-action-view" data-id="' + escapeHtml(item.id || '') + '" title="Xem">' +
-          '<svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
-          '</button>' +
           '<button class="db-icon-btn partners-action-delete" data-id="' + escapeHtml(item.id || '') + '" title="Xóa">' +
           '<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
+          '</button>' +
+          '<button class="db-icon-btn partners-action-hide" data-id="' + escapeHtml(item.id || '') + '" title="Ẩn">' +
+          '<svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>' +
           '</button>' +
           '</div>' +
           '</td>' +
@@ -3148,9 +3133,13 @@
           if (editItem) openCustomerModal(editItem);
           return;
         }
-        if (e.target.closest('.partners-action-view')) {
-          var viewId = e.target.closest('button').getAttribute('data-id');
-          if (viewId) navigateTo('#/partners/customers/' + encodeURIComponent(viewId) + '/overview');
+        if (e.target.closest('.partners-action-hide')) {
+          var hideId = e.target.closest('button').getAttribute('data-id');
+          if (hideId) { tdsConfirm('Bạn có chắc muốn ẩn khách hàng này?', { title: 'Ẩn khách hàng' }).then(function (ok) { if (!ok) return;
+            api('/api/customers/' + encodeURIComponent(hideId), { method: 'PATCH', body: JSON.stringify({ hidden: true }) })
+              .then(function () { loadPartnersData(); showToast('success', 'Đã ẩn khách hàng.'); })
+              .catch(function () { showToast('error', 'Ẩn thất bại.'); });
+          }); }
           return;
         }
         if (e.target.closest('.partners-action-delete')) {
@@ -3191,7 +3180,7 @@
         '<span class="partners-pagesize-label">hàng trên trang</span>' +
         '</div>' +
         '<div class="partners-pagination-right">' +
-        '<span>Hiển thị 0-0 / 0</span>' +
+        '<span>0-0 của 0 dòng</span>' +
         '</div>';
       return;
     }
@@ -3221,7 +3210,7 @@
       '<span class="partners-pagesize-label">hàng trên trang</span>' +
       '</div>' +
       '<div class="partners-pagination-right">' +
-      '<span>Hiển thị ' + start + '-' + end + ' / ' + total + '</span>' +
+      '<span>' + start + '-' + end + ' của ' + total + ' dòng</span>' +
       '</div>';
 
     var pageBtns = paginationWrap.querySelectorAll('.partners-page-btn');
