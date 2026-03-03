@@ -334,15 +334,37 @@
     options = options || {};
     var headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
     var token = localStorage.getItem('token');
+    var hadAuthHeader = false;
     if (token) {
       headers.Authorization = 'Bearer ' + token;
+      hadAuthHeader = true;
     }
     var fetchOpts = Object.assign({}, options, { headers: headers });
     delete fetchOpts.raw;
 
     try {
       var res = await fetch(endpoint, fetchOpts);
+      if (res.status === 401 && hadAuthHeader) {
+        // Recover from stale localStorage token by retrying with cookie session only.
+        localStorage.removeItem('token');
+        APP.token = null;
+        delete headers.Authorization;
+        fetchOpts = Object.assign({}, fetchOpts, { headers: headers });
+        res = await fetch(endpoint, fetchOpts);
+      }
+
       if (res.status === 401) {
+        var authEndpoint = String(endpoint || '');
+        var skipRedirect =
+          authEndpoint.indexOf('/api/auth/login') === 0 ||
+          authEndpoint.indexOf('/api/auth/logout') === 0 ||
+          authEndpoint.indexOf('/api/auth/session') === 0;
+        if (!skipRedirect && window.location.pathname !== '/login') {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          localStorage.removeItem('selected_branch');
+          window.location.href = '/login';
+        }
         return null;
       }
       if (options.raw) return res;
@@ -1371,7 +1393,8 @@
     // Branch selector toggle
     var branchBtn = document.getElementById('branch-btn');
     var branchSelector = document.getElementById('branch-selector');
-    if (branchBtn && branchSelector) {
+    var branchDropdown = document.getElementById('branch-dropdown');
+    if (branchBtn && branchSelector && branchDropdown) {
       if (!branchBtn._boundBranchToggle) {
         branchBtn.addEventListener('click', function (e) {
           e.preventDefault();
@@ -1381,11 +1404,28 @@
         branchBtn._boundBranchToggle = true;
       }
 
-      if (!branchSelector._boundBranchClick) {
-        branchSelector.addEventListener('click', function (e) {
+      if (!branchDropdown._boundBranchClick) {
+        branchDropdown.addEventListener('click', function (e) {
           e.stopPropagation();
+          var item = e.target.closest('.branch-dropdown-item');
+          if (!item) return;
+          selectBranchValue(item.getAttribute('data-branch-value') || '');
         });
-        branchSelector._boundBranchClick = true;
+        branchDropdown._boundBranchClick = true;
+      }
+
+      if (!branchBtn._boundBranchKeyboard) {
+        branchBtn.addEventListener('keydown', function (e) {
+          if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (!isBranchSelectorOpen()) {
+              toggleBranchSelector();
+            } else {
+              focusBranchOption();
+            }
+          }
+        });
+        branchBtn._boundBranchKeyboard = true;
       }
 
       if (!document._boundBranchOutsideClick) {
@@ -1467,7 +1507,8 @@
 
   async function loadBranches() {
     var selector = document.getElementById('branch-selector');
-    if (!selector) return;
+    var dropdown = document.getElementById('branch-dropdown');
+    if (!selector || !dropdown) return;
 
     var savedBranch = localStorage.getItem('selected_branch') || '';
     selector.innerHTML = '<option value="">Tất cả chi nhánh</option>';
@@ -1493,6 +1534,7 @@
       selector.value = exists ? savedBranch : '';
       if (!exists) localStorage.removeItem('selected_branch');
     }
+    rebuildBranchDropdown();
     syncBranchLabel();
 
     if (!selector._boundChange) {
@@ -1512,22 +1554,121 @@
     }
   }
 
-  function toggleBranchSelector() {
+  function rebuildBranchDropdown() {
+    var selector = document.getElementById('branch-selector');
+    var dropdown = document.getElementById('branch-dropdown');
+    if (!selector || !dropdown) return;
+    dropdown.innerHTML = '';
+
+    if (!selector.options || !selector.options.length) {
+      var empty = document.createElement('div');
+      empty.className = 'branch-dropdown-empty';
+      empty.textContent = 'Không có chi nhánh';
+      dropdown.appendChild(empty);
+      return;
+    }
+
+    Array.prototype.forEach.call(selector.options, function (option) {
+      var value = option.value || '';
+      var item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'branch-dropdown-item';
+      item.setAttribute('role', 'option');
+      item.setAttribute('data-branch-value', value);
+
+      var check = document.createElement('span');
+      check.className = 'branch-dropdown-item-check';
+      check.textContent = '✓';
+
+      var label = document.createElement('span');
+      label.className = 'branch-dropdown-item-label';
+      label.textContent = option.textContent || 'N/A';
+
+      item.appendChild(check);
+      item.appendChild(label);
+      dropdown.appendChild(item);
+    });
+
+    syncBranchDropdownSelection();
+  }
+
+  function syncBranchDropdownSelection() {
+    var selector = document.getElementById('branch-selector');
+    var dropdown = document.getElementById('branch-dropdown');
+    if (!selector || !dropdown) return;
+
+    Array.prototype.forEach.call(dropdown.querySelectorAll('.branch-dropdown-item'), function (item) {
+      var isSelected = item.getAttribute('data-branch-value') === (selector.value || '');
+      item.classList.toggle('is-selected', isSelected);
+      item.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+      item.tabIndex = isSelected ? 0 : -1;
+    });
+  }
+
+  function selectBranchValue(rawValue) {
     var selector = document.getElementById('branch-selector');
     if (!selector) return;
-    var isOpen = selector.classList.contains('open');
+    var value = rawValue || '';
+    var exists = selector.querySelector('option[value="' + cssEscape(value) + '"]');
+    var nextValue = exists ? value : '';
+
+    if (selector.value === nextValue) {
+      syncBranchLabel();
+      closeBranchSelector();
+      return;
+    }
+
+    selector.value = nextValue;
+    var changeEvent;
+    try {
+      changeEvent = new Event('change', { bubbles: true });
+    } catch (_e) {
+      changeEvent = document.createEvent('HTMLEvents');
+      changeEvent.initEvent('change', true, false);
+    }
+    selector.dispatchEvent(changeEvent);
+  }
+
+  function isBranchSelectorOpen() {
+    var dropdown = document.getElementById('branch-dropdown');
+    return !!(dropdown && dropdown.classList.contains('open'));
+  }
+
+  function focusBranchOption() {
+    var dropdown = document.getElementById('branch-dropdown');
+    if (!dropdown) return;
+    var selected = dropdown.querySelector('.branch-dropdown-item.is-selected');
+    var first = dropdown.querySelector('.branch-dropdown-item');
+    if (selected) {
+      selected.focus();
+    } else if (first) {
+      first.focus();
+    }
+  }
+
+  function toggleBranchSelector() {
+    var wrap = document.querySelector('.branch-wrap');
+    var button = document.getElementById('branch-btn');
+    var dropdown = document.getElementById('branch-dropdown');
+    if (!wrap || !button || !dropdown) return;
+    var isOpen = dropdown.classList.contains('open');
     if (isOpen) {
       closeBranchSelector();
       return;
     }
-    selector.classList.add('open');
-    selector.focus();
+    dropdown.classList.add('open');
+    wrap.classList.add('open');
+    button.setAttribute('aria-expanded', 'true');
+    focusBranchOption();
   }
 
   function closeBranchSelector() {
-    var selector = document.getElementById('branch-selector');
-    if (!selector) return;
-    selector.classList.remove('open');
+    var wrap = document.querySelector('.branch-wrap');
+    var button = document.getElementById('branch-btn');
+    var dropdown = document.getElementById('branch-dropdown');
+    if (dropdown) dropdown.classList.remove('open');
+    if (wrap) wrap.classList.remove('open');
+    if (button) button.setAttribute('aria-expanded', 'false');
   }
 
   function syncBranchLabel() {
@@ -1536,6 +1677,7 @@
     if (!selector || !label) return;
     var selected = selector.options[selector.selectedIndex];
     label.textContent = selected ? (selected.textContent || 'Tất cả chi nhánh') : 'Tất cả chi nhánh';
+    syncBranchDropdownSelection();
   }
 
   function initNotificationPanel() {
@@ -1739,12 +1881,20 @@
       if (data && data.user) {
         APP.user = data.user;
         localStorage.setItem('user', JSON.stringify(data.user));
-      } else if (!APP.user) {
-        APP.user = { id: 'demo', name: 'Admin', email: 'admin@tdental.vn', role: 'admin' };
+      } else {
+        APP.user = null;
+        localStorage.removeItem('user');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+          return false;
+        }
       }
     } catch (_e) {
-      if (!APP.user) {
-        APP.user = { id: 'demo', name: 'Admin', email: 'admin@tdental.vn', role: 'admin' };
+      APP.user = null;
+      localStorage.removeItem('user');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+        return false;
       }
     }
 
@@ -11501,6 +11651,10 @@
     if (!payload) return [];
     if (Array.isArray(payload)) return payload;
     if (payload.items && Array.isArray(payload.items)) return payload.items;
+    if (payload.data && Array.isArray(payload.data)) return payload.data;
+    if (payload.results && Array.isArray(payload.results)) return payload.results;
+    if (payload.rows && Array.isArray(payload.rows)) return payload.rows;
+    if (payload.records && Array.isArray(payload.records)) return payload.records;
     return [];
   }
 

@@ -756,30 +756,87 @@ ol {
   background: #F3F4F6;
 }
 
-/* Branch selector dropdown */
+/* Keep native select as hidden data source; custom list is the visible UI */
 #branch-selector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  clip-path: inset(100%);
+  pointer-events: none;
+}
+
+.branch-wrap.open .branch-btn {
+  border-color: #7AADEE;
+  box-shadow: 0 0 0 3px rgba(58, 141, 255, 0.16);
+}
+
+.branch-dropdown {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  min-width: 220px;
-  max-width: 280px;
-  height: 34px;
-  padding: 0 10px;
-  background: #fff;
-  border: 1px solid #D1D5DB;
-  border-radius: 6px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.14);
-  z-index: 220;
-  opacity: 0;
+  min-width: 260px;
+  max-width: 360px;
+  max-height: 280px;
+  padding: 6px;
+  background: #FFFFFF;
+  border: 1px solid #DDE5F0;
+  border-radius: 12px;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
+  overflow-y: auto;
+  z-index: 260;
   pointer-events: none;
-  transform: translateY(-4px);
-  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-#branch-selector.open {
-  opacity: 1;
+.branch-dropdown.open {
   pointer-events: auto;
-  transform: translateY(0);
+}
+
+.branch-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #334155;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.branch-dropdown-item:hover {
+  background: #EEF5FF;
+}
+
+.branch-dropdown-item:focus-visible {
+  outline: 2px solid #7AADEE;
+  outline-offset: 1px;
+}
+
+.branch-dropdown-item.is-selected {
+  background: #5798EA;
+  color: #FFFFFF;
+}
+
+.branch-dropdown-item-check {
+  width: 14px;
+  text-align: center;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.branch-dropdown-item:not(.is-selected) .branch-dropdown-item-check {
+  color: transparent;
+}
+
+.branch-dropdown-empty {
+  padding: 10px 12px;
+  color: #64748B;
+  font-size: 14px;
 }
 
 /* Notification Bell (dark theme) */
@@ -4754,6 +4811,13 @@ ol {
 
   .branch-btn span {
     display: none;
+  }
+
+  .branch-dropdown {
+    left: auto;
+    right: 0;
+    min-width: 220px;
+    max-width: min(320px, calc(100vw - 16px));
   }
 
   .topbar-user-name {

@@ -155,15 +155,19 @@
       });
 
       async function redirectIfAlreadyLoggedIn() {
-        var token = localStorage.getItem('token');
-        if (!token) {
-          return false;
-        }
-        var headers = {};
-        headers.Authorization = 'Bearer ' + token;
-
         try {
+          var headers = {};
+          var token = localStorage.getItem('token');
+          if (token) {
+            headers.Authorization = 'Bearer ' + token;
+          }
+
           var res = await fetch('/api/auth/session', { headers: headers });
+          if (res.status === 401 && token) {
+            // Retry with cookie session if token cache is stale.
+            localStorage.removeItem('token');
+            res = await fetch('/api/auth/session');
+          }
           if (!res.ok) {
             throw new Error('No active session');
           }
@@ -235,6 +239,8 @@
               throw new Error(data.detail || data.message || 'Đăng nhập thất bại.');
             }
 
+            // Reset token cache to avoid stale Authorization headers.
+            localStorage.removeItem('token');
             if (data.token) {
               localStorage.setItem('token', data.token);
             } else if (data.access_token) {

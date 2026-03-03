@@ -237,13 +237,14 @@
         </div>
         <div class="topbar-right">
           <div class="branch-wrap">
-            <button id="branch-btn" class="branch-btn" title="Chi nhánh">
+            <button id="branch-btn" class="branch-btn" title="Chi nhánh" aria-haspopup="listbox" aria-expanded="false" aria-controls="branch-dropdown">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
               <span id="branch-label">Tất cả chi nhánh</span>
             </button>
             <select id="branch-selector" title="Chi nhánh">
               <option value="">Tất cả chi nhánh</option>
             </select>
+            <div id="branch-dropdown" class="branch-dropdown" role="listbox" aria-label="Chi nhánh"></div>
           </div>
           <div class="notification-wrap">
             <button id="notification-bell" title="Thông báo">

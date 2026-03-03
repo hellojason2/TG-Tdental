@@ -41,8 +41,8 @@ def resolve_table(conn, *candidates: str) -> TableRef | None:
               AND lower(table_name) = ANY(%s)
             ORDER BY
               CASE table_schema
-                WHEN 'public' THEN 0
-                WHEN 'dbo' THEN 1
+                WHEN 'dbo' THEN 0
+                WHEN 'public' THEN 1
                 ELSE 2
               END,
               table_schema,
