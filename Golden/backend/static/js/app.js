@@ -2048,12 +2048,6 @@
   function dashboardLoadingMarkup(branchName) {
     return (
       '<div class="db-container">' +
-      '<div class="db-stat-cards">' +
-      '<div class="stat-card"><div class="stat-icon"></div><div class="stat-content"><div class="stat-value">...</div><div class="stat-label">Khách hàng</div></div></div>' +
-      '<div class="stat-card"><div class="stat-icon"></div><div class="stat-content"><div class="stat-value">...</div><div class="stat-label">Lịch hẹn</div></div></div>' +
-      '<div class="stat-card"><div class="stat-icon"></div><div class="stat-content"><div class="stat-value">...</div><div class="stat-label">Doanh thu</div></div></div>' +
-      '<div class="stat-card"><div class="stat-icon"></div><div class="stat-content"><div class="stat-value">...</div><div class="stat-label">Công việc</div></div></div>' +
-      '</div>' +
       '<div class="db-grid">' +
       '<div class="db-left"><div class="db-panel" style="padding:32px;text-align:center">' +
       '<div class="tds-loading"><div class="tds-spinner"></div><span>Đang tải dữ liệu cho ' + escapeHtml(branchName) + '...</span></div>' +
@@ -2253,18 +2247,10 @@
       limit: 200,
     }));
 
-    // Fetch customer count
-    var customersPromise = dashboardSafeApi('/api/customers' + toQueryString({
-      companyId: branchId || undefined,
-      limit: 1,
-      offset: 0,
-    }));
-
-    var result = await Promise.all([summaryPromise, receptionPromise, servicesPromise, customersPromise]);
+    var result = await Promise.all([summaryPromise, receptionPromise, servicesPromise]);
     var summary = result[0];
     var reception = result[1];
     var services = result[2];
-    var customersData = result[3];
 
     if (!summary) summary = await dashboardSummaryFallback(branchId, todayISO);
 
@@ -2285,17 +2271,10 @@
       svcItems = services;
     }
 
-    // Get customer count from response
-    var customerCount = 0;
-    if (customersData && customersData.totalItems !== undefined) {
-      customerCount = customersData.totalItems;
-    }
-
     return {
       branchId: branchId || '',
       branchName: branchName || 'Tất cả chi nhánh',
       fetchedAt: new Date(),
-      customerCount: customerCount,
       kpis: {
         cash: toNumber(summary.totalCash),
         bank: toNumber(summary.totalBank),
@@ -2366,47 +2345,10 @@
     var services = data.services || [];
     var kpis = data.kpis || {};
 
-    // Stat cards data
-    var customerCount = data.customerCount || totals.all || 0;
-    var appointmentCount = totals.all || 0;
-    var revenueAmount = kpis.total || 0;
-    var workCount = services.length || 0;
-
     return (
       '<div class="db-container">' +
-      /* ===== STAT CARDS ===== */
-      '<div class="db-stat-cards">' +
-      '<div class="stat-card">' +
-      '<div class="stat-icon">' + DB_SVG.user + '</div>' +
-      '<div class="stat-content">' +
-      '<div class="stat-value">' + formatNumber(customerCount) + '</div>' +
-      '<div class="stat-label">Khách hàng</div>' +
-      '</div>' +
-      '</div>' +
-      '<div class="stat-card">' +
-      '<div class="stat-icon">' + DB_SVG.calendar + '</div>' +
-      '<div class="stat-content">' +
-      '<div class="stat-value">' + formatNumber(appointmentCount) + '</div>' +
-      '<div class="stat-label">Lịch hẹn</div>' +
-      '</div>' +
-      '</div>' +
-      '<div class="stat-card">' +
-      '<div class="stat-icon">' + DB_SVG.money + '</div>' +
-      '<div class="stat-content">' +
-      '<div class="stat-value">' + formatCurrency(revenueAmount) + '</div>' +
-      '<div class="stat-label">Doanh thu</div>' +
-      '</div>' +
-      '</div>' +
-      '<div class="stat-card">' +
-      '<div class="stat-icon">' + DB_SVG.work + '</div>' +
-      '<div class="stat-content">' +
-      '<div class="stat-value">' + formatNumber(workCount) + '</div>' +
-      '<div class="stat-label">Công việc</div>' +
-      '</div>' +
-      '</div>' +
-      '</div>' +
 
-      /* ===== MAIN GRID ===== */
+      /* ===== MAIN GRID (no stat cards — matches original) ===== */
       '<div class="db-grid">' +
 
       /* ===== LEFT COLUMN ===== */

@@ -258,3 +258,26 @@ UI/UX Iteration U2.2: Branch switches refresh all branch-aware routes correctly.
 - Known issue: full_function audit hangs on pages with search inputs due to networkidle
   timeout competing with debounced search API calls. Pre-existing, not caused by U2.2 change.
 - Next: U3.1 — Fix dashboard parity across all locations.
+
+UI/UX Iteration U3.1: Dashboard parity across all locations.
+- Root cause: Replica had 4 stat cards (Khách hàng, Lịch hẹn, Doanh thu, Công việc) above
+  the main grid. Original dashboard has NO stat cards — goes directly to reception panel.
+- Fix:
+  - Removed stat card HTML from both loading markup and main dashboard render (app.js).
+  - Removed unused /api/customers call that only served the stat card customer count.
+  - Removed unused variables (customerCount, appointmentCount, revenueAmount, workCount).
+- Verified across multiple branches (Nha khoa Tấm Dentist, Tấm Dentist Thủ Đức):
+  - Dashboard now starts with "TIẾP NHẬN KHÁCH HÀNG" panel directly, matching original.
+  - All 4 panels (reception, services, appointments, revenue) render correctly.
+  - Branch switching works correctly for dashboard data.
+- Gate results:
+  - pytest: PASS (43/43)
+  - visual_parity: PASS (14/14, 0 REVIEW, 0 MISSING)
+  - branch_matrix: PASS (336/336)
+  - phase_3_4: REWORK (only 3.9 calendar_nested_popup — pre-existing GAP-CAL-01, scoped to U3.4)
+  - live_parity: PASS (all checks green)
+  - full_function: REWORK (only 3/134 calendar cells — pre-existing GAP-CAL-01, scoped to U3.4)
+- Evidence:
+  - files/evidence/U3.1/replica-dashboard-no-stat-cards.png
+  - files/evidence/U3.1/replica-dashboard-thu-duc.png
+- Next: U3.2 — Fix customers parity across all locations.
