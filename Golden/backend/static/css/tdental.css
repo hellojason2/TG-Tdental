@@ -12,8 +12,8 @@
   --tds-color-primary-light: #E8F0FE;
 
   /* Sidebar */
-  --tds-sidebar-bg: #0C1014;
-  --tds-sidebar-text: #656D7C;
+  --tds-sidebar-bg: #181C22;
+  --tds-sidebar-text: #788396;
   --tds-sidebar-active: #22262D;
   --tds-sidebar-hover: rgba(255, 255, 255, 0.06);
   --tds-sidebar-width: 56px;
@@ -195,6 +195,15 @@ ol {
   justify-content: center;
   flex-shrink: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background-image: url('/static/img/sidebar-logo-collapsed.png');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: 56px 56px;
+}
+
+.sidebar-logo > svg,
+.sidebar-logo > .logo-text {
+  display: none !important;
 }
 
 /* Sidebar Navigation */
@@ -233,7 +242,7 @@ ol {
 
 .sidebar-nav-item.active {
   background: var(--tds-sidebar-active);
-  color: #D1D5DB;
+  color: #F2F6FF;
   position: relative;
 }
 
@@ -267,6 +276,36 @@ ol {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+/* Use FA solid icons to better match original glyph style. */
+#sidebar .sidebar-nav-item .nav-icon svg {
+  display: none;
+}
+
+#sidebar .sidebar-nav-item .nav-icon::before {
+  content: "\f111";
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  font-size: 17px;
+  line-height: 1;
+  color: currentColor;
+}
+
+#sidebar .sidebar-nav-item[data-route="#/dashboard"] .nav-icon::before { content: "\f00a"; }
+#sidebar .sidebar-nav-item[data-route="#/partners"] .nav-icon::before { content: "\f0c0"; font-size: 17px; }
+#sidebar .sidebar-nav-item[data-route="#/work"] .nav-icon::before { content: "\f0b1"; }
+#sidebar .sidebar-nav-item[data-route="#/calendar"] .nav-icon::before { content: "\f073"; font-size: 16px; }
+#sidebar .sidebar-nav-item[data-route="#/labo"] .nav-icon::before { content: "\f5c9"; }
+#sidebar .sidebar-nav-item[data-route="#/purchase"] .nav-icon::before { content: "\f07a"; }
+#sidebar .sidebar-nav-item[data-route="#/warehouse"] .nav-icon::before { content: "\f015"; font-size: 17px; }
+#sidebar .sidebar-nav-item[data-route="#/salary"] .nav-icon::before { content: "\f0d6"; }
+#sidebar .sidebar-nav-item[data-route="#/cashbook"] .nav-icon::before { content: "\f02d"; font-size: 16px; }
+#sidebar .sidebar-nav-item[data-route="#/callcenter"] .nav-icon::before { content: "\f590"; font-size: 16px; }
+#sidebar .sidebar-nav-item[data-route="#/commission"] .nav-icon::before { content: "\f51e"; }
+#sidebar .sidebar-nav-item[data-route="#/reports"] .nav-icon::before { content: "\f080"; font-size: 16px; }
+#sidebar .sidebar-nav-item[data-route="#/categories"] .nav-icon::before { content: "\f03a"; font-size: 16px; }
+#sidebar .sidebar-nav-item[data-route="#/settings"] .nav-icon::before { content: "\f013"; }
+#sidebar #sidebar-help-btn .nav-icon::before { content: "\f059"; font-size: 17px; }
 
 /* Sidebar bottom (help icon) */
 .sidebar-bottom {
@@ -375,17 +414,16 @@ ol {
 
 #sidebar.expanded .sidebar-logo {
   justify-content: flex-start;
-  padding: 0 16px;
-  gap: 10px;
+  padding: 0;
+  gap: 0;
+  background-image: url('/static/img/sidebar-logo-expanded.png');
+  background-repeat: no-repeat;
+  background-position: left top;
+  background-size: 240px 56px;
 }
 
 #sidebar.expanded .logo-text {
-  display: inline;
-  color: #E2E8F0;
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  white-space: nowrap;
+  display: none !important;
 }
 
 /* Nav items: horizontal layout with label */

@@ -65,3 +65,26 @@ UI/UX Iteration U0.2: Prioritized defects by user-facing severity.
   - live_parity: REWORK (expected — dashboard shows appointment IDs not customer names, known defect D10 for U3.1)
 - Evidence: files/evidence/U0.2/prioritized_defects.json
 - Next: U1.1 — Fix sidebar/topbar shell pixel parity.
+
+UI/UX Iteration U1.1: Sidebar/topbar shell pixel parity (sizes, spacing, iconography, typography, colors).
+- Compared original screenshots + scraped INTERACTIONS.md icon class names against replica.
+- Fixed sidebar background color: #0C1014 → #181C22 (matches original #181C22).
+- Fixed 7 sidebar icon mappings to match original tdsi-* icon classes:
+  - Labo: flask (\f0c3) → tooth (\f5c9) [tdsi-tooth-fill]
+  - Kho: box-open (\f49e) → house (\f015) [tdsi-storehouse-fill]
+  - Lương: dollar-sign (\f155) → money-bill (\f0d6) [tdsi-cash-fill]
+  - Sổ quỹ: money-check-alt (\f555) → book (\f02d) [tdsi-accounting-fill]
+  - Tổng đài: phone (\f095) → headset (\f590) [tdsi-support-fill]
+  - Hoa hồng: star (\f005) → money-check (\f51e) [tdsi-cash-payment-fill]
+  - Danh mục: folder (\f07b) → list (\f03a) [tdsi-list-view-fill]
+- Verified all 15 sidebar icons render at 20x20px using FA6 Free 6.5.2.
+- Confirmed sidebar ordering matches original (14 items + help at bottom).
+- Topbar structure, typography, and spacing already at parity (visual audit scores 6-9% under 12% threshold).
+- Gate results:
+  - branch_matrix: PASS (336/336)
+  - phase_3_4_modules: PASS
+  - visual_parity: PASS (14/14, 0 REVIEW, 0 MISSING)
+  - pytest: PASS (41/41)
+  - live_parity: REWORK (pre-existing D10 — dashboard IDs not names, scoped to U3.1)
+- Evidence: files/evidence/U1.1/replica-after-icons-fix.png, files/evidence/U1.1/replica-expanded-sidebar.png
+- Next: U1.2 — Fix sidebar collapsed/expanded/mobile interaction parity.
