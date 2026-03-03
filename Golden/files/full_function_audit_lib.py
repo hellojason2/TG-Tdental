@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -72,17 +73,22 @@ async def login(context: BrowserContext, base_url: str, email: str, password: st
 
 async def wait_settle(page: Page, settle_ms: int) -> None:
     try:
-        await page.wait_for_load_state("networkidle", timeout=4500)
+        await page.wait_for_load_state("domcontentloaded", timeout=1200)
     except Exception:
         pass
-    await page.wait_for_timeout(settle_ms)
+    await page.wait_for_timeout(max(120, min(settle_ms, 450)))
 
 
 async def read_branch_options(page: Page) -> list[BranchOption]:
-    payload = await page.evaluate(
-        "() => Array.from(document.querySelectorAll('#branch-selector option')).map((o) => ({value:o.value||'',label:(o.textContent||'').trim()}))"
-    )
-    return [BranchOption(value=str(p.get("value", "")), label=str(p.get("label", ""))) for p in payload if p.get("value")]
+    for _ in range(24):
+        payload = await page.evaluate(
+            "() => Array.from(document.querySelectorAll('#branch-selector option')).map((o) => ({value:o.value||'',label:(o.textContent||'').trim()}))"
+        )
+        options = [BranchOption(value=str(p.get("value", "")), label=str(p.get("label", ""))) for p in payload if p.get("value")]
+        if options:
+            return options
+        await page.wait_for_timeout(250)
+    return []
 
 
 async def set_branch(page: Page, branch_value: str, settle_ms: int) -> bool:
@@ -162,11 +168,13 @@ async def run_search_inputs(page: Page, settle_ms: int, max_inputs: int) -> list
         loc = page.locator(f'[data-audit-search-id="{item["id"]}"]').first
         try:
             await close_transient(page)
-            await loc.fill("audit")
+            if not await loc.is_visible():
+                continue
+            await loc.fill("audit", timeout=900)
             await page.keyboard.press("Enter")
             await wait_settle(page, settle_ms)
             if await loc.is_visible():
-                await loc.fill("")
+                await loc.fill("", timeout=700)
                 await wait_settle(page, 120)
             results.append({"ok": True, "placeholder": item.get("placeholder", "")})
         except Exception as exc:
@@ -179,7 +187,8 @@ async def close_transient(page: Page) -> None:
         loc = page.locator(sel)
         if await loc.count() > 0:
             try:
-                await loc.first.click()
+                if await loc.first.is_visible():
+                    await loc.first.click(timeout=400, no_wait_after=True)
                 await page.wait_for_timeout(120)
             except Exception:
                 pass
@@ -199,7 +208,7 @@ async def run_tab_population_check(page: Page, settle_ms: int) -> list[dict]:
                 continue
             label = (" ".join((await tab.inner_text()).split())).strip()
             try:
-                await tab.click()
+                await tab.click(timeout=1200, no_wait_after=True)
                 await wait_settle(page, settle_ms)
                 sig = await tab.evaluate(
                     """
@@ -245,21 +254,31 @@ async def run_full_audit(args) -> dict:
             branches = branches[: args.branch_limit]
         if not branches:
             raise RuntimeError("No branch options found in #branch-selector")
+        total_cells = sum(len(branches) if route.branch_aware else 1 for route in routes)
+        cell_index = 0
+        session_refresh_every = 18
         for route_entry in routes:
             for branch in (branches if route_entry.branch_aware else branches[:1]):
+                cell_index += 1
+                if cell_index == 1 or cell_index % session_refresh_every == 0:
+                    await login(context, args.base_url, args.email, args.password)
                 req_start, err_start = len(requests), len(page_errors)
                 route = route_entry.route
                 cell = {"route": route, "branch": branch.label, "branchValue": branch.value, "branchAware": route_entry.branch_aware, "ok": True, "actions": []}
+                print(f"[full-audit] {cell_index}/{total_cells} route={route} branch={branch.label}", flush=True)
+                t_nav_start = time.monotonic()
                 await page.goto(f"{args.base_url}/static/tdental.html{materialize_route(route)}", wait_until="domcontentloaded")
                 await wait_settle(page, args.settle_ms)
                 if route_entry.branch_aware and not await set_branch(page, branch.value, args.settle_ms):
                     cell["ok"] = False
                     cell["actions"].append({"type": "branch", "ok": False, "reason": "branch option not selectable"})
                 req_start = len(requests)
+                print(f"  [step] nav+branch {time.monotonic() - t_nav_start:.2f}s", flush=True)
                 if not page.url.split("#", 1)[-1].startswith(expected_hash(route).lstrip("#")):
                     cell["ok"] = False
                     cell["actions"].append({"type": "navigation", "ok": False, "reason": f"hash mismatch: {page.url}"})
 
+                t_actions_start = time.monotonic()
                 for idx in range(args.max_actions_per_page):
                     actions = await discover_actions(page, args.max_actions_per_page + 6)
                     if idx >= len(actions):
@@ -267,21 +286,26 @@ async def run_full_audit(args) -> dict:
                     action = actions[idx]
                     try:
                         await close_transient(page)
-                        await page.locator(f'[data-audit-action-id="{action["id"]}"]').first.click(timeout=3000)
+                        await page.locator(f'[data-audit-action-id="{action["id"]}"]').first.click(timeout=1200, no_wait_after=True)
                         await wait_settle(page, args.settle_ms // 2)
                         await close_transient(page)
                         cell["actions"].append({"type": "control", "label": action["label"], "ok": True})
                     except Exception as exc:
                         cell["ok"] = False
                         cell["actions"].append({"type": "control", "label": action["label"], "ok": False, "reason": str(exc)})
+                print(f"  [step] controls {time.monotonic() - t_actions_start:.2f}s", flush=True)
+                t_search_start = time.monotonic()
                 for item in await run_search_inputs(page, args.settle_ms // 2, args.max_search_inputs):
                     if not item.get("ok"):
                         cell["ok"] = False
                     cell["actions"].append({"type": "search", "ok": bool(item.get("ok")), "placeholder": item.get("placeholder", ""), "reason": item.get("error", "")})
+                print(f"  [step] search {time.monotonic() - t_search_start:.2f}s", flush=True)
+                t_tabs_start = time.monotonic()
                 for tab_check in await run_tab_population_check(page, args.settle_ms // 2):
                     if tab_check.get("suspicious"):
                         cell["ok"] = False
                         cell["actions"].append({"type": "tab_population", "ok": False, "reason": "tab switched but content signatures did not change", "rows": tab_check["rows"]})
+                print(f"  [step] tabs {time.monotonic() - t_tabs_start:.2f}s", flush=True)
                 relevant = [r for r in requests[req_start:] if is_relevant_api_request(r.url)]
                 if route_entry.branch_aware and relevant:
                     bad = [{"url": r.url, "ids": ids} for r in relevant if (ids := extract_company_ids(r)) and branch.value not in ids]
@@ -292,8 +316,13 @@ async def run_full_audit(args) -> dict:
                     cell["ok"] = False
                     cell["actions"].append({"type": "console_error", "ok": False, "reason": page_errors[err_start:err_start + 3]})
                 shot = evidence_dir / f"{route.replace('#/', '').replace('/', '_').replace(':id', 'id')}--{branch.value[:8]}.png"
-                await page.screenshot(path=str(shot), full_page=False)
-                cell["screenshot"] = str(shot)
+                try:
+                    await page.screenshot(path=str(shot), full_page=False, timeout=8000)
+                    cell["screenshot"] = str(shot)
+                except Exception as exc:
+                    cell["ok"] = False
+                    cell["actions"].append({"type": "screenshot", "ok": False, "reason": str(exc)})
+                    cell["screenshot"] = ""
                 if not cell["ok"]:
                     failures.append({"route": route, "branch": branch.label, "details": cell["actions"][-6:], "screenshot": str(shot)})
                 cells.append(cell)

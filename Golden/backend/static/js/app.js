@@ -4909,7 +4909,7 @@
   }
 
   function getCalendarViewState() {
-    if (!APP.calendar) {
+    if (!APP.calendar || typeof APP.calendar !== 'object') {
       APP.calendar = {
         date: TODAY_ISO,
         companyId: getSelectedBranchId(),
@@ -4928,9 +4928,26 @@
         },
       };
     }
+    // Backfill missing keys for sessions that boot with a partial APP.calendar object.
     if (typeof APP.calendar.date !== 'string' || APP.calendar.date.length < 10) {
       APP.calendar.date = formatDateInput(APP.calendar.date || new Date());
     }
+    if (typeof APP.calendar.companyId === 'undefined') {
+      APP.calendar.companyId = getSelectedBranchId();
+    }
+    if (!APP.calendar.view) APP.calendar.view = 'day';
+    if (!APP.calendar.segment) APP.calendar.segment = 'all';
+    if (!APP.calendar.dayData) APP.calendar.dayData = null;
+    if (!APP.calendar.weekData) APP.calendar.weekData = null;
+    if (!APP.calendar.monthData) APP.calendar.monthData = null;
+    if (!APP.calendar.itemMap || typeof APP.calendar.itemMap !== 'object') APP.calendar.itemMap = {};
+    if (typeof APP.calendar.searchQuery !== 'string') APP.calendar.searchQuery = '';
+    if (!APP.calendar.filters || typeof APP.calendar.filters !== 'object') {
+      APP.calendar.filters = {};
+    }
+    if (!('doctor' in APP.calendar.filters)) APP.calendar.filters.doctor = null;
+    if (!('time' in APP.calendar.filters)) APP.calendar.filters.time = null;
+    if (!('service' in APP.calendar.filters)) APP.calendar.filters.service = null;
     if (typeof APP.calendar.requestSeq !== 'number' || !isFinite(APP.calendar.requestSeq)) {
       APP.calendar.requestSeq =
         typeof APP.calendar.requestId === 'number' && isFinite(APP.calendar.requestId)

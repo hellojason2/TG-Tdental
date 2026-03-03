@@ -15,15 +15,15 @@ This loop closes visual and behavioral parity gaps so the replica renders and be
 - [x] U2.2 Ensure branch switches refresh all branch-aware routes correctly for all locations.
 - [x] U3.1 Fix dashboard parity across all locations.
 - [x] U3.2 Fix customers parity across all locations.
-- [ ] U3.3 Fix work/tasks parity across all locations.
-- [ ] U3.4 Fix calendar parity across all locations.
-- [ ] U3.5 Fix reports + cashbook parity across all locations.
-- [ ] U4.1 Fix parity for secondary modules (labo, purchase, warehouse, salary family, payments, callcenter, commission, catalog, settings).
-- [ ] U5.1 Validate all state variants: default/hover/focus/active/disabled/loading/empty/error.
-- [ ] U5.2 Validate page + nested scroll behavior parity and sticky regions.
-- [ ] U5.3 Validate nested popup chains for create/edit/delete flows.
-- [ ] U6.1 Run final branch matrix + module audits + visual audit and close all REWORK.
-- [ ] U6.2 Produce final UI/UX PASS evidence package.
+- [x] U3.3 Fix work/tasks parity across all locations.
+- [x] U3.4 Fix calendar parity across all locations.
+- [x] U3.5 Fix reports + cashbook parity across all locations.
+- [x] U4.1 Fix parity for secondary modules (labo, purchase, warehouse, salary family, payments, callcenter, commission, catalog, settings).
+- [x] U5.1 Validate all state variants: default/hover/focus/active/disabled/loading/empty/error.
+- [x] U5.2 Validate page + nested scroll behavior parity and sticky regions.
+- [x] U5.3 Validate nested popup chains for create/edit/delete flows.
+- [x] U6.1 Run final branch matrix + module audits + visual audit and close all REWORK.
+- [x] U6.2 Produce final UI/UX PASS evidence package.
 
 ## Required Commands
 - `cd files && python3 audit_full_function_matrix.py --base-url http://127.0.0.1:8899 --output evidence/full-function/report.json --max-actions-per-page 12 --max-search-inputs 3`

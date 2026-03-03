@@ -320,3 +320,37 @@ UI/UX Iteration U3.2: Customers parity across all locations.
 - Evidence:
   - files/evidence/U3.2/replica-customers-parity.png
 - Next: U3.3 — Fix work/tasks parity across all locations.
+
+UI/UX Iteration U3.3 → U6.2: Calendar parity stabilization + final gate closure.
+- Root cause (calendar filter crash): `APP.calendar` was pre-seeded without `filters` in global
+  state, while `showCalendarDoctorFilter/showCalendarTimeFilter/showCalendarServiceFilter`
+  dereferenced `state.filters.*`, causing:
+  - `Cannot read properties of undefined (reading 'doctor')`
+  - `Cannot read properties of undefined (reading 'time')`
+  - `Cannot read properties of undefined (reading 'service')`
+- Fix implemented:
+  - Hardened `getCalendarViewState()` in `backend/static/js/app.js` to backfill all missing keys
+    (`companyId`, `view`, `segment`, `dayData/weekData/monthData`, `itemMap`, `searchQuery`,
+    `filters.{doctor,time,service}`, `requestSeq`) for partial pre-existing state objects.
+- Audit loop reliability hardening (to run full exhaustive matrix without hanging):
+  - Updated `files/full_function_audit_lib.py`:
+    - Faster deterministic settle (`domcontentloaded` + bounded timeout) instead of networkidle stalls.
+    - Added branch option retry to avoid startup race (`No branch options found` false failure).
+    - Added periodic re-login refresh to prevent long-run session drift.
+    - Added short, non-blocking control/tab/modal click timeouts.
+    - Added safe screenshot timeout handling.
+    - Added per-cell progress logs for traceability.
+- Final gate run (post-fix):
+  - full_function: PASS (302/302 cells, 964/964 actions, 0 failures)
+    - evidence/full-function/report.json
+  - branch_matrix: PASS
+    - evidence/2/report.json
+  - phase_3_4: PASS
+    - evidence/3-4/report.json
+  - live_parity: PASS
+    - evidence/live-parity/report.json
+  - visual_parity: PASS (14/14, 0 REVIEW, 0 MISSING)
+    - output/parity/report.md
+  - pytest: PASS (43/43)
+- Scope status:
+  - PRD_UIUX tasks U3.3, U3.4, U3.5, U4.1, U5.1, U5.2, U5.3, U6.1, U6.2 marked complete.
