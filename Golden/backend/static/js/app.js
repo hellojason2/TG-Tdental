@@ -1612,7 +1612,10 @@
       // Branch filter is optional.
     }
 
-    if (savedBranch) {
+    if (savedBranch === '__all__') {
+      // User explicitly selected "Tất cả chi nhánh"
+      selector.value = '';
+    } else if (savedBranch) {
       var exists = selector.querySelector('option[value="' + cssEscape(savedBranch) + '"]');
       selector.value = exists ? savedBranch : '';
       if (!exists) localStorage.removeItem('selected_branch');
@@ -1631,7 +1634,7 @@
         if (this.value) {
           localStorage.setItem('selected_branch', this.value);
         } else {
-          localStorage.removeItem('selected_branch');
+          localStorage.setItem('selected_branch', '__all__');
         }
         syncBranchLabel();
         closeBranchSelector();
@@ -9627,8 +9630,11 @@
 
     var st = APP.catProducts;
     var currentCompanyId = getSelectedBranchId() || '';
-    if (st.loaded && st.companyId !== currentCompanyId) {
+    if (st.companyId !== currentCompanyId) {
+      st.companyId = currentCompanyId;
       st.loaded = false;
+      st.loading = false;
+      st.requestId += 1;
     }
     if (st.loading) {
       el.innerHTML = '<div class="tds-card categories-shell">' + renderLoadingState('Đang tải thông tin sản phẩm...') + '</div>';
@@ -11860,7 +11866,8 @@
   function getSelectedBranchId() {
     var selector = document.getElementById('branch-selector');
     if (selector && selector.value) return selector.value;
-    return localStorage.getItem('selected_branch') || '';
+    var stored = localStorage.getItem('selected_branch') || '';
+    return stored === '__all__' ? '' : stored;
   }
 
   function getSelectedBranchName() {
