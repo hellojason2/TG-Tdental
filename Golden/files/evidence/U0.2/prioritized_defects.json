@@ -1,0 +1,125 @@
+{
+  "task": "U0.2",
+  "description": "Prioritized defect list by user-facing severity",
+  "timestamp": "2026-03-03",
+  "status": "CAPTURED",
+  "severity_categories": {
+    "P0_layout_break": "Structural differences that change visible layout or content composition",
+    "P1_wrong_data_widget": "Correct layout but wrong data fields, columns, or widget content",
+    "P2_wrong_behavior": "Correct appearance but incorrect interaction or state behavior",
+    "P3_minor_token_drift": "Small visual differences in spacing, colors, icons, or text that don't affect usability"
+  },
+  "prioritized_defects": [
+    {
+      "id": "D10",
+      "severity": "P1_wrong_data_widget",
+      "area": "Dashboard reception list shows IDs not names",
+      "description": "Dashboard TIEP NHAN KHACH HANG shows appointment IDs (AP215851) instead of customer names (Luu Thi Thu). Original shows customer names. Live parity text_overlap=0.0, replica_id_ratio=1.0.",
+      "impact": "User sees meaningless IDs instead of patient names on dashboard",
+      "fix_task": "U3.1",
+      "effort": "medium"
+    },
+    {
+      "id": "D03",
+      "severity": "P0_layout_break",
+      "area": "Dashboard stat cards",
+      "description": "Replica has 4 stat cards above main content. Original goes directly to TIEP NHAN KHACH HANG.",
+      "impact": "Extra UI element not in original changes page layout structure",
+      "fix_task": "U3.1",
+      "effort": "low"
+    },
+    {
+      "id": "D01",
+      "severity": "P1_wrong_data_widget",
+      "area": "Customers table columns",
+      "description": "Table shows STT/INFO/DOB/PHONE/EMAIL/CREATED/ACTIONS. Original shows Name/DOB/LastAppt/NextAppt/LastTreatment/TreatmentStatus.",
+      "impact": "User sees completely different data fields",
+      "fix_task": "U3.2",
+      "effort": "medium"
+    },
+    {
+      "id": "D04",
+      "severity": "P1_wrong_data_widget",
+      "area": "Customers tab labels",
+      "description": "Tabs include counts (Tat ca 200). Original has no counts in tabs.",
+      "impact": "Different tab naming convention and display style",
+      "fix_task": "U3.2",
+      "effort": "low"
+    },
+    {
+      "id": "D02",
+      "severity": "P2_wrong_behavior",
+      "area": "Customers table sorting",
+      "description": "Default sort is alphabetical. Original sorts by most recent appointment.",
+      "impact": "User sees different customer ordering",
+      "fix_task": "U3.2",
+      "effort": "low"
+    },
+    {
+      "id": "D05",
+      "severity": "P2_wrong_behavior",
+      "area": "Branch selector default",
+      "description": "Defaults to Tat ca chi nhanh. Original defaults to specific branch.",
+      "impact": "User starts with different data scope",
+      "fix_task": "U2.1",
+      "effort": "low"
+    },
+    {
+      "id": "D09",
+      "severity": "P2_wrong_behavior",
+      "area": "Audit selector mismatch (gate blocker)",
+      "description": "audit_phase3_4.py checks wrong selector for customer detail. FIXED in U0.2.",
+      "impact": "Blocked phase 3.4 gate. Now resolved.",
+      "fix_task": "U0.2",
+      "effort": "done"
+    },
+    {
+      "id": "D07",
+      "severity": "P3_minor_token_drift",
+      "area": "Customer avatar initials",
+      "description": "Two-letter initials vs single initial in original.",
+      "impact": "Minor visual style difference",
+      "fix_task": "U3.2",
+      "effort": "low"
+    },
+    {
+      "id": "D08",
+      "severity": "P3_minor_token_drift",
+      "area": "Sidebar icon ordering",
+      "description": "Minor sub-item ordering differences after Kho.",
+      "impact": "Very minor navigation difference",
+      "fix_task": "U1.1",
+      "effort": "low"
+    },
+    {
+      "id": "D06",
+      "severity": "P3_minor_token_drift",
+      "area": "Topbar user display",
+      "description": "Shows Admin with letter avatar. Data-dependent, not a code bug.",
+      "impact": "Different user account data",
+      "fix_task": "N/A",
+      "effort": "none"
+    }
+  ],
+  "fix_order": [
+    "D10 (P1 dashboard IDs not names) -> U3.1",
+    "D03 (P0 dashboard layout) -> U3.1",
+    "D01 (P1 customers columns) -> U3.2",
+    "D04 (P1 customers tab labels) -> U3.2",
+    "D02 (P2 customers sort) -> U3.2",
+    "D05 (P2 branch selector default) -> U2.1",
+    "D07 (P3 avatar style) -> U3.2",
+    "D08 (P3 sidebar ordering) -> U1.1",
+    "D06 (P3 user display) -> data-dependent, skip"
+  ],
+  "summary": {
+    "total_defects": 10,
+    "P0_layout_break": 1,
+    "P1_wrong_data_widget": 3,
+    "P2_wrong_behavior": 3,
+    "P3_minor_token_drift": 3,
+    "already_fixed": 1,
+    "data_dependent_skip": 1,
+    "actionable_remaining": 8
+  }
+}

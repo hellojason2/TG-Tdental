@@ -48,3 +48,20 @@ UI/UX Iteration U0.1: Baseline visual + interaction mismatch report captured.
   - audit_phase3_4.py checks wrong selector for customer detail page (.customer-detail-page vs .cdetail-page)
 - Evidence: files/evidence/U0.1/baseline_mismatch_report.json
 - Next: U0.2 — Prioritize defects by user-facing severity.
+
+UI/UX Iteration U0.2: Prioritized defects by user-facing severity.
+- Fixed audit_phase3_4.py selector: changed '.customer-detail-page' to '.cdetail-page' to match actual DOM.
+- Categorized all defects into 4 severity tiers:
+  - P0 layout break: 1 (dashboard stat cards not in original)
+  - P1 wrong data widget: 3 (dashboard IDs not names, customers wrong columns, customers tab counts)
+  - P2 wrong behavior: 3 (customers sort order, branch selector default, audit selector — fixed)
+  - P3 minor token drift: 3 (avatar initials, sidebar ordering, user display — data-dependent)
+- Total: 10 defects, 8 actionable, 1 fixed (audit selector), 1 data-dependent skip.
+- Gate results:
+  - branch_matrix: PASS (336/336)
+  - phase_3_4_modules: PASS (selector fix unblocked 3.2)
+  - visual_parity: PASS (14/14, 0 REVIEW, 0 MISSING)
+  - pytest: PASS (41/41)
+  - live_parity: REWORK (expected — dashboard shows appointment IDs not customer names, known defect D10 for U3.1)
+- Evidence: files/evidence/U0.2/prioritized_defects.json
+- Next: U1.1 — Fix sidebar/topbar shell pixel parity.

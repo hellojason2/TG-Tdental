@@ -5,7 +5,7 @@ This loop closes visual and behavioral parity gaps so the replica renders and be
 
 ## Tasks
 - [x] U0.1 Capture baseline visual + interaction mismatch report for shell + high-impact pages.
-- [ ] U0.2 Prioritize defects by user-facing severity (layout break, wrong data widget, wrong behavior, minor token drift).
+- [x] U0.2 Prioritize defects by user-facing severity (layout break, wrong data widget, wrong behavior, minor token drift).
 - [ ] U1.1 Fix sidebar/topbar shell pixel parity (sizes, spacing, iconography, typography, colors).
 - [ ] U1.2 Fix sidebar collapsed/expanded/mobile interaction parity (hover, tooltip, focus, overlay close behavior).
 - [ ] U1.3 Fix global search UX parity (Ctrl+K, F2, focus transfer, enter navigation, close behavior).
@@ -26,6 +26,7 @@ This loop closes visual and behavioral parity gaps so the replica renders and be
 ## Required Commands
 - `cd files && python3 audit_branch_matrix.py --base-url http://127.0.0.1:8899 --output evidence/2/report.json --write-task-evidence`
 - `cd files && python3 audit_phase3_4.py --base-url http://127.0.0.1:8899 --output evidence/3-4/report.json --write-task-evidence`
+- `cd files && python3 audit_live_playwright_parity.py --output evidence/live-parity/report.json`
 - `cd backend && python3 tests/visual_parity_audit.py --base-url http://127.0.0.1:8899`
 - `cd backend && python3 -m pytest tests -q`
 
