@@ -978,6 +978,9 @@
     if (overlay) {
       overlay.classList.remove('visible');
     }
+    // Return focus cleanly — blur the search input
+    var gsInput = document.getElementById('global-search-input');
+    if (gsInput) gsInput.blur();
   }
 
   function getGlobalSearchItemCount() {
@@ -1495,14 +1498,6 @@
         document._boundBranchEsc = true;
       }
     }
-
-    // F2 shortcut for search focus
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'F2') {
-        e.preventDefault();
-        openGlobalSearch();
-      }
-    });
 
     // Wire topbar search input to open global search overlay
     var topbarSearchInput = document.getElementById('topbar-search-input');

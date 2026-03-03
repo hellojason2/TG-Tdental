@@ -8,7 +8,7 @@ This loop closes visual and behavioral parity gaps so the replica renders and be
 - [x] U0.2 Prioritize defects by user-facing severity (layout break, wrong data widget, wrong behavior, minor token drift).
 - [x] U1.1 Fix sidebar/topbar shell pixel parity (sizes, spacing, iconography, typography, colors).
 - [x] U1.2 Fix sidebar collapsed/expanded/mobile interaction parity (hover, tooltip, focus, overlay close behavior).
-- [ ] U1.3 Fix global search UX parity (Ctrl+K, F2, focus transfer, enter navigation, close behavior).
+- [x] U1.3 Fix global search UX parity (Ctrl+K, F2, focus transfer, enter navigation, close behavior).
 - [ ] U2.1 Ensure branch selector parity (label, dropdown states, persistence, keyboard).
 - [ ] U2.2 Ensure branch switches refresh all branch-aware routes correctly for all locations.
 - [ ] U3.1 Fix dashboard parity across all locations.

@@ -81,6 +81,9 @@ UI/UX Iteration U0.3: Removed AP-code patient labels from appointment-driven scr
   - Added regression tests in `backend/tests/test_appointments_sql.py` for:
     - AP-code to partner-name fallback path.
     - no-partner-table fallback path.
+  - `python3 files/audit_branch_matrix.py ...` => PASS (`files/evidence/2/report.json`).
+  - `python3 files/audit_phase3_4.py ...` => PASS (`files/evidence/3-4/report.json`).
+  - `cd backend && python3 tests/visual_parity_audit.py --base-url http://127.0.0.1:8899` => PASS (14 routes, 0 review).
   - Re-ran live parity gate:
     - `id_style`: fixed (`original_id_ratio: 0.0`, `replica_id_ratio: 0.0`)
     - `text_overlap`: still REWORK (`0.04`) due remaining source-data/content mismatch vs live original.
@@ -127,3 +130,24 @@ UI/UX Iteration U1.2: Sidebar collapsed/expanded/mobile interaction parity (hove
   - pytest: PASS (43/43)
   - live_parity: REWORK (pre-existing D10 — dashboard customer data mismatch, scoped to U3.1)
 - Next: U1.3 — Fix global search UX parity.
+
+UI/UX Iteration U1.3: Global search UX parity (Ctrl+K, F2, focus transfer, enter navigation, close behavior).
+- Verified existing global search implementation against original INTERACTIONS.md:
+  - Ctrl+K opens overlay and focuses input ✓
+  - F2 opens overlay ✓
+  - Escape closes overlay ✓
+  - Arrow keys navigate results, Enter navigates to selected ✓
+  - Topbar search input handoff to global search modal ✓
+  - Click on backdrop closes overlay ✓
+  - Click on result navigates ✓
+- Cleanup: removed duplicate F2 keydown listener in initTopbar (authoritative one is in initGlobalSearch).
+- Added input blur on closeGlobalSearch for clean focus return.
+- Ran dedicated audit: audit_global_search.py → PASS (5/5 checks).
+- Gate results:
+  - branch_matrix: PASS (336/336)
+  - phase_3_4_modules: PASS
+  - visual_parity: PASS (14/14, 0 REVIEW, 0 MISSING)
+  - pytest: PASS (43/43)
+  - global_search: PASS (5/5)
+  - live_parity: REWORK (pre-existing D10 — dashboard customer data mismatch, scoped to U3.1)
+- Next: U2.1 — Ensure branch selector parity.
