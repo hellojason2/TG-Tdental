@@ -6,10 +6,12 @@ This loop closes visual and behavioral parity gaps so the replica renders and be
 ## Tasks
 - [x] U0.1 Capture baseline visual + interaction mismatch report for shell + high-impact pages.
 - [x] U0.2 Prioritize defects by user-facing severity (layout break, wrong data widget, wrong behavior, minor token drift).
+- [x] U0.3 Add exhaustive function audit harness for all routes, all branches, all discoverable filter controls, tab groups, search inputs, and popup open/close safety checks.
+- [ ] U0.4 Run exhaustive full-function baseline and register all REWORK gaps before remediation work.
 - [x] U1.1 Fix sidebar/topbar shell pixel parity (sizes, spacing, iconography, typography, colors).
 - [x] U1.2 Fix sidebar collapsed/expanded/mobile interaction parity (hover, tooltip, focus, overlay close behavior).
 - [x] U1.3 Fix global search UX parity (Ctrl+K, F2, focus transfer, enter navigation, close behavior).
-- [ ] U2.1 Ensure branch selector parity (label, dropdown states, persistence, keyboard).
+- [x] U2.1 Ensure branch selector parity (label, dropdown states, persistence, keyboard).
 - [ ] U2.2 Ensure branch switches refresh all branch-aware routes correctly for all locations.
 - [ ] U3.1 Fix dashboard parity across all locations.
 - [ ] U3.2 Fix customers parity across all locations.
@@ -24,6 +26,7 @@ This loop closes visual and behavioral parity gaps so the replica renders and be
 - [ ] U6.2 Produce final UI/UX PASS evidence package.
 
 ## Required Commands
+- `cd files && python3 audit_full_function_matrix.py --base-url http://127.0.0.1:8899 --output evidence/full-function/report.json`
 - `cd files && python3 audit_branch_matrix.py --base-url http://127.0.0.1:8899 --output evidence/2/report.json --write-task-evidence`
 - `cd files && python3 audit_phase3_4.py --base-url http://127.0.0.1:8899 --output evidence/3-4/report.json --write-task-evidence`
 - `cd files && python3 audit_live_playwright_parity.py --output evidence/live-parity/report.json`
@@ -32,8 +35,9 @@ This loop closes visual and behavioral parity gaps so the replica renders and be
 
 ## Definition of Done
 1. Branch matrix passes all required cells.
-2. Module/state/scroll/modal checks pass for core and secondary routes.
-3. Visual parity audit has no unresolved review mismatches.
-4. No UI regression in backend/frontend tests relevant to touched flows.
+2. Exhaustive full-function matrix audit is PASS for all scoped routes and branch cells.
+3. Module/state/scroll/modal checks pass for core and secondary routes.
+4. Visual parity audit has no unresolved review mismatches.
+5. No UI regression in backend/frontend tests relevant to touched flows.
 
 Output `<promise>COMPLETE</promise>` when ALL verified.

@@ -151,3 +151,27 @@ UI/UX Iteration U1.3: Global search UX parity (Ctrl+K, F2, focus transfer, enter
   - global_search: PASS (5/5)
   - live_parity: REWORK (pre-existing D10 — dashboard customer data mismatch, scoped to U3.1)
 - Next: U2.1 — Ensure branch selector parity.
+
+UI/UX Iteration U2.1: Branch selector parity (label, dropdown states, persistence, keyboard).
+- Fixed default selection: when no saved branch in localStorage, now defaults to first specific branch
+  (original behavior) instead of "Tất cả chi nhánh".
+- Auto-persists the default selection to localStorage so it survives page reload.
+- Added full keyboard navigation within open dropdown:
+  - ArrowDown/ArrowUp: cycle through branch items
+  - Enter/Space: select focused item
+  - Home/End: jump to first/last item
+  - Escape: close dropdown and return focus to trigger button
+- Verified existing features still work:
+  - Click to open/close ✓
+  - Outside click closes ✓
+  - Selection persists across page reloads via localStorage ✓
+  - Branch label updates on selection ✓
+  - Checkmark indicator on selected item ✓
+  - ARIA attributes (aria-expanded, aria-selected, role=option) ✓
+- Gate results:
+  - branch_matrix: PASS (336/336)
+  - phase_3_4_modules: PASS
+  - visual_parity: PASS (14/14, 0 REVIEW, 0 MISSING)
+  - pytest: PASS (43/43)
+  - live_parity: REWORK (pre-existing D10 — dashboard customer data mismatch, scoped to U3.1)
+- Next: U2.2 — Ensure branch switches refresh all branch-aware routes correctly.

@@ -1484,6 +1484,41 @@
         branchBtn._boundBranchKeyboard = true;
       }
 
+      // Arrow key navigation within open dropdown
+      if (!branchDropdown._boundBranchKeyboard) {
+        branchDropdown.addEventListener('keydown', function (e) {
+          var items = Array.prototype.slice.call(branchDropdown.querySelectorAll('.branch-dropdown-item'));
+          if (!items.length) return;
+          var current = document.activeElement;
+          var idx = items.indexOf(current);
+
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            var next = idx < items.length - 1 ? idx + 1 : 0;
+            items[next].focus();
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            var prev = idx > 0 ? idx - 1 : items.length - 1;
+            items[prev].focus();
+          } else if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (idx >= 0) {
+              selectBranchValue(items[idx].getAttribute('data-branch-value') || '');
+            }
+          } else if (e.key === 'Home') {
+            e.preventDefault();
+            items[0].focus();
+          } else if (e.key === 'End') {
+            e.preventDefault();
+            items[items.length - 1].focus();
+          } else if (e.key === 'Escape') {
+            closeBranchSelector();
+            branchBtn.focus();
+          }
+        });
+        branchDropdown._boundBranchKeyboard = true;
+      }
+
       if (!document._boundBranchOutsideClick) {
         document.addEventListener('click', function () {
           closeBranchSelector();
@@ -1581,6 +1616,12 @@
       var exists = selector.querySelector('option[value="' + cssEscape(savedBranch) + '"]');
       selector.value = exists ? savedBranch : '';
       if (!exists) localStorage.removeItem('selected_branch');
+    } else {
+      // Original defaults to the first specific branch, not "Tất cả chi nhánh"
+      if (selector.options.length > 1) {
+        selector.value = selector.options[1].value;
+        localStorage.setItem('selected_branch', selector.value);
+      }
     }
     rebuildBranchDropdown();
     syncBranchLabel();
