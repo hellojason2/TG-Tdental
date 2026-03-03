@@ -12008,6 +12008,71 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Bundle Version Watcher
+  // ---------------------------------------------------------------------------
+  function extractVersionFromSrc(src) {
+    if (!src) return '';
+    try {
+      var url = new URL(src, window.location.origin);
+      return url.searchParams.get('v') || '';
+    } catch (_err) {
+      var match = String(src).match(/[?&]v=([a-zA-Z0-9_-]+)/);
+      return match ? match[1] : '';
+    }
+  }
+
+  function getCurrentBundleVersion() {
+    var scripts = document.querySelectorAll('script[src*="/static/js/app.js"]');
+    if (!scripts || !scripts.length) return '';
+    return extractVersionFromSrc(scripts[scripts.length - 1].getAttribute('src') || '');
+  }
+
+  async function fetchLatestBundleVersion() {
+    try {
+      var res = await fetch('/static/tdental.html?_=' + Date.now(), {
+        method: 'GET',
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      if (!res.ok) return '';
+      var html = await res.text();
+      var match = html.match(/\/static\/js\/app\.js\?v=([a-zA-Z0-9_-]+)/);
+      return match ? match[1] : '';
+    } catch (_err) {
+      return '';
+    }
+  }
+
+  function initBundleVersionWatcher() {
+    var currentVersion = getCurrentBundleVersion();
+    if (!currentVersion) return;
+
+    var checking = false;
+    var reloadQueued = false;
+
+    async function checkVersion() {
+      if (checking || reloadQueued) return;
+      checking = true;
+      try {
+        var latestVersion = await fetchLatestBundleVersion();
+        if (!latestVersion || latestVersion === currentVersion) return;
+        reloadQueued = true;
+        showToast('info', 'Có bản cập nhật mới. Đang tải lại trang...', 1500);
+        setTimeout(function () {
+          window.location.reload();
+        }, 1200);
+      } finally {
+        checking = false;
+      }
+    }
+
+    setInterval(checkVersion, 45000);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) checkVersion();
+    });
+  }
+
+  // ---------------------------------------------------------------------------
   // Expose Global Functions
   // ---------------------------------------------------------------------------
   window.TDS = {
@@ -12034,6 +12099,7 @@
     initTopbar();
     initRippleEffect();
     initGlobalSearch();
+    initBundleVersionWatcher();
 
     window.addEventListener('hashchange', handleRoute);
     window.addEventListener('resize', dashboardHandleResize);
